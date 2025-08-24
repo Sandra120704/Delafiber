@@ -7,3 +7,6 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', 'Home::index');
 $routes->get('/leads', 'LeadController::index');
+$routes->get('/leads/create', 'LeadController::create');
+$routes->post('/leads/store', 'LeadController::store');
+

@@ -28,3 +28,6 @@ BEGIN
 END $$
 
 DELIMITER ;
+
+CALL sp_registrar_lead(1, 1, 1, 1, CURDATE(), @nuevo_id);
+SELECT @nuevo_id;

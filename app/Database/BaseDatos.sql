@@ -39,7 +39,7 @@ CREATE TABLE personas (
     CONSTRAINT fk_persona_distrito FOREIGN KEY (iddistrito) REFERENCES distritos(iddistrito)
 );
 
-CREATE TABLE usuarios (
+DROP TABLE usuarios; (
     idusuario INT AUTO_INCREMENT PRIMARY KEY,
     idpersona INT NOT NULL UNIQUE,
     nombreusuario VARCHAR(50) UNIQUE NOT NULL,
@@ -191,5 +191,35 @@ JOIN provincias pr ON d.idprovincia = pr.idprovincia
 JOIN departamentos dp ON pr.iddepartamento = dp.iddepartamento;
 
 
+-- Asume que ya tienes distrito/provincia/departamento
+INSERT INTO departamentos (departamento) VALUES ('Lima');
+
+INSERT INTO provincias (provincia, iddepartamento)
+VALUES ('Lima', 1);
+
+INSERT INTO distritos (distrito, idprovincia)
+VALUES ('Miraflores', 1);
+
+INSERT INTO personas (apellidos, nombres, telprimario, iddistrito, creado)
+VALUES ('Pérez', 'Juan', '987654321', 1, NOW());
+
+INSERT INTO usuarios (idpersona, nombreusuario, claveacceso, estado, creado)
+VALUES (2, 'juanp', '123456', 1, NOW());
+
+SELECT * FROM personas WHERE idpersona = 1;
+
+SELECT * FROM personas;
 
 
+INSERT INTO campanias (nombre, fechainicio, fechafin, creado)
+VALUES ('Campaña Agosto', '2025-08-01', '2025-08-31', NOW());
+
+INSERT INTO medios (tipo_medio, medio, creado)
+VALUES ('REDES SOCIALES', 'Facebook', NOW());
+
+INSERT INTO difusiones (idcampania, idmedio, creado)
+VALUES (1, 1, NOW());
+
+
+
+SELECT * FROM usuarios;
