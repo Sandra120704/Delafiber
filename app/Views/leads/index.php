@@ -23,16 +23,26 @@
       </tr>
     </thead>
     <tbody>
+      <?php if (!empty($leads)): ?>
       <?php foreach ($leads as $lead): ?>
         <tr>
-          <td><?= $lead['id'] ?></td>
+          <td class="text-center"><?= $lead['idlead'] ?></td>
           <td><?= $lead['nombre'] ?></td>
           <td><?= $lead['email'] ?></td>
           <td><?= $lead['telefono'] ?></td>
           <td><?= $lead['fechaasignacion'] ?></td>
-          <td><?= $lead['estado'] ?></td>
+          <td class="text-center">
+            <span class="badge bg-<?= $lead['estado'] === 'nuevo' ? 'success' : ($lead['estado'] === 'contactado' ? 'info' : ($lead['estado'] === 'interesado' ? 'warning' : 'secondary')) ?>">
+              <?= ucfirst($lead['estado']) ?>
+            </span>
+          </td>
         </tr>
       <?php endforeach; ?>
+      <?php else: ?>
+        <tr>
+          <td colspan="6" class="text-center">No hay leads disponibles</td>
+        </tr>
+      <?php endif; ?>
     </tbody>
   </table>
 
