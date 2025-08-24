@@ -2,6 +2,7 @@
 namespace App\Controllers;
 
 use App\Models\PersonaModel;
+use App\Models\DistritoModel;
 
 use CodeIgniter\Controller;
 
@@ -17,14 +18,16 @@ class PersonaController extends BaseController
     // Listar personas
     public function index()
     {
-        $data['personas'] = $this->personaModel->listarPersonasSP(); // ✅
+        $data['personas'] = $this->personaModel->listarPersonasSP(); 
         return view('personas/index', $data);
     }
 
     // Mostrar formulario para registrar
     public function crear()
     {
-        return view('personas/crear');
+        $distritoModel = new DistritoModel();
+        $data['distritos'] = $distritoModel->findAll();
+        return view('personas/create', $data);
     }
 
     // Guardar persona nueva

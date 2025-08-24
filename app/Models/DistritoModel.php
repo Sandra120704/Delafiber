@@ -1,0 +1,12 @@
+<?php
+namespace App\Models;
+
+use CodeIgniter\Model;
+
+class DistritoModel extends Model
+{
+    protected $table = 'distritos';
+    protected $primaryKey = 'iddistrito';
+    protected $allowedFields = ['distrito', 'idprovincia'];
+    public $timestamps = false;
+}
