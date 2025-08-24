@@ -1,3 +1,4 @@
+-- Active: 1743133057434@@127.0.0.1@3306@delafiber
 -- Crear la base de datos
 CREATE DATABASE delafiber;
 USE delafiber;

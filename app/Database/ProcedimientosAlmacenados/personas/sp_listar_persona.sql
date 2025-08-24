@@ -1,13 +1,16 @@
 DELIMITER $$
 
-CREATE PROCEDURE sp_listar_persona()
+CREATE PROCEDURE sp_listar_personas()
 BEGIN
- SELECT 
-  p.idpersona,
+    SELECT 
+        p.idpersona,
         p.nombres,
         p.apellidos,
         p.telprimario,
+        p.telalternativo,
         p.email,
+        p.direccion,
+        p.referencia,
         d.distrito,
         pr.provincia,
         dp.departamento
@@ -18,3 +21,15 @@ BEGIN
 END $$
 
 DELIMITER ;
+
+SHOW PROCEDURE STATUS WHERE Db = 'delafiber' AND Name = 'sp_listar_personas';
+
+SHOW PROCEDURE STATUS WHERE Db = 'delafiber';
+
+SHOW PROCEDURE STATUS WHERE Db = 'delafiber' AND Name = 'sp_listar_personas';
+
+DROP PROCEDURE IF EXISTS sp_listar_personas;
+
+USE delafiber;
+USE medicamentos;
+
