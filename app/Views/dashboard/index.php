@@ -17,7 +17,7 @@
 
   <!-- Sidebar -->
   <nav class="bg-dark text-white p-3 sidebar">
-    <h4>DELAFIBER CRM</h4>
+    <h4>DELAFIBER</h4>
     <ul class="nav flex-column mt-4">
       <li class="nav-item"><a class="nav-link text-white" href="<?= base_url('dashboard') ?>">Dashboard</a></li>
       <li class="nav-item"><a class="nav-link text-white" href="<?= base_url('personas') ?>">Personas</a></li>
