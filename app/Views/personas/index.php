@@ -1,99 +1,81 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personas</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <title>Lista de Personas</title>
 </head>
 <body>
-
 <div class="container mt-4">
-  <h2>Listado De Personas</h2>
+  <h2>Listado de Personas</h2>
 
-    <?php if (session()->getFlashdata('success')): ?>
-        <div class="alert alert-success"><?= session()->getFlashdata('success') ?></div>
-    <?php elseif (session()->getFlashdata('error')): ?>
-        <div class="alert alert-danger"><?= session()->getFlashdata('error') ?></div>
-    <?php endif; ?>
+  <?php if (session()->getFlashdata('success')): ?>
+    <div class="alert alert-success"><?= session()->getFlashdata('success') ?></div>
+  <?php elseif (session()->getFlashdata('error')): ?>
+    <div class="alert alert-danger"><?= session()->getFlashdata('error') ?></div>
+  <?php endif; ?>
 
-    <!-- Botón para abrir el modal -->
-    <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalCrearPersona">
-        Registrar Nueva Persona
-    </button>
+  <!-- Formulario de registro -->
+  <form action="<?= base_url('/personas/store') ?>" method="post" class="mb-4">
+    <div class="row">
+      <div class="col">
+        <input type="text" name="apellidos" class="form-control" placeholder="Apellidos" required>
+      </div>
+      <div class="col">
+        <input type="text" name="nombres" class="form-control" placeholder="Nombres" required>
+      </div>
+      <div class="col">
+        <input type="text" name="telprimario" class="form-control" placeholder="Teléfono" required>
+      </div>
+      <div class="col">
+        <select name="iddistrito" class="form-control" required>
+          <option value="">Seleccione distrito</option>
+          <?php foreach ($distritos as $d): ?>
+            <option value="<?= $d['iddistrito'] ?>"><?= $d['distrito'] ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="col">
+        <button type="submit" class="btn btn-primary">Registrar</button>
+      </div>
+    </div>
+  </form>
 
-    <table class="table table-bordered table-hover">
-        <thead class="table-light">
-            <tr>
-                <th>ID</th>
-                <th>Apellidos</th>
-                <th>Nombres</th>
-                <th>Teléfono</th>
-                <th>Email</th>
-                <th>Distrito</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (!empty($personas)): ?>
-                <?php foreach ($personas as $persona): ?>
-                    <tr>
-                        <td><?= $persona['idpersona'] ?></td>
-                        <td><?= $persona['apellidos'] ?></td>
-                        <td><?= $persona['nombres'] ?></td>
-                        <td><?= $persona['telprimario'] ?></td>
-                        <td><?= $persona['email'] ?></td>
-                        <td><?= $persona['distrito'] ?? '—' ?></td>
-                        <td>
-                            <a class="btn btn-sm btn-warning btnEditarPersona" data-bs-target="#modalCrearPersona" data-id="<?= $persona['idpersona'] ?>">Editar</a>
-
-                            <a href="<?= base_url('/personas/delete/' . $persona['idpersona']) ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de eliminar esta persona?')">Eliminar</a>
-
-                            <?php if (empty($persona['es_lead']) || !$persona['es_lead']): ?>
-                                <a href="<?= base_url('/personas/convertir/' . $persona['idpersona']) ?>" class="btn btn-sm btn-primary">Convertir en Lead</a>
-                            <?php else: ?>
-                                <span class="badge bg-success">Lead</span>
-                            <?php endif; ?>
-
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <tr>
-                    <td colspan="7" class="text-center">No hay personas registradas.</td>
-                </tr>
-            <?php endif; ?>
-        </tbody>
-    </table>
-
-    <?= view('personas/create', ['distritos' => $distritos]) ?>
-    <?php if (session()->getFlashdata('error')): ?>
-        <script>
-        var myModal = new bootstrap.Modal(document.getElementById('modalCrearPersona'));
-        myModal.show();
-        </script>
-    <?php endif; ?>
-
-
-
+  <!-- Tabla -->
+  <table class="table table-bordered table-hover">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Apellidos</th>
+        <th>Nombres</th>
+        <th>Teléfono</th>
+        <th>Email</th>
+        <th>Distrito</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <?php if (!empty($personas)): ?>
+        <?php foreach ($personas as $p): ?>
+          <tr>
+            <td><?= $p['idpersona'] ?></td>
+            <td><?= $p['apellidos'] ?></td>
+            <td><?= $p['nombres'] ?></td>
+            <td><?= $p['telprimario'] ?></td>
+            <td><?= $p['email'] ?></td>
+            <td><?= $p['distrito'] ?? '—' ?></td>
+            <td>
+              <a href="<?= base_url('/personas/edit/'.$p['idpersona']) ?>" class="btn btn-sm btn-warning">Editar</a>
+              <a href="<?= base_url('/personas/delete/'.$p['idpersona']) ?>" class="btn btn-sm btn-danger"
+                 onclick="return confirm('¿Eliminar persona?')">Eliminar</a>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      <?php else: ?>
+        <tr><td colspan="7" class="text-center">No hay personas registradas</td></tr>
+      <?php endif; ?>
+    </tbody>
+  </table>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    $(document).on('click', '.btnEditarPersona', function() {
-        const id = $(this).data('id');
-
-        $.get('/personas/formulario-editar/' + id, function(html) {
-            $('#modalPersona .modal-content').html(html);
-            var modal = new bootstrap.Modal(document.getElementById('modalPersona'));
-            modal.show();
-        }).fail(function(err) {
-            console.error("Error cargando el modal:", err);
-        });
-    });
-</script>
-
-
-
 </body>
 </html>

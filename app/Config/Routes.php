@@ -19,12 +19,9 @@ $routes->post('/leads/update/(:num)', 'LeadController::update/$1');
 $routes->get('/personas', 'PersonaController::index');
 $routes->get('/personas/create', 'PersonaController::crear');
 $routes->post('/personas/store', 'PersonaController::store');
-$routes->get('/personas/edit/(:num)', 'PersonaController::edit/$1');
 $routes->post('/personas/update/(:num)', 'PersonaController::update/$1');
 $routes->get('/personas/delete/(:num)', 'PersonaController::delete/$1');
-$routes->get('/personas/convertir/(:num)', 'LeadController::convertir/$1');
-$routes->get('/personas/formulario-editar/(:num)', 'PersonaController::formularioEditar/$1');
-$routes->get('/personas/editar/(:num)', 'PersonaController::getFormularioEditar/$1');
+
 
 // Seguimientos
 $routes->get('/seguimientos', 'SeguimientoController::index');

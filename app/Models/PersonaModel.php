@@ -23,7 +23,7 @@ class PersonaModel extends Model
     }
 
     // Registrar persona
-    public function registrarPersona($data)
+    public function registrar($data)
     {
         $this->db->query(
             "CALL sp_registrar_persona(?, ?, ?, ?, ?, ?, ?, ?, @nuevo_id)",
@@ -44,7 +44,7 @@ class PersonaModel extends Model
     }
 
     // Actualizar persona
-    public function actualizarPersona($idpersona, $data)
+    public function actualizar($idpersona, $data)
     {
         return $this->db->query(
             "CALL sp_actualizar_persona(?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -63,22 +63,40 @@ class PersonaModel extends Model
     }
 
     // Eliminar persona
-    public function eliminarPersona($idpersona)
+    public function eliminar($idpersona)
     {
         return $this->db->query("CALL sp_eliminar_persona(?)", [$idpersona]);
     }
 
     // Listar personas
-    public function listarPersonasSP()
+    public function listar()
     {
         $query = $this->db->query("CALL sp_listar_personas()");
         return $query->getResultArray();
     }
 
     // Obtener persona por ID
-    public function obtenerPersonaPorId($idpersona)
+    public function obtener($idpersona)
     {
-        $query = $this->db->query("CALL sp_obtener_persona(?)", [$idpersona]);
+        $query = $this->db->query("CALL sp_obtener_persona_por_id(?)", [$idpersona]);
         return $query->getRowArray();
+    }
+
+    /* ---------------------------
+       Alias para que funcione con PersonaController
+    --------------------------- */
+    public function listarPersonasSP()
+    {
+        return $this->listar();
+    }
+
+    public function actualizarPersona($id, $data)
+    {
+        return $this->actualizar($id, $data);
+    }
+
+    public function eliminarPersona($id)
+    {
+        return $this->eliminar($id);
     }
 }

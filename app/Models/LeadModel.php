@@ -2,70 +2,46 @@
 namespace App\Models;
 
 use CodeIgniter\Model;
+
 class LeadModel extends Model
 {
     protected $table = 'leads';
     protected $primaryKey = 'idlead';
-    protected $allowedFields = [
-        'iddifusion', 'idpersona', 'idusuarioregistro', 'idusuarioresponsable',
-        'fechasignacion', 'estado', 'fecharegistro', 'creado', 'modificado'
-    ];
-    protected $useTimestamps = false;
 
-    // Método que llama al SP para registrar un lead
-    public function registrarLeadSP($params)
+    protected $db;
+
+    public function __construct()
     {
-        $db = \Config\Database::connect();
-
-        $db->query("CALL sp_registrar_lead(?, ?, ?, ?, ?, @nuevo_id)", [
-            $params['iddifusion'],
-            $params['idpersona'],
-            $params['idusuarioregistro'],
-            $params['idusuarioresponsable'],
-            $params['fechasignacion'],
-        ]);
-
-        $result = $db->query("SELECT @nuevo_id as idlead")->getRow();
-        return $result->idlead ?? null;
+        parent::__construct();
+        $this->db = \Config\Database::connect();
     }
 
-    //Actualizacion De Leads
-    public function actualizarLead($params)
+    public function contarLeads()
     {
-        $db = \Config\Database::connect();
-
-        $db->query("CALL sp_actualizar_lead(?, ?, ?, ?, ?, ?)", [
-            $params['idlead'],
-            $params['idusuarioresponsable'],
-            $params['fechasignacion'],
-            $params['estado'],
-        ]);
+        $query = $this->db->query("SELECT COUNT(*) as total FROM leads");
+        return $query->getRow()->total ?? 0;
     }
 
-    //Eliminar Un Leads Por ID
-    public function eliminarLead($idlead)
+    public function contarLeadsPorEstado()
     {
-        $db = \Config\Database::connect();
+        $query = $this->db->query("
+            SELECT estado, COUNT(*) as cantidad 
+            FROM leads 
+            GROUP BY estado
+        ")->getResultArray();
 
-        $db->query("CALL sp_eliminar_lead(?)", [$idlead]);
+        $result = [
+            'nuevo' => 0,
+            'contactado' => 0,
+            'interesado' => 0,
+            'no interesado' => 0,
+            'perdido' => 0
+        ];
+
+        foreach ($query as $row) {
+            $result[$row['estado']] = $row['cantidad'];
+        }
+
+        return array_values($result);
     }
-
-    //Obtencion de leads por un Id
-    public function obtenerLeadPorId($idlead)
-    {
-        $db = \Config\Database::connect();
-
-        $query = $db->query("CALL sp_obtener_lead_por_id(?)", [$idlead]);
-        return $query->getRow();
-    }
-
-    //Listar Leads 
-    public function listarLeads()
-    {
-        $db = \Config\Database::connect();
-
-        $query = $db->query("CALL sp_listar_leads()");
-        return $query->getResultArray();
-    }
-
-  }
+}
