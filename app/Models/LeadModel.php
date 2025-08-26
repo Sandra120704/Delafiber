@@ -2,7 +2,6 @@
 namespace App\Models;
 
 use CodeIgniter\Model;
-
 class LeadModel extends Model
 {
     protected $table = 'leads';

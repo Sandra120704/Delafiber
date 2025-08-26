@@ -40,12 +40,13 @@ CREATE TABLE personas (
     CONSTRAINT fk_persona_distrito FOREIGN KEY (iddistrito) REFERENCES distritos(iddistrito)
 );
 
-DROP TABLE usuarios; (
+CREATE TABLE usuarios (
     idusuario INT AUTO_INCREMENT PRIMARY KEY,
     idpersona INT NOT NULL UNIQUE,
     nombreusuario VARCHAR(50) UNIQUE NOT NULL,
     claveacceso VARCHAR(100) NOT NULL,
     estado BOOLEAN DEFAULT TRUE,
+    rol ENUM('admin', 'vendedor') DEFAULT 'vendedor',
     creado DATETIME NOT NULL DEFAULT NOW(),
     modificado DATETIME,
     CONSTRAINT fk_usuario_persona FOREIGN KEY (idpersona) REFERENCES personas(idpersona)
@@ -92,12 +93,13 @@ CREATE TABLE etapas (
 );
 
 
-CREATE TABLE leads (
+CREATE TABLE leads (    
     idlead INT AUTO_INCREMENT PRIMARY KEY,
     iddifusion INT NOT NULL,
-    idpersona INT NOT NULL,
+    idpersona INT,
     idusuarioregistro INT NOT NULL,
     idusuarioresponsable INT NOT NULL,
+    idetapa INT NOT NULL,
     fechasignacion DATE NOT NULL,
     estado ENUM('nuevo', 'contactado', 'interesado', 'no interesado', 'perdido') DEFAULT 'nuevo',
     fecharegistro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -106,121 +108,91 @@ CREATE TABLE leads (
     CONSTRAINT fk_leads_difusion FOREIGN KEY (iddifusion) REFERENCES difusiones(iddifusion),
     CONSTRAINT fk_leads_persona FOREIGN KEY (idpersona) REFERENCES personas(idpersona),
     CONSTRAINT fk_leads_usuario_registro FOREIGN KEY (idusuarioregistro) REFERENCES usuarios(idusuario),
-    CONSTRAINT fk_leads_usuario_responsable FOREIGN KEY (idusuarioresponsable) REFERENCES usuarios(idusuario)
+    CONSTRAINT fk_leads_usuario_responsable FOREIGN KEY (idusuarioresponsable) REFERENCES usuarios(idusuario),
+    CONSTRAINT fk_leads_etapa FOREIGN KEY (idetapa) REFERENCES etapas(idetapa)
 );
+
 
 
 CREATE TABLE seguimientos (
     idseguimiento INT AUTO_INCREMENT PRIMARY KEY,
     idlead INT NOT NULL,
-    idetapa INT NOT NULL,
     modalidadcontacto VARCHAR(100),
     fecha DATE NOT NULL,
     hora TIME,
     comentarios TEXT,
+    resultado_contacto ENUM('interesado','no contesta','rechazado','equivocado'),
+    proxima_accion VARCHAR(150),
+    proxima_fecha DATE,
     creado DATETIME NOT NULL DEFAULT NOW(),
     modificado DATETIME,
-    CONSTRAINT fk_seguimiento_lead FOREIGN KEY (idlead) REFERENCES leads(idlead),
-    CONSTRAINT fk_seguimiento_etapa FOREIGN KEY (idetapa) REFERENCES etapas(idetapa)
+    CONSTRAINT fk_seguimiento_lead FOREIGN KEY (idlead) REFERENCES leads(idlead)
 );
 
-SELECT 
-    l.idlead,
-    CONCAT(p.nombres, ' ', p.apellidos) AS nombre_completo,
-    p.email,
-    p.telprimario,
-    l.fechasignacion,
-    l.estado,
-    u1.nombreusuario AS registrado_por,
-    u2.nombreusuario AS responsable,
-    c.nombre AS campania,
-    m.medio
-FROM leads l
-JOIN personas p ON l.idpersona = p.idpersona
-JOIN usuarios u1 ON l.idusuarioregistro = u1.idusuario
-JOIN usuarios u2 ON l.idusuarioresponsable = u2.idusuario
-JOIN difusiones d ON l.iddifusion = d.iddifusion
-JOIN campanias c ON d.idcampania = c.idcampania
-JOIN medios m ON d.idmedio = m.idmedio;
+INSERT INTO departamentos (departamento) VALUES ('Ica');
 
-SELECT 
-    idlead,
-	 estado,
-	 fechasignacion
-FROM leads
-WHERE estado = 'interesado';
+INSERT INTO provincias (provincia, iddepartamento) 
+VALUES ('Chincha', 1);
 
-SELECT 
-    u.nombreusuario,
-    COUNT(l.idlead) AS total_leads
-FROM leads l
-JOIN usuarios u ON l.idusuarioresponsable = u.idusuario
-GROUP BY u.nombreusuario;
+INSERT INTO distritos (distrito, idprovincia) VALUES 
+('Chincha Alta', 1),
+('Sunampe', 1),
+('Grocio Prado', 1),
+('Pueblo Nuevo', 1);
 
-SELECT 
-    l.idlead,
-    CONCAT(p.nombres, ' ', p.apellidos) AS nombre_lead,
-    e.nombreetapa,
-    s.fecha,
-    s.modalidadcontacto
-FROM leads l
-JOIN personas p ON l.idpersona = p.idpersona
-JOIN seguimientos s ON s.idlead = l.idlead
-JOIN etapas e ON s.idetapa = e.idetapa
-WHERE s.idseguimiento IN (
-    SELECT MAX(idseguimiento)
-    FROM seguimientos
-    GROUP BY idlead
-);
-
-SELECT 
-    estado,
-    COUNT(*) AS total
-FROM leads
-GROUP BY estado;
-
-SELECT 
-    p.idpersona,
-    p.nombres,
-    p.apellidos,
-    d.distrito,
-    pr.provincia,
-    dp.departamento
-FROM personas p
-JOIN distritos d ON p.iddistrito = d.iddistrito
-JOIN provincias pr ON d.idprovincia = pr.idprovincia
-JOIN departamentos dp ON pr.iddepartamento = dp.iddepartamento;
+INSERT INTO personas (apellidos, nombres, telprimario, telalternativo, email, direccion, referencia, iddistrito)
+VALUES
+('Perez', 'Juan', '999111222', NULL, 'juan.perez@gmail.com', 'Av. Los Incas 123', 'Frente al mercado', 1), -- Chincha Alta
+('Lopez', 'Maria', '999222333', '988776655', 'maria.lopez@yahoo.com', 'Calle Principal 456', 'Cerca al colegio', 2), -- Sunampe
+('Garcia', 'Carlos', '999333444', NULL, 'carlos.garcia@hotmail.com', 'Jr. Libertad 789', 'Esquina con Av. Grau', 3), -- Grocio Prado
+('Torres', 'Ana', '999444555', NULL, 'ana.torres@gmail.com', 'Urb. Las Flores Mz A Lt 10', 'Altura parque central', 4); 
 
 
--- Asume que ya tienes distrito/provincia/departamento
-INSERT INTO departamentos (departamento) VALUES ('Lima');
+INSERT INTO usuarios (idpersona, nombreusuario, claveacceso, estado, rol)
+VALUES
+(1, 'jperez', '123456', TRUE, 'admin'),
+(2, 'mlopez', '123456', TRUE, 'vendedor'),
+(3, 'cgarcia', '123456', TRUE, 'vendedor'),
+(4, 'atorres', '123456', TRUE, 'vendedor');
 
-INSERT INTO provincias (provincia, iddepartamento)
-VALUES ('Lima', 1);
+INSERT INTO campanias (nombre, descripcion, fechainicio, fechafin, inversion, estado)
+VALUES 
+('Campaña Facebook Chincha', 'Captación de clientes por redes sociales', '2025-01-01', '2025-03-31', 1500.00, 'activo');
 
-INSERT INTO distritos (distrito, idprovincia)
-VALUES ('Miraflores', 1);
+INSERT INTO medios (tipo_medio, medio)
+VALUES
+('REDES SOCIALES', 'Facebook Ads'),
+('PRESENCIAL', 'Volanteo en Chincha');
 
-INSERT INTO personas (apellidos, nombres, telprimario, iddistrito, creado)
-VALUES ('Pérez', 'Juan', '987654321', 1, NOW());
+INSERT INTO difusiones (idcampania, idmedio)
+VALUES
+(1, 1),
+(1, 2);
 
-INSERT INTO usuarios (idpersona, nombreusuario, claveacceso, estado, creado)
-VALUES (2, 'juanp', '123456', 1, NOW());
+INSERT INTO leads (iddifusion, idpersona, idusuarioregistro, idusuarioresponsable, idetapa, fechasignacion, estado)
+VALUES
+(1, 1, 1, 2, 1, '2025-02-01', 'nuevo'); 
 
-SELECT * FROM personas WHERE idpersona = 1;
+INSERT INTO leads (iddifusion, idpersona, idusuarioregistro, idusuarioresponsable, idetapa, fechasignacion, estado)
+VALUES
+(1, 2, 1, 3, 2, '2025-02-05', 'contactado');
 
-SELECT * FROM personas;
+INSERT INTO leads (iddifusion, idpersona, idusuarioregistro, idusuarioresponsable, idetapa, fechasignacion, estado)
+VALUES
+(2, 3, 1, 4, 3, '2025-02-10', 'interesado');
 
+INSERT INTO leads (iddifusion, idpersona, idusuarioregistro, idusuarioresponsable, idetapa, fechasignacion, estado)
+VALUES
+(2, 4, 1, 1, 4, '2025-02-15', 'contactado');
 
-INSERT INTO campanias (nombre, fechainicio, fechafin, creado)
-VALUES ('Campaña Agosto', '2025-08-01', '2025-08-31', NOW());
+INSERT INTO etapas (nombreetapa, estado)
+VALUES 
+('CAPTACIÓN', TRUE),
+('CONVERSIÓN', TRUE),
+('VENTA', TRUE),
+('FIDELIZACIÓN', TRUE);
 
-INSERT INTO medios (tipo_medio, medio, creado)
-VALUES ('REDES SOCIALES', 'Facebook', NOW());
+SELECT * FROM leads l
+INNER JOIN personas p ON l.idpersona = p.idpersona
+INNER JOIN etapas e ON l.idetapa = e.idetapa;
 
-INSERT INTO difusiones (idcampania, idmedio, creado)
-VALUES (1, 1, NOW());
-
-
-
-SELECT * FROM usuarios;

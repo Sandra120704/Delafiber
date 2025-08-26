@@ -1,29 +1,30 @@
 DELIMITER $$
 
-CREATE PROCEDURE sp_actualizar_persona(
+CREATE PROCEDURE sp_actualizar_persona (
   IN p_idpersona INT,
-  IN p_apellidos VARCHAR(100),
   IN p_nombres VARCHAR(100),
-  IN p_telprimario VARCHAR(9),
-  IN p_telalternativo VARCHAR(9),
+  IN p_apellidos VARCHAR(100),
   IN p_email VARCHAR(100),
-  IN p_direccion TEXT,
-  IN p_referencia TEXT,
-  IN p_iddistrito INT
+  IN p_telprimario VARCHAR(20),
+  IN p_telsecundario VARCHAR(20),
+  IN p_direccion VARCHAR(200),
+  IN p_distrito VARCHAR(100),
+  OUT p_exito BOOLEAN
 )
 BEGIN
   UPDATE personas
-  SET
-    apellidos = p_apellidos,
+  SET 
     nombres = p_nombres,
-    telprimario = p_telprimario,
-    telalternativo = p_telalternativo,
+    apellidos = p_apellidos,
     email = p_email,
+    telprimario = p_telprimario,
+    telsecundario = p_telsecundario,
     direccion = p_direccion,
-    referencia = p_referencia,
-    iddistrito = p_iddistrito,
+    distrito = p_distrito,
     modificado = NOW()
   WHERE idpersona = p_idpersona;
+
+  SET p_exito = ROW_COUNT() > 0;
 END $$
 
 DELIMITER ;

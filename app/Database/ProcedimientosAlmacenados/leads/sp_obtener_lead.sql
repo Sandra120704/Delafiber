@@ -18,10 +18,10 @@ BEGIN
   FROM leads l
   JOIN personas p ON l.idpersona = p.idpersona
   JOIN usuarios u1 ON l.idusuarioregistro = u1.idusuario
-  JOIN usuarios u2 ON l.idusuarioresponsable = u2.idusuario
-  JOIN difusiones d ON l.iddifusion = d.iddifusion
-  JOIN campanias c ON d.idcampania = c.idcampania
-  JOIN medios m ON d.idmedio = m.idmedio
+  LEFT JOIN usuarios u2 ON l.idusuarioresponsable = u2.idusuario
+  LEFT JOIN difusiones d ON l.iddifusion = d.iddifusion
+  LEFT JOIN campanias c ON d.idcampania = c.idcampania
+  LEFT JOIN medios m ON d.idmedio = m.idmedio
   WHERE l.idlead = p_idlead;
 END $$
 

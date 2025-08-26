@@ -12,22 +12,28 @@ BEGIN
   DECLARE personaExiste INT;
 
   -- Verificar si la persona existe
-  SELECT COUNT(*) INTO personaExiste FROM personas WHERE idpersona = p_idpersona;
+  SELECT COUNT(*) INTO personaExiste 
+  FROM personas 
+  WHERE idpersona = p_idpersona;
 
   IF personaExiste = 1 THEN
     INSERT INTO leads (
-      iddifusion, idpersona, idusuarioregistro, idusuarioresponsable, fechasignacion
+      iddifusion, idpersona, idusuarioregistro, 
+      idusuarioresponsable, fechasignacion, estado
     ) VALUES (
-      p_iddifusion, p_idpersona, p_idusuarioregistro, p_idusuarioresponsable, p_fechasignacion
+      p_iddifusion, p_idpersona, p_idusuarioregistro, 
+      p_idusuarioresponsable, p_fechasignacion, 'nuevo'
     );
 
     SET p_idlead = LAST_INSERT_ID();
+
+    -- Registrar primer seguimiento automáticamente
+    INSERT INTO seguimientos (idlead, idetapa, fecha, comentarios, creado)
+    VALUES (p_idlead, 1, CURDATE(), 'Lead registrado', NOW());
+
   ELSE
     SET p_idlead = NULL;
   END IF;
 END $$
 
 DELIMITER ;
-
-CALL sp_registrar_lead(1, 1, 1, 1, CURDATE(), @nuevo_id);
-SELECT @nuevo_id;
