@@ -45,13 +45,16 @@ class PersonaController extends BaseController
     }
 
     // Formulario editar
-    public function edit($id)
+        public function edit($id)
     {
-        $data = [
-            'persona'   => $this->personaModel->obtener($id),
-            'distritos' => $this->distritoModel->findAll()
-        ];
-        return view('personas/editar', $data);
+        $persona = $this->personaModel->find($id);
+        $distritos = $this->distritoModel->findAll();
+
+        // Enviar datos a la misma vista que se usa para crear
+        echo view('personas/form', [
+            'persona' => $persona,
+            'distritos' => $distritos
+        ]);
     }
 
     // Actualizar

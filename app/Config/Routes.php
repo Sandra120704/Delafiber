@@ -21,6 +21,7 @@ $routes->get('/personas/create', 'PersonaController::crear');
 $routes->post('/personas/store', 'PersonaController::store');
 $routes->post('/personas/update/(:num)', 'PersonaController::update/$1');
 $routes->get('/personas/delete/(:num)', 'PersonaController::delete/$1');
+$routes->get('/personas/edit/(:num)', 'PersonaController::edit/$1');
 
 
 // Seguimientos
