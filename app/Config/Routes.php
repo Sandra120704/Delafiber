@@ -34,5 +34,8 @@ $routes->get('/logout', 'UsuarioController::logout'); // logout
 $routes->get('/crear-admin', 'UsuarioController::crearAdmin'); // crear admin
 
 // Dashboard
-$routes->get('/dashboard', 'DashboardController::index');
+$routes->get('/', 'Dashboard::index'); // Página principal
+$routes->get('dashboard', 'Dashboard::index'); // Dashboard opcional
+
+
 
