@@ -131,10 +131,17 @@
                 Configuración
               </a>
               <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="<?= base_url('auth/logout') ?>" onclick="return confirm('¿Estás seguro de cerrar sesión?')">
+              <a class="dropdown-item" href="#" onclick="cerrarSesion()">
                 <i class="ti-power-off text-danger"></i>
                 Cerrar sesión
               </a>
+              <script>
+              function cerrarSesion() {
+                  if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+                      window.location.href = '<?= base_url('auth/logout') ?>';
+                  }
+              }
+              </script>
             </div>
           </li>
         </ul>
@@ -173,6 +180,7 @@
       <!-- Sidebar mejorado -->
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
         <ul class="nav">
+          <!-- 1. Dashboard -->
           <li class="nav-item <?= (uri_string() == '' || uri_string() == 'dashboard') ? 'active' : '' ?>">
             <a class="nav-link" href="<?= base_url('dashboard') ?>">
               <i class="icon-grid menu-icon"></i>
@@ -180,30 +188,7 @@
             </a>
           </li>
           
-          <!-- Módulo de Contactos -->
-          <li class="nav-item <?= (strpos(uri_string(), 'contacts') !== false) ? 'active' : '' ?>">
-            <a class="nav-link" data-toggle="collapse" href="#contacts-menu" 
-               aria-expanded="<?= (strpos(uri_string(), 'contacts') !== false) ? 'true' : 'false' ?>" 
-               aria-controls="contacts-menu">
-              <i class="icon-head menu-icon"></i>
-              <span class="menu-title">Contactos</span>
-              <i class="menu-arrow"></i>
-            </a>
-            <div class="collapse <?= (strpos(uri_string(), 'contacts') !== false) ? 'show' : '' ?>" id="contacts-menu">
-              <ul class="nav flex-column sub-menu">
-                <li class="nav-item">
-                  <a class="nav-link <?= (uri_string() == 'contacts') ? 'active' : '' ?>" 
-                     href="<?= base_url('contacts') ?>">Todos los Contactos</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link <?= (uri_string() == 'contacts/create') ? 'active' : '' ?>" 
-                     href="<?= base_url('contacts/create') ?>">Nuevo Contacto</a>
-                </li>
-              </ul>
-            </div>
-          </li>
-          
-          <!-- Módulo de Leads -->
+          <!-- 2. Leads (Prospectos) -->
           <li class="nav-item <?= (strpos(uri_string(), 'leads') !== false) ? 'active' : '' ?>">
             <a class="nav-link" data-toggle="collapse" href="#leads-menu" 
                aria-expanded="<?= (strpos(uri_string(), 'leads') !== false) ? 'true' : 'false' ?>" 
@@ -226,7 +211,30 @@
             </div>
           </li>
 
-          <!-- Procesos -->
+          <!-- 3. Contactos (Clientes) -->
+          <li class="nav-item <?= (strpos(uri_string(), 'contacts') !== false) ? 'active' : '' ?>">
+            <a class="nav-link" data-toggle="collapse" href="#contacts-menu" 
+               aria-expanded="<?= (strpos(uri_string(), 'contacts') !== false) ? 'true' : 'false' ?>" 
+               aria-controls="contacts-menu">
+              <i class="icon-head menu-icon"></i>
+              <span class="menu-title">Contactos</span>
+              <i class="menu-arrow"></i>
+            </a>
+            <div class="collapse <?= (strpos(uri_string(), 'contacts') !== false) ? 'show' : '' ?>" id="contacts-menu">
+              <ul class="nav flex-column sub-menu">
+                <li class="nav-item">
+                  <a class="nav-link <?= (uri_string() == 'contacts') ? 'active' : '' ?>" 
+                     href="<?= base_url('contacts') ?>">Todos los Contactos</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link <?= (uri_string() == 'contacts/create') ? 'active' : '' ?>" 
+                     href="<?= base_url('contacts/create') ?>">Nuevo Contacto</a>
+                </li>
+              </ul>
+            </div>
+          </li>
+
+          <!-- 4. Procesos (Campañas y Flujos) -->
           <li class="nav-item <?= (strpos(uri_string(), 'processes') !== false) ? 'active' : '' ?>">
             <a class="nav-link" data-toggle="collapse" href="#processes-menu" 
                aria-expanded="<?= (strpos(uri_string(), 'processes') !== false) ? 'true' : 'false' ?>" 
@@ -247,26 +255,7 @@
             </div>
           </li>
           
-          <!-- Módulos adicionales -->
-          <li class="nav-item <?= (strpos(uri_string(), 'personas') !== false) ? 'active' : '' ?>">
-            <a class="nav-link" data-toggle="collapse" href="#modules-menu" 
-               aria-expanded="<?= (strpos(uri_string(), 'personas') !== false) ? 'true' : 'false' ?>" 
-               aria-controls="modules-menu">
-              <i class="icon-columns menu-icon"></i>
-              <span class="menu-title">Módulos</span>
-              <i class="menu-arrow"></i>
-            </a>
-            <div class="collapse <?= (strpos(uri_string(), 'personas') !== false) ? 'show' : '' ?>" id="modules-menu">
-              <ul class="nav flex-column sub-menu">
-                <li class="nav-item">
-                  <a class="nav-link <?= (uri_string() == 'personas') ? 'active' : '' ?>" 
-                     href="<?= base_url('personas') ?>">Personas</a>
-                </li>
-              </ul>
-            </div>
-          </li>
-          
-          <!-- Reportes -->
+          <!-- 5. Reportes -->
           <li class="nav-item <?= (strpos(uri_string(), 'reports') !== false) ? 'active' : '' ?>">
             <a class="nav-link" data-toggle="collapse" href="#reports-menu" 
                aria-expanded="<?= (strpos(uri_string(), 'reports') !== false) ? 'true' : 'false' ?>" 
@@ -287,7 +276,7 @@
             </div>
           </li>
           
-          <!-- Documentación -->
+          <!-- 6. Documentación -->
           <li class="nav-item <?= (uri_string() == 'documentation') ? 'active' : '' ?>">
             <a class="nav-link" href="<?= base_url('documentation') ?>">
               <i class="icon-paper menu-icon"></i>
@@ -296,7 +285,7 @@
           </li>
           
           <?php if(isset($user_role) && $user_role == 'admin'): ?>
-          <!-- Administración (solo para admins) -->
+          <!-- 7. Administración (solo para admins) -->
           <li class="nav-item <?= (strpos(uri_string(), 'admin') !== false) ? 'active' : '' ?>">
             <a class="nav-link" data-toggle="collapse" href="#admin-menu" 
                aria-expanded="<?= (strpos(uri_string(), 'admin') !== false) ? 'true' : 'false' ?>" 
@@ -322,4 +311,8 @@
 
       <div class="main-panel">
         <div class="content-wrapper">
-          <!-- Aquí va el contenido de cada página -->
+          <?= $this->renderSection('content') ?>
+        </div>
+      </div>
+    </div>
+<?php include APPPATH . 'Views/Layouts/footer.php'; ?>

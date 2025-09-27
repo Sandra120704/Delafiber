@@ -15,26 +15,30 @@
   </div>
   <!-- container-scroller -->
 
+  <!-- jQuery primero -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <!-- plugins:js -->
-  <script src="assets/js/vendor.bundle.base.js"></script>
-  <!-- endinject -->
+  <script src="<?= base_url('assets/js/vendor.bundle.base.js') ?>"></script>
   <!-- Plugin js for this page -->
-  <script src="assets/chart.js/Chart.min.js"></script>
-  <script src="assets/datatables.net/jquery.dataTables.js"></script>
-  <script src="assets/datatables.net-bs4/dataTables.bootstrap4.js"></script>
-  <script src="js/dataTables.select.min.js"></script>
-
-  <!-- End plugin js for this page -->
+  <script src="<?= base_url('assets/chart.js/Chart.min.js') ?>"></script>
+  <script src="<?= base_url('assets/datatables/js/jquery.dataTables.min.js') ?>"></script>
+  <script src="<?= base_url('assets/datatables/js/dataTables.bootstrap4.min.js') ?>"></script>
+  <!-- <script src="<?= base_url('assets/js/select.dataTables.min.js') ?>"></script> -->
   <!-- inject:js -->
-  <script src="js/off-canvas.js"></script>
-  <script src="js/hoverable-collapse.js"></script>
-  <script src="js/template.js"></script>
-  <script src="js/settings.js"></script>
-  <script src="js/todolist.js"></script>
+  <script src="<?= base_url('assets/js/off-canvas.js') ?>"></script>
+  <script src="<?= base_url('assets/js/hoverable-collapse.js') ?>"></script>
+  <script src="<?= base_url('assets/js/template.js') ?>"></script>
+  <script src="<?= base_url('assets/js/settings.js') ?>"></script>
+  <script src="<?= base_url('assets/js/todolist.js') ?>"></script>
+  <!-- Custom js for this page-->
+  <script src="<?= base_url('assets/js/dashboard.js') ?>"></script>
+  <script src="<?= base_url('assets/js/Chart.roundedBarCharts.js') ?>"></script>
+</body>
+</html>
   <!-- endinject -->
   <!-- Custom js for this page-->
-  <script src="js/dashboard.js"></script>
-  <script src="js/Chart.roundedBarCharts.js"></script>
+  <script src="<?= base_url('assets/js/dashboard.js') ?>"></script>
+  <script src="<?= base_url('assets/js/Chart.roundedBarCharts.js') ?>"></script>
   <!-- End custom js for this page-->
 </body>
 

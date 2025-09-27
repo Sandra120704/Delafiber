@@ -131,7 +131,7 @@ class DashboardController extends BaseController{
         }
 
         $tareaId = $this->request->getPost('tarea_id');
-        $notas = $this->request->getPost('notas', '');
+        $notas = (string) $this->request->getPost('notas');
 
         $result = $this->tareaModel->completarTarea($tareaId, $notas);
 

@@ -1,4 +1,5 @@
-<?= view('Layouts/header') ?>
+<?= $this->extend('Layouts/header') ?>
+<?= $this->section('content') ?>
 
 <div class="content-wrapper">
     <!-- Saludo personalizado y resumen rápido -->
@@ -368,9 +369,10 @@
     </div>
 </div>
 
+
 <!-- Incluir CSS y JS específicos del dashboard -->
-<link rel="stylesheet" href="<?= base_url('css/dashboard.css') ?>">
-<script src="<?= base_url('js/dashboard.js') ?>"></script>
+<!-- <link rel="stylesheet" href="<?= base_url('css/dashboard.css') ?>"> -->
+<!-- <script src="<?= base_url('js/dashboard.js') ?>"></script> -->
 
 <script>
 // Variable global para base_url
@@ -390,4 +392,4 @@ function time_elapsed_string(fecha) {
 <?php endif; ?>
 </script>
 
-<?= view('Layouts/footer') ?>
+<?= $this->endSection() ?>

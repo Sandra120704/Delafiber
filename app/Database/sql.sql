@@ -52,6 +52,7 @@ CREATE TABLE usuarios (
     clave VARCHAR(255) NOT NULL,
     idrol INT NOT NULL,
     idpersona INT,
+    correo VARCHAR(150),
     activo BOOLEAN DEFAULT TRUE,
     fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_usuario_rol FOREIGN KEY (idrol) 
@@ -439,3 +440,5 @@ LEFT JOIN personas u ON u_vendedor.idpersona = u.idpersona
 LEFT JOIN distritos d ON p.iddistrito = d.iddistrito
 LEFT JOIN provincias pr ON d.idprovincia = pr.idprovincia
 LEFT JOIN departamentos dp ON pr.iddepartamento = dp.iddepartamento;
+-- Agrega la columna 'ultimo_login' a la tabla 'usuarios'
+ALTER TABLE usuarios ADD COLUMN ultimo_login DATETIME NULL AFTER correo;
