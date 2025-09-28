@@ -19,312 +19,171 @@ class LeadModel extends Model
     protected $updatedField = 'fecha_modificacion';
 
     /**
-     * Obtiene leads nuevos que necesitan contacto inicial
+     * Obtener leads con filtros - SIMPLE
      */
-    public function getLeadsNuevos($userId, $limit = 5)
+    public function getLeadsConFiltros($userId, $filtros = [])
     {
-        return $this->db->table('leads l')
-            ->join('personas p', 'l.idpersona = p.idpersona')
-            ->join('etapas e', 'l.idetapa = e.idetapa')
-            ->join('distritos d', 'p.iddistrito = d.iddistrito')
-            ->select('l.idlead, p.nombres, p.apellidos, p.telefono, p.correo, 
-                     d.nombre as distrito, e.nombre as etapa, l.fecha_registro,
-                     CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre')
-            ->where('l.idusuario', $userId)
-            ->where('l.estado IS NULL') // Solo leads activos
-            ->where('e.nombre', 'CAPTACION') // Solo en etapa inicial
-            ->where('l.fecha_registro >=', date('Y-m-d H:i:s', strtotime('-24 hours'))) // Últimas 24 horas
-            ->orderBy('l.fecha_registro', 'DESC')
-            ->limit($limit)
-            ->get()
-            ->getResultArray();
+        $builder = $this->db->table('leads')
+            ->select('leads.*, personas.nombres, personas.apellidos')
+            ->join('personas', 'personas.idpersona = leads.idpersona')
+            ->where('leads.idusuario', $userId);
+
+        if (!empty($filtros['etapa'])) {
+            $builder->where('leads.idetapa', $filtros['etapa']);
+        }
+        if (!empty($filtros['origen'])) {
+            $builder->where('leads.idorigen', $filtros['origen']);
+        }
+        if (!empty($filtros['busqueda'])) {
+            $builder->groupStart()
+                ->like('persona.nombres', $filtros['busqueda'])
+                ->orLike('persona.apellidos', $filtros['busqueda'])
+                ->orLike('persona.telefono', $filtros['busqueda'])
+                ->groupEnd();
+        }
+
+        return $builder->get()->getResultArray();
     }
 
     /**
-     * Obtiene leads calientes en etapas avanzadas
+     * Obtener lead completo por ID
      */
-    public function getLeadsCalientes($userId, $limit = 8)
-    {
-        return $this->db->table('leads l')
-            ->join('personas p', 'l.idpersona = p.idpersona')
-            ->join('etapas e', 'l.idetapa = e.idetapa')
-            ->join('distritos d', 'p.iddistrito = d.iddistrito')
-            ->select('l.idlead, p.nombres, p.apellidos, p.telefono, p.correo,
-                     d.nombre as distrito, e.nombre as etapa, l.fecha_registro,
-                     CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre')
-            ->where('l.idusuario', $userId)
-            ->where('l.estado IS NULL')
-            ->whereIn('e.nombre', ['INTERES', 'COTIZACION', 'NEGOCIACION', 'CIERRE'])
-            ->orderBy('e.orden', 'DESC') // Prioridad a etapas más avanzadas
-            ->orderBy('l.fecha_modificacion', 'ASC') // Los que hace más tiempo no se actualizan
-            ->limit($limit)
-            ->get()
-            ->getResultArray();
-    }
-
-    /**
-     * Obtiene leads sin seguimiento reciente
-     */
-    public function getLeadsSinSeguimiento($userId, $dias = 2, $limit = 10)
-    {
-        $fechaLimite = date('Y-m-d H:i:s', strtotime("-$dias days"));
-        
-        return $this->db->table('leads l')
-            ->join('personas p', 'l.idpersona = p.idpersona')
-            ->join('etapas e', 'l.idetapa = e.idetapa')
-            ->select('l.idlead, p.nombres, p.apellidos, p.telefono,
-                     e.nombre as etapa, l.fecha_registro,
-                     CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre')
-            ->where('l.idusuario', $userId)
-            ->where('l.estado IS NULL')
-            ->where('l.fecha_registro <=', $fechaLimite)
-            ->where('l.idlead NOT IN', function($builder) use ($fechaLimite) {
-                return $builder->select('s.idlead')
-                    ->from('seguimiento s')
-                    ->where('s.fecha >=', $fechaLimite);
-            })
-            ->orderBy('l.fecha_registro', 'ASC')
-            ->limit($limit)
-            ->get()
-            ->getResultArray();
-    }
-
-    /**
-     * Obtiene información completa de un lead
-     */
-    public function getLeadCompleto($leadId)
-    {
-        return $this->db->table('leads l')
-            ->join('personas p', 'l.idpersona = p.idpersona')
-            ->join('etapas e', 'l.idetapa = e.idetapa')
-            ->join('origenes o', 'l.idorigen = o.idorigen')
-            ->join('distritos d', 'p.iddistrito = d.iddistrito', 'LEFT')
-            ->join('provincias pr', 'd.idprovincia = pr.idprovincia', 'LEFT')
-            ->join('campanias c', 'l.idcampania = c.idcampania', 'LEFT')
-            ->select('l.*, p.nombres, p.apellidos, p.dni, p.telefono, p.correo, 
-                     p.direccion, p.referencias, e.nombre as etapa_nombre,
-                     o.nombre as origen_nombre, d.nombre as distrito_nombre,
-                     pr.nombre as provincia_nombre, c.nombre as campania_nombre')
-            ->where('l.idlead', $leadId)
-            ->get()
-            ->getRowArray();
-    }
-
-    /**
-     * Obtiene estadísticas de leads por usuario
-     */
-    public function getEstadisticasPorUsuario($userId)
-    {
-        // Total de leads
-        $total = $this->where('idusuario', $userId)
-                     ->where('estado IS NULL')
-                     ->countAllResults();
-
-        // Leads convertidos este mes
-        $convertidos = $this->where('idusuario', $userId)
-                          ->where('estado', 'Convertido')
-                          ->where('MONTH(fecha_conversion_contrato)', date('m'))
-                          ->where('YEAR(fecha_conversion_contrato)', date('Y'))
-                          ->countAllResults();
-
-        // Leads por etapa
-        $porEtapa = $this->db->table('leads l')
-            ->join('etapas e', 'l.idetapa = e.idetapa')
-            ->select('e.nombre as etapa, COUNT(*) as total')
-            ->where('l.idusuario', $userId)
-            ->where('l.estado IS NULL')
-            ->groupBy('e.idetapa, e.nombre')
-            ->orderBy('e.orden')
-            ->get()
-            ->getResultArray();
-
-        // Tasa de conversión
-        $totalHistorico = $this->where('idusuario', $userId)->countAllResults();
-        $convertidosHistorico = $this->where('idusuario', $userId)
-                                   ->where('estado', 'Convertido')
-                                   ->countAllResults();
-        
-        $tasaConversion = $totalHistorico > 0 ? 
-            round(($convertidosHistorico / $totalHistorico) * 100, 1) : 0;
-
-        return [
-            'total_activos' => $total,
-            'convertidos_mes' => $convertidos,
-            'por_etapa' => $porEtapa,
-            'tasa_conversion' => $tasaConversion,
-            'total_historico' => $totalHistorico,
-            'convertidos_historico' => $convertidosHistorico
-        ];
-    }
-
-    /**
-     * Obtiene leads próximos a vencer (sin actividad)
-     */
-    public function getLeadsProximosVencer($userId, $dias = 3, $limit = 5)
-    {
-        $fechaLimite = date('Y-m-d H:i:s', strtotime("-$dias days"));
-        
-        return $this->db->table('leads l')
-            ->join('personas p', 'l.idpersona = p.idpersona')
-            ->join('etapas e', 'l.idetapa = e.idetapa')
-            ->select('l.idlead, p.nombres, p.apellidos, p.telefono,
-                     e.nombre as etapa, l.fecha_registro,
-                     DATEDIFF(NOW(), l.fecha_modificacion) as dias_sin_actividad,
-                     CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre')
-            ->where('l.idusuario', $userId)
-            ->where('l.estado IS NULL')
-            ->where('l.fecha_modificacion <=', $fechaLimite)
-            ->whereNotIn('e.nombre', ['VENTA', 'DESCARTADO'])
-            ->orderBy('l.fecha_modificacion', 'ASC')
-            ->limit($limit)
-            ->get()
-            ->getResultArray();
-    }
-
-    /**
-     * Obtiene el pipeline completo del usuario
-     */
-    public function getPipelineUsuario($userId)
-    {
-        return $this->db->table('etapas e')
-            ->join('leads l', 'e.idetapa = l.idetapa AND l.idusuario = ' . $userId . ' AND l.estado IS NULL', 'LEFT')
-            ->join('personas p', 'l.idpersona = p.idpersona', 'LEFT')
-            ->select('e.idetapa, e.nombre as etapa, e.orden,
-                     COUNT(l.idlead) as total_leads,
-                     GROUP_CONCAT(
-                         DISTINCT CONCAT(l.idlead, "|", p.nombres, " ", p.apellidos, "|", p.telefono)
-                         SEPARATOR ";"
-                     ) as leads_info')
-            ->groupBy('e.idetapa, e.nombre, e.orden')
-            ->orderBy('e.orden')
-            ->get()
-            ->getResultArray();
-    }
-
-    /**
-     * Mueve un lead a la siguiente etapa
-     */
-    public function avanzarEtapa($leadId, $usuarioId)
-    {
-        $lead = $this->find($leadId);
-        if (!$lead) return false;
-
-        // Obtener siguiente etapa
-        $siguienteEtapa = $this->db->table('etapas')
-            ->where('idpipeline', 1) // Pipeline principal
-            ->where('orden >', function($builder) use ($lead) {
-                return $builder->select('e2.orden')
-                    ->from('etapas e2')
-                    ->where('e2.idetapa', $lead['idetapa']);
-            })
-            ->orderBy('orden', 'ASC')
-            ->limit(1)
-            ->get()
-            ->getRowArray();
-
-        if (!$siguienteEtapa) return false;
-
-        // Actualizar lead
-        $this->update($leadId, [
-            'idetapa' => $siguienteEtapa['idetapa']
-        ]);
-
-        // Registrar en historial
-        $this->registrarCambioEtapa($leadId, $usuarioId, $lead['idetapa'], $siguienteEtapa['idetapa']);
-
-        return true;
-    }
-
-    /**
-     * Registra cambio de etapa en el historial
-     */
-    private function registrarCambioEtapa($leadId, $usuarioId, $etapaAnterior, $etapaNueva)
-    {
-        $this->db->table('leads_historial')->insert([
-            'idlead' => $leadId,
-            'idusuario' => $usuarioId,
-            'accion' => 'cambio_etapa',
-            'descripcion' => 'Lead avanzó de etapa',
-            'etapa_anterior' => $etapaAnterior,
-            'etapa_nueva' => $etapaNueva,
-            'fecha' => date('Y-m-d H:i:s')
-        ]);
-    }
-
-    /**
-     * Busca leads por criterios múltiples
-     */
-    public function buscarLeads($criterios, $userId = null)
+    public function getLeadCompleto($leadId, $userId = null)
     {
         $builder = $this->db->table('leads l')
             ->join('personas p', 'l.idpersona = p.idpersona')
             ->join('etapas e', 'l.idetapa = e.idetapa')
             ->join('origenes o', 'l.idorigen = o.idorigen')
-            ->select('l.idlead, p.nombres, p.apellidos, p.telefono, p.correo,
-                     e.nombre as etapa, o.nombre as origen, l.fecha_registro,
-                     CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre');
+            ->join('distritos d', 'p.iddistrito = d.iddistrito', 'LEFT')
+            ->join('provincias pr', 'd.idprovincia = pr.idprovincia', 'LEFT')
+            ->select('l.*, p.nombres, p.apellidos, p.dni, p.telefono, p.correo,
+                     p.direccion, p.referencias, e.nombre as etapa_nombre,
+                     o.nombre as origen_nombre, d.nombre as distrito_nombre,
+                     pr.nombre as provincia_nombre')
+            ->where('l.idlead', $leadId);
 
+        // Si se especifica userId, verificar que le pertenezca
         if ($userId) {
             $builder->where('l.idusuario', $userId);
         }
 
-        if (!empty($criterios['texto'])) {
-            $texto = $criterios['texto'];
-            $builder->groupStart()
-                ->like('p.nombres', $texto)
-                ->orLike('p.apellidos', $texto)
-                ->orLike('p.telefono', $texto)
-                ->orLike('p.correo', $texto)
-                ->groupEnd();
-        }
-
-        if (!empty($criterios['etapa'])) {
-            $builder->where('l.idetapa', $criterios['etapa']);
-        }
-
-        if (!empty($criterios['origen'])) {
-            $builder->where('l.idorigen', $criterios['origen']);
-        }
-
-        if (!empty($criterios['estado'])) {
-            if ($criterios['estado'] === 'activo') {
-                $builder->where('l.estado IS NULL');
-            } else {
-                $builder->where('l.estado', $criterios['estado']);
-            }
-        }
-
-        if (!empty($criterios['fecha_desde'])) {
-            $builder->where('l.fecha_registro >=', $criterios['fecha_desde']);
-        }
-
-        if (!empty($criterios['fecha_hasta'])) {
-            $builder->where('l.fecha_registro <=', $criterios['fecha_hasta']);
-        }
-
-        return $builder->orderBy('l.fecha_registro', 'DESC')->get()->getResultArray();
+        return $builder->get()->getRowArray();
     }
 
     /**
-     * Obtiene leads para exportar
+     * Buscar lead por teléfono
      */
-    public function getLeadsParaExportar($userId = null, $filtros = [])
+    public function buscarPorTelefono($telefono)
     {
-        $builder = $this->db->table('vista_leads_completa');
-        
-        if ($userId) {
-            $builder->where('vendedor_asignado LIKE', '%' . $userId . '%'); // Buscar en el nombre concatenado
+        return $this->db->table('leads l')
+            ->join('personas p', 'l.idpersona = p.idpersona')
+            ->join('etapas e', 'l.idetapa = e.idetapa')
+            ->select('l.idlead, p.nombres, p.apellidos, p.telefono,
+                     e.nombre as etapa_nombre, l.fecha_registro')
+            ->where('p.telefono', $telefono)
+            ->where('l.estado IS NULL')
+            ->orderBy('l.fecha_registro', 'DESC')
+            ->get()
+            ->getRowArray();
+    }
+
+    /**
+     * Obtener historial de un lead
+     */
+    public function getHistorialLead($leadId)
+    {
+        return $this->db->table('seguimiento s')
+            ->join('modalidades m', 's.idmodalidad = m.idmodalidad')
+            ->join('usuarios u', 's.idusuario = u.idusuario')
+            ->join('personas p', 'u.idpersona = p.idpersona')
+            ->select('s.*, m.nombre as modalidad_nombre,
+                     CONCAT(p.nombres, " ", p.apellidos) as usuario_nombre')
+            ->where('s.idlead', $leadId)
+            ->orderBy('s.fecha', 'DESC')
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * Obtener tareas de un lead
+     */
+    public function getTareasLead($leadId)
+    {
+        return $this->db->table('tareas')
+            ->where('idlead', $leadId)
+            ->orderBy('fecha_vencimiento', 'ASC')
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * Obtener pipeline del usuario - SIMPLE
+     */
+    public function getPipelineUsuario($userId)
+    {
+        // Obtener todas las etapas
+        $etapas = $this->db->table('etapas')
+            ->orderBy('orden')
+            ->get()
+            ->getResultArray();
+
+        $pipeline = [];
+
+        foreach ($etapas as $etapa) {
+            // Contar leads en esta etapa
+            $totalLeads = $this->db->table('leads l')
+                ->where('l.idusuario', $userId)
+                ->where('l.idetapa', $etapa['idetapa'])
+                ->where('l.estado IS NULL')
+                ->countAllResults();
+
+            // Obtener algunos leads de muestra
+            $leadsEjemplo = $this->db->table('leads l')
+                ->join('personas p', 'l.idpersona = p.idpersona')
+                ->select('l.idlead, p.nombres, p.apellidos, p.telefono')
+                ->where('l.idusuario', $userId)
+                ->where('l.idetapa', $etapa['idetapa'])
+                ->where('l.estado IS NULL')
+                ->limit(5)
+                ->get()
+                ->getResultArray();
+
+            $pipeline[] = [
+                'etapa_id' => $etapa['idetapa'],
+                'etapa_nombre' => $etapa['nombre'],
+                'total_leads' => $totalLeads,
+                'leads' => $leadsEjemplo
+            ];
         }
 
-        // Aplicar filtros adicionales
-        if (!empty($filtros['etapa'])) {
-            $builder->where('etapa_actual', $filtros['etapa']);
-        }
+        return $pipeline;
+    }
 
-        if (!empty($filtros['estado'])) {
-            $builder->where('estado', $filtros['estado']);
-        }
+    /**
+     * Contar leads por usuario
+     */
+    public function contarLeadsUsuario($userId)
+    {
+        return $this->where('idusuario', $userId)
+                   ->where('estado IS NULL')
+                   ->countAllResults();
+    }
 
-        return $builder->orderBy('fecha_registro', 'DESC')->get()->getResultArray();
+    /**
+     * Obtener leads recientes del usuario
+     */
+    public function getLeadsRecientes($userId, $limite = 5)
+    {
+        return $this->db->table('leads l')
+            ->join('personas p', 'l.idpersona = p.idpersona')
+            ->join('etapas e', 'l.idetapa = e.idetapa')
+            ->select('l.idlead, p.nombres, p.apellidos, p.telefono,
+                     e.nombre as etapa_nombre, l.fecha_registro')
+            ->where('l.idusuario', $userId)
+            ->where('l.estado IS NULL')
+            ->orderBy('l.fecha_registro', 'DESC')
+            ->limit($limite)
+            ->get()
+            ->getResultArray();
     }
 }

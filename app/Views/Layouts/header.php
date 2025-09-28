@@ -25,6 +25,9 @@
   
   <!-- CSRF Token para formularios -->
   <meta name="csrf-token" content="<?= csrf_hash() ?>">
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
 <body>
@@ -207,6 +210,10 @@
                   <a class="nav-link <?= (uri_string() == 'leads/create') ? 'active' : '' ?>" 
                      href="<?= base_url('leads/create') ?>">Nuevo Lead</a>
                 </li>
+                <li class="nav-item">
+                  <a class="nav-link <?= (uri_string() == 'leads/pipeline') ? 'active' : '' ?>" 
+                     href="<?= base_url('leads/pipeline') ?>">Pipeline</a>
+                </li>
               </ul>
             </div>
           </li>
@@ -308,11 +315,16 @@
           <?php endif; ?>
         </ul>
       </nav>
-
       <div class="main-panel">
         <div class="content-wrapper">
           <?= $this->renderSection('content') ?>
         </div>
       </div>
     </div>
-<?php include APPPATH . 'Views/Layouts/footer.php'; ?>
+
+    <!-- Bootstrap JS (al final del body) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </div>
+</body>
+
+</html>

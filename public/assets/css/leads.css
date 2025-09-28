@@ -1,0 +1,15 @@
+.kanban-column {
+  min-height: 200px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 8px;
+}
+.kanban-card {
+  cursor: grab;
+  border-left: 4px solid #17a2b8;
+  background: #fff;
+  transition: box-shadow 0.2s;
+}
+.kanban-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}

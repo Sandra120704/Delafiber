@@ -440,5 +440,7 @@ LEFT JOIN personas u ON u_vendedor.idpersona = u.idpersona
 LEFT JOIN distritos d ON p.iddistrito = d.iddistrito
 LEFT JOIN provincias pr ON d.idprovincia = pr.idprovincia
 LEFT JOIN departamentos dp ON pr.iddepartamento = dp.iddepartamento;
--- Agrega la columna 'ultimo_login' a la tabla 'usuarios'
 ALTER TABLE usuarios ADD COLUMN ultimo_login DATETIME NULL AFTER correo;
+
+ALTER TABLE usuarios ADD COLUMN correo VARCHAR(150) NULL AFTER idpersona;
+ALTER TABLE usuarios ADD COLUMN activo BOOLEAN DEFAULT TRUE AFTER correo;

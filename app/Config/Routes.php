@@ -42,3 +42,16 @@ $routes->get('dashboard/notificaciones', 'Dashboard::notificaciones');
 // Rutas legacy
 $routes->get('personas', 'Persons::index', ['filter' => 'auth']);
 $routes->get('campanias', 'Campaigns::index', ['filter' => 'auth']);
+
+$routes->group('leads', function($routes) {
+    $routes->get('/', 'Leads::index');
+    $routes->get('create', 'Leads::create');
+    $routes->post('store', 'Leads::store');
+    $routes->get('edit/(:num)', 'Leads::edit/$1');
+    $routes->post('update/(:num)', 'Leads::update/$1');
+    $routes->get('view/(:num)', 'Leads::view/$1');
+    $routes->post('buscarPorTelefono', 'Leads::buscarPorTelefono');
+    $routes->get('pipeline', 'Leads::pipeline');
+    $routes->post('updateEtapa', 'Leads::updateEtapa');
+});
+$routes->get('personas/buscardni', 'PersonaController::buscardni');
