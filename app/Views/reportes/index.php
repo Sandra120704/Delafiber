@@ -279,3 +279,4 @@
 </style>
 
 <?= $this->endsection() ?>
+<?= $this->include('Layouts/footer') ?>

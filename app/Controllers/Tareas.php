@@ -3,7 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\TareaModel;
-use App\Models\LeadModel;
+use App\Models\LeadModel; 
 
 class Tareas extends BaseController
 {
@@ -13,50 +13,45 @@ class Tareas extends BaseController
     public function __construct()
     {
         $this->tareaModel = new TareaModel();
-        $this->leadModel = new LeadModel();
+        $this->leadModel = new LeadModel(); 
     }
 
     /**
-     * Mostrar lista de tareas del usuario
+     * Vista principal de tareas
      */
     public function index()
     {
-        $idusuario = session()->get('idusuario');
-
-        // Obtener todas las tareas del usuario
-        $tareas = $this->tareaModel->getTareasConDetalles([
-            'idusuario' => $idusuario
-        ]);
-
-        // Calcular contadores
-        $contadores = [
-            'pendientes' => 0,
-            'hoy' => 0,
-            'completadas' => 0
-        ];
-
-        $hoy = date('Y-m-d');
-        foreach ($tareas as $tarea) {
-            if ($tarea['estado'] == 'Completada') {
-                $contadores['completadas']++;
-            } elseif (date('Y-m-d', strtotime($tarea['fecha_vencimiento'])) == $hoy) {
-                $contadores['hoy']++;
-            } elseif (strtotime($tarea['fecha_vencimiento']) < strtotime($hoy)) {
-                $contadores['pendientes']++;
-            }
+        if (!session()->get('logged_in')) {
+            return redirect()->to('/auth/login');
         }
 
-        // Obtener leads para el select
+        $idusuario = session()->get('idusuario');
+
+        // Obtener tareas por estado
+        $pendientes = $this->tareaModel->getTareasPendientes($idusuario);
+        $hoy = $this->tareaModel->getTareasHoy($idusuario);
+        $vencidas = $this->tareaModel->getTareasVencidas($idusuario);
+        $completadas = $this->tareaModel->getTareasCompletas([
+            'idusuario' => $idusuario,
+            'estado' => 'Completada'
+        ]);
+
+        // Si necesitas mostrar leads en el select de tareas
         $leads = $this->leadModel->getLeadsBasicos([
             'idusuario' => $idusuario,
             'activos' => true
         ]);
 
         $data = [
-            'title' => 'Mis Tareas',
-            'tareas' => $tareas,
-            'contadores' => $contadores,
-            'leads' => $leads
+            'title' => 'Mis Tareas - Delafiber CRM',
+            'user_name' => session()->get('nombre_completo'),
+            'user_email' => session()->get('correo'),
+            'user_role' => session()->get('rol'),
+            'pendientes' => $pendientes,
+            'hoy' => $hoy,
+            'vencidas' => $vencidas,
+            'completadas' => $completadas,
+            'leads' => $leads // Solo si lo necesitas en la vista
         ];
 
         return view('tareas/index', $data);

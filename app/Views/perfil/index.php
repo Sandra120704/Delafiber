@@ -255,3 +255,4 @@ document.querySelector('form[action*="cambiar-password"]')?.addEventListener('su
 </script>
 
 <?= $this->endsection() ?>
+<?= $this->include('Layouts/footer') ?>

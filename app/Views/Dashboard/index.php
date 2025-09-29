@@ -393,3 +393,4 @@ function time_elapsed_string(fecha) {
 </script>
 
 <?= $this->endSection() ?>
+<?= $this->include('Layouts/footer') ?>

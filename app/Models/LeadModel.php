@@ -13,9 +13,7 @@ class LeadModel extends Model
         'idetapa',
         'idusuario',
         'idorigen',
-        'idcampania',
         'medio_comunicacion',
-        'idmodalidad',
         'idusuario_registro',
         'referido_por',
         'estado',
@@ -344,5 +342,42 @@ class LeadModel extends Model
         $this->update($leadId, [
             'idusuario' => $usuarioId
         ]);
+    }
+
+    /**
+     * Obtener leads básicos para select (id, nombre completo)
+     */
+    public function getLeadsBasicos($filtros = [])
+    {
+        $builder = $this->db->table($this->table . ' l');
+        $builder->select('l.idlead, CONCAT(p.nombres, " ", p.apellidos) as lead_nombre');
+        $builder->join('personas p', 'l.idpersona = p.idpersona', 'left');
+
+        if (!empty($filtros['idusuario'])) {
+            $builder->where('l.idusuario', $filtros['idusuario']);
+        }
+        if (array_key_exists('activos', $filtros) && $filtros['activos']) {
+            $builder->where('l.estado IS NULL');
+        }
+
+        return $builder->orderBy('lead_nombre', 'ASC')->get()->getResultArray();
+    }
+
+    /**
+     * Obtener leads por campaña (para mostrar leads recientes de una campaña)
+     */
+    public function getLeadsByCampania($idcampania, $limit = 5)
+    {
+        $builder = $this->db->table($this->table . ' l');
+        $builder->select('l.idlead, CONCAT(p.nombres, " ", p.apellidos) as cliente, p.telefono, l.fecha_registro, e.nombre as etapa_actual');
+        $builder->join('personas p', 'l.idpersona = p.idpersona', 'left');
+        $builder->join('etapas e', 'l.idetapa = e.idetapa', 'left');
+        $builder->where('l.idcampania', $idcampania);
+        $builder->where('l.estado', null);
+        $builder->orderBy('l.fecha_registro', 'DESC');
+        if ($limit) {
+            $builder->limit($limit);
+        }
+        return $builder->get()->getResultArray();
     }
 }

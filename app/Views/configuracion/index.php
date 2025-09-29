@@ -1,5 +1,4 @@
-<?= $this->extend('layouts/header') ?>
-
+<?= $this->extend('Layouts/header') ?>
 <?= $this->section('content') ?>
 
 <div class="row">
@@ -553,4 +552,5 @@ $('#modalUsuario').on('show.bs.modal', function(e) {
 });
 </script>
 
-<?= $this->endsection() ?>
+<?= $this->endSection() ?>
+<?= $this->include('Layouts/footer') ?>

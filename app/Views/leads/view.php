@@ -499,3 +499,4 @@ function completarTarea(id) {
 </script>
 
 <?= $this->endSection() ?>
+<?= $this->include('Layouts/footer') ?>

@@ -77,3 +77,4 @@ function avanzarEtapa(idlead, etapaActual) {
 </style>
 
 <?= $this->endSection() ?>
+<?= $this->include('Layouts/footer') ?>

@@ -38,6 +38,18 @@ class Campanias extends BaseController
     }
 
     /**
+     * Formulario de crear campaña
+     */
+    public function create()
+    {
+        $data = [
+            'title' => 'Nueva Campaña'
+        ];
+
+        return view('campanias/create', $data);
+    }
+
+    /**
      * Guardar nueva campaña
      */
     public function store()
@@ -65,7 +77,8 @@ class Campanias extends BaseController
             'fecha_inicio' => $this->request->getPost('fecha_inicio'),
             'fecha_fin' => $this->request->getPost('fecha_fin'),
             'presupuesto' => $this->request->getPost('presupuesto') ?: 0,
-            'activo' => $this->request->getPost('activo') ? 1 : 0
+            'estado' => 'Activa',
+            'activo' => 1
         ];
 
         // Guardar
@@ -77,6 +90,26 @@ class Campanias extends BaseController
                 ->withInput()
                 ->with('error', 'Error al crear la campaña');
         }
+    }
+
+    /**
+     * Formulario de editar campaña
+     */
+    public function edit($id)
+    {
+        $campania = $this->campaniaModel->find($id);
+        
+        if (!$campania) {
+            return redirect()->to('campanias')
+                ->with('error', 'Campaña no encontrada');
+        }
+
+        $data = [
+            'title' => 'Editar Campaña',
+            'campania' => $campania
+        ];
+
+        return view('campanias/edit', $data);
     }
 
     /**
@@ -173,36 +206,55 @@ class Campanias extends BaseController
         }
 
         // Obtener leads de la campaña
-        $leads = $this->leadModel->getLeadsByCampania($id);
+        $leads = $this->leadModel
+            ->where('idcampania', $id)
+            ->orderBy('fecha_registro', 'DESC')
+            ->findAll();
+
+        // Leads recientes (últimos 5)
+        $leads_recientes = array_slice($leads, 0, 5);
 
         // Calcular estadísticas
         $totalLeads = count($leads);
-        $conversiones = array_filter($leads, fn($l) => $l['estado'] === 'Convertido');
-        $tasaConversion = $totalLeads > 0 ? (count($conversiones) / $totalLeads) * 100 : 0;
+        $convertidos = count(array_filter($leads, fn($l) => isset($l['estado']) && $l['estado'] === 'Convertido'));
+        $activos = count(array_filter($leads, fn($l) => isset($l['estado']) && $l['estado'] === 'Activo'));
         
-        $ingresos = array_sum(array_column($conversiones, 'presupuesto_estimado'));
-        $costoPorLead = $campania['presupuesto'] > 0 && $totalLeads > 0 
-            ? $campania['presupuesto'] / $totalLeads 
-            : 0;
-        
-        $roi = $campania['presupuesto'] > 0 
-            ? (($ingresos - $campania['presupuesto']) / $campania['presupuesto']) * 100 
-            : 0;
+        $estadisticas = [
+            'total_leads' => $totalLeads,
+            'convertidos' => $convertidos,
+            'activos' => $activos,
+            'tasa_conversion' => $totalLeads > 0 ? ($convertidos / $totalLeads) * 100 : 0
+        ];
 
         $data = [
             'title' => $campania['nombre'],
             'campania' => $campania,
-            'leads' => $leads,
-            'estadisticas' => [
-                'total_leads' => $totalLeads,
-                'conversiones' => count($conversiones),
-                'tasa_conversion' => $tasaConversion,
-                'ingresos' => $ingresos,
-                'costo_por_lead' => $costoPorLead,
-                'roi' => $roi
-            ]
+            'leads_recientes' => $leads_recientes,
+            'estadisticas' => $estadisticas,
+            'difusiones' => [], // Aquí deberías cargar las difusiones reales
+            'medios' => [] // Aquí deberías cargar los medios disponibles
         ];
 
         return view('campanias/view', $data);
+    }
+
+    /**
+     * Cambiar estado de campaña (Activa/Inactiva)
+     */
+    public function toggleEstado($id)
+    {
+        $campania = $this->campaniaModel->find($id);
+        
+        if (!$campania) {
+            return redirect()->to('campanias')
+                ->with('error', 'Campaña no encontrada');
+        }
+
+        $nuevoEstado = $campania['estado'] === 'Activa' ? 'Inactiva' : 'Activa';
+        
+        $this->campaniaModel->update($id, ['estado' => $nuevoEstado]);
+        
+        return redirect()->back()
+            ->with('success', "Campaña {$nuevoEstado} correctamente");
     }
 }

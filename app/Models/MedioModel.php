@@ -3,11 +3,6 @@
 namespace App\Models;
 
 use CodeIgniter\Model;
-
-/**
- * MODELO: DifusionModel
- * Gestión de difusiones (medios asociados a campañas)
- */
 class DifusionModel extends Model
 {
     protected $table = 'difusiones';
@@ -112,11 +107,7 @@ class MedioModel extends Model
 {
     protected $table = 'medios';
     protected $primaryKey = 'idmedio';
-    protected $allowedFields = [
-        'nombre',
-        'descripcion',
-        'activo'
-    ];
+    protected $allowedFields = ['nombre', 'descripcion', 'activo'];
 
     /**
      * Obtener todos los medios activos
@@ -129,7 +120,7 @@ class MedioModel extends Model
     }
 
     /**
-     * Obtener medio con estadísticas
+     * Obtener medio con estadísticas de uso
      */
     public function getMedioConEstadisticas($idmedio)
     {
@@ -139,14 +130,14 @@ class MedioModel extends Model
             return null;
         }
 
-        // Obtener estadísticas de difusiones
-        $builder = $this->db->table('difusiones d');
+        $db = \Config\Database::connect();
+        $builder = $db->table('difusiones');
         $builder->select('
             COUNT(*) as total_difusiones,
-            SUM(d.presupuesto) as presupuesto_total,
-            SUM(d.leads_generados) as leads_total
+            SUM(presupuesto) as presupuesto_total,
+            SUM(leads_generados) as leads_total
         ');
-        $builder->where('d.idmedio', $idmedio);
+        $builder->where('idmedio', $idmedio);
         
         $stats = $builder->get()->getRowArray();
         
@@ -161,7 +152,8 @@ class MedioModel extends Model
      */
     public function getRankingMedios()
     {
-        $builder = $this->db->table($this->table . ' m');
+        $db = \Config\Database::connect();
+        $builder = $db->table($this->table . ' m');
         $builder->select('
             m.*,
             COUNT(d.iddifusion) as total_difusiones,
@@ -177,6 +169,23 @@ class MedioModel extends Model
         $builder->where('m.activo', 1);
         $builder->groupBy('m.idmedio');
         $builder->orderBy('efectividad', 'DESC');
+        
+        return $builder->get()->getResultArray();
+    }
+
+    /**
+     * Obtener medios más utilizados
+     */
+    public function getMediosMasUtilizados($limit = 5)
+    {
+        $db = \Config\Database::connect();
+        $builder = $db->table($this->table);
+        $builder->select('medios.*, COUNT(difusiones.iddifusion) as total_uso')
+            ->join('difusiones', 'medios.idmedio = difusiones.idmedio', 'left')
+            ->where('medios.activo', 1)
+            ->groupBy('medios.idmedio')
+            ->orderBy('total_uso', 'DESC')
+            ->limit($limit);
         
         return $builder->get()->getResultArray();
     }

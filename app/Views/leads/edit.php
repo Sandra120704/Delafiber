@@ -232,3 +232,4 @@
 </div>
 
 <?= $this->endSection() ?>
+<?= $this->include('Layouts/footer') ?>
