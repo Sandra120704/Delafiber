@@ -311,5 +311,34 @@ public function store()
                 ->with('error', 'Error al actualizar el lead: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Buscar lead por DNI (AJAX/API Decolecta)
+     */
+    public function buscarPorDni()
+    {
+        $dni = $this->request->getGet('dni');
+        if (!$dni) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'DNI no proporcionado'
+            ]);
+        }
+
+        // Ejemplo: consulta a modelo o API externa
+        $lead = model('LeadModel')->where('dni', $dni)->first();
+
+        if ($lead) {
+            return $this->response->setJSON([
+                'success' => true,
+                'lead' => $lead
+            ]);
+        } else {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No se encontró lead con ese DNI'
+            ]);
+        }
+    }
 }
 
