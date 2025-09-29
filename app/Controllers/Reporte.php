@@ -6,6 +6,9 @@ use App\Models\LeadModel;
 use App\Models\CampaniaModel;
 use App\Models\UsuarioModel;
 
+// Include Composer autoloader
+require_once(ROOTPATH . 'vendor/autoload.php');
+
 // Import PhpSpreadsheet classes
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;

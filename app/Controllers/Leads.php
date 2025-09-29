@@ -56,6 +56,10 @@ class Leads extends BaseController
             'origen' => $filtro_origen,
             'busqueda' => $filtro_busqueda
         ]);
+        // Obtener campañas desde el modelo
+        $campaignsModel = new CampaniaModel(); // Usa el modelo correcto
+        $campanias = $campaignsModel->findAll();
+
         $data = [
             'title' => 'Mis Leads - Delafiber CRM',
             'leads' => $leads,
@@ -65,7 +69,8 @@ class Leads extends BaseController
             'filtro_etapa' => $filtro_etapa,
             'filtro_origen' => $filtro_origen,
             'filtro_busqueda' => $filtro_busqueda,
-            'user_name' => session()->get('user_name')
+            'user_name' => session()->get('user_name'),
+            'campanias' => $campanias,
         ];
         return view('leads/index', $data); // leads/index.php debe tener extend('Layouts/header'), section('content'), endSection()
     }

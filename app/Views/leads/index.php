@@ -1,4 +1,4 @@
-<?= $this->extend('layout/main') ?>
+<?= $this->extend('layouts/header') ?>
 
 <?= $this->section('content') ?>
 
@@ -143,12 +143,6 @@
                                                class="btn btn-sm btn-warning" title="Editar">
                                                 <i class="icon-pencil"></i>
                                             </a>
-                                            <button type="button" 
-                                                    class="btn btn-sm btn-danger" 
-                                                    onclick="confirmarEliminar(<?= $lead['idlead'] ?>)"
-                                                    title="Eliminar">
-                                                <i class="icon-trash"></i>
-                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -156,8 +150,13 @@
                             <?php else: ?>
                                 <tr>
                                     <td colspan="8" class="text-center py-4">
-                                        <i class="icon-info text-muted" style="font-size: 48px;"></i>
-                                        <p class="text-muted mt-2">No se encontraron leads</p>
+                                        <div class="text-muted">
+                                            <i class="icon-info" style="font-size: 3rem;"></i>
+                                            <p class="mt-2">No se encontraron leads con los filtros aplicados</p>
+                                            <a href="<?= base_url('leads/create') ?>" class="btn btn-primary mt-2">
+                                                <i class="icon-plus"></i> Crear Primer Lead
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endif; ?>
@@ -165,48 +164,29 @@
                     </table>
                 </div>
 
-                <!-- Paginación -->
-                <?php if (!empty($pager)): ?>
+                <!-- Resumen -->
                 <div class="mt-3">
-                    <?= $pager->links() ?>
+                    <p class="text-muted">Total de leads: <strong><?= count($leads) ?></strong></p>
                 </div>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Confirmar Eliminación -->
-<div class="modal fade" id="modalEliminar" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirmar Eliminación</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>¿Estás seguro de que deseas eliminar este lead?</p>
-                <p class="text-danger"><small>Esta acción no se puede deshacer.</small></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <form id="formEliminar" method="POST" style="display:inline;">
-                    <?= csrf_field() ?>
-                    <button type="submit" class="btn btn-danger">Eliminar</button>
-                </form>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-function confirmarEliminar(idlead) {
-    const formEliminar = document.getElementById('formEliminar');
-    formEliminar.action = '<?= base_url('leads/delete/') ?>' + idlead;
-    $('#modalEliminar').modal('show');
-}
+// Inicializar DataTables para búsqueda y ordenamiento
+$(document).ready(function() {
+    $('#tableLeads').DataTable({
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Spanish.json"
+        },
+        "order": [[6, "desc"]], // Ordenar por fecha descendente
+        "pageLength": 25,
+        "columnDefs": [
+            { "orderable": false, "targets": 7 } // Columna de acciones no ordenable
+        ]
+    });
+});
 </script>
 
-<?= $this->endsection() ?>
+<?= $this->endSection() ?>

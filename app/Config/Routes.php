@@ -40,8 +40,21 @@ $routes->get('dashboard/perfil', 'Dashboard::perfil');
 $routes->get('dashboard/notificaciones', 'Dashboard::notificaciones');
 
 // Rutas legacy
-$routes->get('personas', 'Persons::index', ['filter' => 'auth']);
+// $routes->get('personas', 'Persons::index', ['filter' => 'auth']); // Comentada para evitar conflicto
 $routes->get('campanias', 'Campaigns::index', ['filter' => 'auth']);
+// CRUD para campañas
+$routes->get('campanias/create', 'Campaigns::create', ['filter' => 'auth']);
+$routes->post('campanias/store', 'Campaigns::store', ['filter' => 'auth']);
+$routes->get('campanias/edit/(:num)', 'Campaigns::edit/$1', ['filter' => 'auth']);
+$routes->post('campanias/update/(:num)', 'Campaigns::update/$1', ['filter' => 'auth']);
+$routes->get('campanias/delete/(:num)', 'Campaigns::delete/$1', ['filter' => 'auth']);
+
+// Campañas: ver campaña específica
+$routes->get('campanias/view/(:num)', 'Campaigns::view/$1', ['filter' => 'auth']);
+
+// Configuración: guardar/actualizar preferencias
+$routes->post('configuracion/guardar-preferencias', 'Configuracion::guardarPreferencias');
+$routes->post('configuracion/actualizar-preferencias', 'Configuracion::actualizarPreferencias');
 
 // === LEADS ===
 $routes->group('leads', ['filter' => 'auth'], function($routes) {
@@ -52,7 +65,7 @@ $routes->group('leads', ['filter' => 'auth'], function($routes) {
     // Ver, editar, eliminar
     $routes->get('view/(:num)', 'Leads::view/$1');
     $routes->get('edit/(:num)', 'Leads::edit/$1');
-    $routes->post('update/(:num)', 'Leads::update/$1');
+    $routes->post('update/(:num)', 'Leads::update/$1'); // corregido typo
     // Pipeline (vista kanban)
     $routes->get('pipeline', 'Leads::pipeline');
     // Acciones sobre leads
@@ -68,4 +81,39 @@ $routes->group('leads', ['filter' => 'auth'], function($routes) {
     $routes->get('exportar', 'Leads::exportar');
 });
 
+// Perfil: editar y actualizar perfil
+$routes->get('dashboard/perfil/edit', 'Dashboard::editPerfil', ['filter' => 'auth']);
+$routes->post('dashboard/perfil/update', 'Dashboard::updatePerfil', ['filter' => 'auth']);
+
+// Reportes: ver y exportar
+$routes->get('reportes', 'Reportes::index', ['filter' => 'auth']);
+$routes->get('reportes/exportar', 'Reportes::exportar', ['filter' => 'auth']);
+
+// Tareas: CRUD
+$routes->get('tareas', 'Tareas::index', ['filter' => 'auth']);
+$routes->get('tareas/create', 'Tareas::create', ['filter' => 'auth']);
+$routes->post('tareas/store', 'Tareas::store', ['filter' => 'auth']);
+$routes->get('tareas/edit/(:num)', 'Tareas::edit/$1', ['filter' => 'auth']);
+$routes->post('tareas/update/(:num)', 'Tareas::update/$1', ['filter' => 'auth']);
+$routes->get('tareas/delete/(:num)', 'Tareas::delete/$1', ['filter' => 'auth']);
+
 $routes->get('personas/buscardni', 'PersonaController::buscardni');
+
+// === PERFIL Y CONFIGURACIÓN ===
+$routes->group('perfil', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'Perfil::index');
+    $routes->get('edit', 'Perfil::edit');
+    $routes->post('update', 'Perfil::update');
+});
+$routes->group('configuracion', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'Configuracion::index');
+    $routes->post('guardar-preferencias', 'Configuracion::guardarPreferencias');
+    $routes->post('actualizar-preferencias', 'Configuracion::actualizarPreferencias');
+});
+
+// === NOTIFICACIONES ===
+$routes->get('notificaciones', 'Dashboard::notificaciones', ['filter' => 'auth']);
+
+// === EXPORTACIONES GENERALES ===
+$routes->get('leads/exportar', 'Leads::exportar', ['filter' => 'auth']);
+$routes->get('reportes/exportar', 'Reports::exportar', ['filter' => 'auth']);
