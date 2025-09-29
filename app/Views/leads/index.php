@@ -81,88 +81,36 @@
                 </div>
 
                 <!-- Tabla de Leads -->
-                <div class="table-responsive">
-                    <table class="table table-hover" id="tableLeads">
-                        <thead>
-                            <tr>
-                                <th>Cliente</th>
-                                <th>Contacto</th>
-                                <th>Etapa</th>
-                                <th>Origen</th>
-                                <th>Campaña</th>
-                                <th>Vendedor</th>
-                                <th>Fecha</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (!empty($leads)): ?>
-                                <?php foreach ($leads as $lead): ?>
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mr-2" style="width:40px;height:40px;">
-                                                <?= strtoupper(substr($lead['cliente'], 0, 2)) ?>
-                                            </div>
-                                            <div>
-                                                <strong><?= esc($lead['cliente']) ?></strong><br>
-                                                <small class="text-muted">DNI: <?= esc($lead['dni']) ?></small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <i class="icon-phone text-primary"></i> <?= esc($lead['telefono']) ?><br>
-                                        <?php if ($lead['correo']): ?>
-                                        <small class="text-muted"><i class="icon-envelope"></i> <?= esc($lead['correo']) ?></small>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <span class="badge badge-info">
-                                            <?= esc($lead['etapa_actual']) ?>
-                                        </span>
-                                    </td>
-                                    <td><?= esc($lead['origen']) ?></td>
-                                    <td>
-                                        <?php if ($lead['campania']): ?>
-                                            <span class="badge badge-secondary"><?= esc($lead['campania']) ?></span>
-                                        <?php else: ?>
-                                            <span class="text-muted">-</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><?= esc($lead['vendedor_asignado']) ?></td>
-                                    <td>
-                                        <small><?= date('d/m/Y', strtotime($lead['fecha_registro'])) ?></small>
-                                    </td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <a href="<?= base_url('leads/view/' . $lead['idlead']) ?>" 
-                                               class="btn btn-sm btn-info" title="Ver detalle">
-                                                <i class="icon-eye"></i>
-                                            </a>
-                                            <a href="<?= base_url('leads/edit/' . $lead['idlead']) ?>" 
-                                               class="btn btn-sm btn-warning" title="Editar">
-                                                <i class="icon-pencil"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="8" class="text-center py-4">
-                                        <div class="text-muted">
-                                            <i class="icon-info" style="font-size: 3rem;"></i>
-                                            <p class="mt-2">No se encontraron leads con los filtros aplicados</p>
-                                            <a href="<?= base_url('leads/create') ?>" class="btn btn-primary mt-2">
-                                                <i class="icon-plus"></i> Crear Primer Lead
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
+                <!-- Solución para error DataTables: revisa que la tabla tenga el mismo número de columnas en <thead> y <tbody>, y que no haya celdas vacías o mal formadas. Además, si usas AJAX en DataTables, asegúrate que el JSON devuelto tenga la estructura esperada. -->
+
+                <table id="tableLeads" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nombre</th>
+                            <th>Teléfono</th>
+                            <th>Campaña</th>
+                            <th>Etapa</th>
+                            <th>Origen</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($leads as $lead): ?>
+                        <tr>
+                            <td><?= $lead['idlead'] ?></td>
+                            <td><?= esc($lead['nombres']) ?> <?= esc($lead['apellidos']) ?></td>
+                            <td><?= esc($lead['telefono']) ?></td>
+                            <td><?= esc($lead['campania']) ?></td>
+                            <td><?= esc($lead['etapa']) ?></td>
+                            <td><?= esc($lead['origen']) ?></td>
+                            <td>
+                                <!-- Acciones aquí -->
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
 
                 <!-- Resumen -->
                 <div class="mt-3">
@@ -172,21 +120,21 @@
         </div>
     </div>
 </div>
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-// Inicializar DataTables para búsqueda y ordenamiento
 $(document).ready(function() {
     $('#tableLeads').DataTable({
         "language": {
             "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Spanish.json"
         },
-        "order": [[6, "desc"]], // Ordenar por fecha descendente
+        "order": [[0, "desc"]], // Ordenar por la primera columna   
         "pageLength": 25,
         "columnDefs": [
-            { "orderable": false, "targets": 7 } // Columna de acciones no ordenable
+            { "orderable": false, "targets": 6 } // Última columna (Acciones) no ordenable
         ]
     });
 });
 </script>
+
 
 <?= $this->endSection() ?>

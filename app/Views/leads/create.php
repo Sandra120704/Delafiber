@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('btnGuardar').innerHTML = '<i class="icon-refresh rotating"></i> Guardando...';
     });
 
-    // Permitir búsqueda con Enter en DNI
+    // Permitir búsqueda with Enter en DNI
     dniInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
