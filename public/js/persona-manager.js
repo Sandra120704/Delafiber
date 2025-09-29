@@ -6,24 +6,81 @@ class PersonaManager {
 
     getElements() {
         return {
+            // Formulario
             dniInput: document.getElementById('dni'),
             btnBuscar: document.getElementById('buscar-dni'),
             apellidosInput: document.getElementById('apellidos'),
             nombresInput: document.getElementById('nombres'),
-            buscando: document.getElementById('searching')
+            telefonoInput: document.getElementById('telefono'),
+            buscando: document.getElementById('searching'),
+
+            // Botones CRUD en tabla (si existen)
+            btnEditar: document.querySelectorAll('.btn-editar'),
+            btnEliminar: document.querySelectorAll('.btn-eliminar'),
+            btnConvertirLead: document.querySelectorAll('.btn-convertir-lead')
         };
     }
 
     init() {
+        // --- Validaciones de inputs ---
         this.elements.dniInput?.addEventListener('input', (e) => {
             e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
         });
 
-        document.getElementById('telefono')?.addEventListener('input', (e) => {
+        this.elements.telefonoInput?.addEventListener('input', (e) => {
             e.target.value = e.target.value.replace(/\D/g, '').slice(0, 9);
         });
 
+        // --- Buscar DNI ---
         this.elements.btnBuscar?.addEventListener('click', () => this.buscarDNI());
+
+        // --- Eventos CRUD (solo si existen en la vista actual) ---
+        this.elements.btnEditar?.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                window.location.href = BASE_URL + 'personas/edit/' + id;
+            });
+        });
+
+        this.elements.btnEliminar?.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                Swal.fire({
+                    title: '¿Eliminar persona?',
+                    text: 'Esta acción no se puede deshacer.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = BASE_URL + 'personas/delete/' + id;
+                    }
+                });
+            });
+        });
+
+        this.elements.btnConvertirLead?.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                Swal.fire({
+                    title: '¿Convertir en Lead?',
+                    text: '¿Deseas convertir esta persona en un lead?',
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Sí, convertir',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = BASE_URL + 'leads/create?persona_id=' + id;
+                    }
+                });
+            });
+        });
     }
 
     async buscarDNI() {
@@ -57,11 +114,11 @@ class PersonaManager {
                     return;
                 }
 
+                // Autocompletar en el form
                 this.elements.nombresInput.value = data.nombres || '';
                 this.elements.apellidosInput.value = `${data.apepaterno || ''} ${data.apematerno || ''}`.trim();
 
-                const telefonoInput = document.getElementById('telefono');
-                telefonoInput?.focus();
+                this.elements.telefonoInput?.focus();
 
                 Swal.fire({
                     icon: 'success',
@@ -93,6 +150,7 @@ class PersonaManager {
     }
 }
 
+// Iniciar manager en cualquier página
 document.addEventListener('DOMContentLoaded', () => {
     window.personaManager = new PersonaManager();
 });

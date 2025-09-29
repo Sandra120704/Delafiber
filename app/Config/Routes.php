@@ -43,15 +43,29 @@ $routes->get('dashboard/notificaciones', 'Dashboard::notificaciones');
 $routes->get('personas', 'Persons::index', ['filter' => 'auth']);
 $routes->get('campanias', 'Campaigns::index', ['filter' => 'auth']);
 
-$routes->group('leads', function($routes) {
+// === LEADS ===
+$routes->group('leads', ['filter' => 'auth'], function($routes) {
+    // Listar y crear
     $routes->get('/', 'Leads::index');
     $routes->get('create', 'Leads::create');
     $routes->post('store', 'Leads::store');
+    // Ver, editar, eliminar
+    $routes->get('view/(:num)', 'Leads::view/$1');
     $routes->get('edit/(:num)', 'Leads::edit/$1');
     $routes->post('update/(:num)', 'Leads::update/$1');
-    $routes->get('view/(:num)', 'Leads::view/$1');
-    $routes->post('buscarPorTelefono', 'Leads::buscarPorTelefono');
+    // Pipeline (vista kanban)
     $routes->get('pipeline', 'Leads::pipeline');
-    $routes->post('updateEtapa', 'Leads::updateEtapa');
+    // Acciones sobre leads
+    $routes->post('moverEtapa', 'Leads::moverEtapa');
+    $routes->post('convertir/(:num)', 'Leads::convertir/$1');
+    $routes->post('descartar/(:num)', 'Leads::descartar/$1');
+    // Búsqueda y AJAX
+    $routes->get('buscarPorDni', 'Leads::buscarPorDni');
+    $routes->post('agregarSeguimiento', 'Leads::agregarSeguimiento');
+    $routes->post('crearTarea', 'Leads::crearTarea');
+    $routes->post('completarTarea', 'Leads::completarTarea');
+    // Exportar
+    $routes->get('exportar', 'Leads::exportar');
 });
+
 $routes->get('personas/buscardni', 'PersonaController::buscardni');

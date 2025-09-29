@@ -193,9 +193,7 @@
           
           <!-- 2. Leads (Prospectos) -->
           <li class="nav-item <?= (strpos(uri_string(), 'leads') !== false) ? 'active' : '' ?>">
-            <a class="nav-link" data-toggle="collapse" href="#leads-menu" 
-               aria-expanded="<?= (strpos(uri_string(), 'leads') !== false) ? 'true' : 'false' ?>" 
-               aria-controls="leads-menu">
+            <a class="nav-link" data-bs-toggle="collapse" href="#leads-menu" role="button" aria-expanded="<?= (strpos(uri_string(), 'leads') !== false) ? 'true' : 'false' ?>" aria-controls="leads-menu">
               <i class="icon-target menu-icon"></i>
               <span class="menu-title">Leads</span>
               <i class="menu-arrow"></i>
@@ -221,21 +219,19 @@
           <!-- 3. Contactos (Clientes) -->
           <li class="nav-item <?= (strpos(uri_string(), 'contacts') !== false) ? 'active' : '' ?>">
             <a class="nav-link" data-toggle="collapse" href="#contacts-menu" 
-               aria-expanded="<?= (strpos(uri_string(), 'contacts') !== false) ? 'true' : 'false' ?>" 
+               aria-expanded="false"
                aria-controls="contacts-menu">
               <i class="icon-head menu-icon"></i>
               <span class="menu-title">Contactos</span>
               <i class="menu-arrow"></i>
             </a>
-            <div class="collapse <?= (strpos(uri_string(), 'contacts') !== false) ? 'show' : '' ?>" id="contacts-menu">
+            <div class="collapse" id="contacts-menu">
               <ul class="nav flex-column sub-menu">
                 <li class="nav-item">
-                  <a class="nav-link <?= (uri_string() == 'contacts') ? 'active' : '' ?>" 
-                     href="<?= base_url('contacts') ?>">Todos los Contactos</a>
+                  <a class="nav-link" href="<?= base_url('contacts') ?>">Todos los Contactos</a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link <?= (uri_string() == 'contacts/create') ? 'active' : '' ?>" 
-                     href="<?= base_url('contacts/create') ?>">Nuevo Contacto</a>
+                  <a class="nav-link" href="<?= base_url('contacts/create') ?>">Nuevo Contacto</a>
                 </li>
               </ul>
             </div>
@@ -243,14 +239,14 @@
 
           <!-- 4. Procesos (Campañas y Flujos) -->
           <li class="nav-item <?= (strpos(uri_string(), 'processes') !== false) ? 'active' : '' ?>">
-            <a class="nav-link" data-toggle="collapse" href="#processes-menu" 
-               aria-expanded="<?= (strpos(uri_string(), 'processes') !== false) ? 'true' : 'false' ?>" 
+            <a class="nav-link" data-toggle="collapse" href="#processes-menu"
+               aria-expanded="false"
                aria-controls="processes-menu">
               <i class="icon-layout menu-icon"></i>
               <span class="menu-title">Procesos</span>
               <i class="menu-arrow"></i>
             </a>
-            <div class="collapse <?= (strpos(uri_string(), 'processes') !== false) ? 'show' : '' ?>" id="processes-menu">
+            <div class="collapse" id="processes-menu">
               <ul class="nav flex-column sub-menu">
                 <li class="nav-item">
                   <a class="nav-link" href="<?= base_url('campaigns') ?>">Campañas</a>
@@ -264,14 +260,14 @@
           
           <!-- 5. Reportes -->
           <li class="nav-item <?= (strpos(uri_string(), 'reports') !== false) ? 'active' : '' ?>">
-            <a class="nav-link" data-toggle="collapse" href="#reports-menu" 
-               aria-expanded="<?= (strpos(uri_string(), 'reports') !== false) ? 'true' : 'false' ?>" 
+            <a class="nav-link" data-toggle="collapse" href="#reports-menu"
+               aria-expanded="false"
                aria-controls="reports-menu">
               <i class="icon-bar-graph menu-icon"></i>
               <span class="menu-title">Reportes</span>
               <i class="menu-arrow"></i>
             </a>
-            <div class="collapse <?= (strpos(uri_string(), 'reports') !== false) ? 'show' : '' ?>" id="reports-menu">
+            <div class="collapse" id="reports-menu">
               <ul class="nav flex-column sub-menu">
                 <li class="nav-item">
                   <a class="nav-link" href="<?= base_url('reports/sales') ?>">Ventas</a>

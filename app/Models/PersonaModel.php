@@ -19,10 +19,8 @@ class PersonaModel extends Model
         'correo',
         'telefono',
         'direccion',
-        'iddistrito',
         'referencias',
-        'created_at',
-        'updated_at'
+        'iddistrito'
     ];
     
     protected $useTimestamps = true;
@@ -30,12 +28,11 @@ class PersonaModel extends Model
     protected $updatedField  = 'updated_at';
 
     protected $validationRules = [
-        'dni' => 'required|exact_length[8]|is_unique[personas.dni,idpersona,{idpersona}]',
-        'nombres' => 'required|max_length[100]',
-        'apellidos' => 'required|max_length[100]',
+        'nombres' => 'required|min_length[2]|max_length[100]',
+        'apellidos' => 'required|min_length[2]|max_length[100]',
+        'dni' => 'permit_empty|exact_length[8]|numeric|is_unique[personas.dni,idpersona,{idpersona}]',
         'correo' => 'permit_empty|valid_email|max_length[150]',
-        'telefono' => 'required|max_length[20]',
-        'iddistrito' => 'permit_empty|is_not_unique[distritos.iddistrito]'
+        'telefono' => 'permit_empty|exact_length[9]|numeric'
     ];
     
     protected $validationMessages = [
@@ -105,5 +102,11 @@ class PersonaModel extends Model
             $builder->where('idpersona !=', $excluirId);
         }
         return $builder->countAllResults() > 0;
+    }
+
+    // Buscar persona por DNI (para AJAX)
+    public function buscarPorDni($dni)
+    {
+        return $this->where('dni', $dni)->first();
     }
 }

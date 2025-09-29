@@ -8,6 +8,7 @@ class DistritoModel extends Model
 {
     protected $table = 'distritos';
     protected $primaryKey = 'iddistrito';
+    protected $allowedFields = ['idprovincia', 'nombre'];
 
     // Obtener distritos donde opera Delafiber
     public function getDistritosDelafiber()
@@ -19,5 +20,17 @@ class DistritoModel extends Model
             ->orderBy('d.nombre', 'ASC')
             ->get()
             ->getResultArray();
+    }
+
+    public function getDistritosConProvincia()
+    {
+        // ...existing code...
+    }
+
+    public function getDistritosChincha()
+    {
+        return $this->whereIn('nombre', ['Chincha Alta', 'Sunampe', 'Grocio Prado'])
+            ->orderBy('nombre', 'ASC')
+            ->findAll();
     }
 }

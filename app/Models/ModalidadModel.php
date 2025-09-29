@@ -8,6 +8,7 @@ class ModalidadModel extends Model
 {
     protected $table = 'modalidades';
     protected $primaryKey = 'idmodalidad';
+    protected $allowedFields = ['nombre'];
 
     // Obtener modalidades activas
     public function getModalidadesActivas()

@@ -8,6 +8,7 @@ class EtapaModel extends Model
 {
     protected $table = 'etapas';
     protected $primaryKey = 'idetapa';
+    protected $allowedFields = ['idpipeline', 'nombre', 'orden'];
 
     // Obtener etapas activas ordenadas
     public function getEtapasActivas()
@@ -19,5 +20,12 @@ class EtapaModel extends Model
     public function getPrimeraEtapa()
     {
         return $this->orderBy('orden', 'ASC')->first();
+    }
+
+    public function getEtapasPipeline($idpipeline = 1)
+    {
+        return $this->where('idpipeline', $idpipeline)
+            ->orderBy('orden', 'ASC')
+            ->findAll();
     }
 }

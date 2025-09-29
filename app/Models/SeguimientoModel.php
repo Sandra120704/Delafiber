@@ -9,9 +9,14 @@ class SeguimientoModel extends Model
     protected $table = 'seguimiento';
     protected $primaryKey = 'idseguimiento';
     protected $allowedFields = [
-        'idlead', 'idusuario', 'idmodalidad', 'nota'
+        'idlead',
+        'idusuario',
+        'idmodalidad',
+        'nota'
     ];
-    protected $useTimestamps = false;
+    protected $useTimestamps = true;
+    protected $createdField = 'fecha';
+    protected $updatedField = null;
 
     /**
      * Registra un nuevo seguimiento

@@ -9,11 +9,19 @@ class TareaModel extends Model
     protected $table = 'tareas';
     protected $primaryKey = 'idtarea';
     protected $allowedFields = [
-        'idlead', 'idusuario', 'titulo', 'descripcion', 'tipo_tarea',
-        'prioridad', 'fecha_inicio', 'fecha_fin', 'fecha_vencimiento',
-        'fecha_completado', 'estado', 'notas_resultado'
+        'idlead',
+        'idusuario',
+        'titulo',
+        'descripcion',
+        'tipo_tarea',
+        'prioridad',
+        'fecha_inicio',
+        'fecha_fin',
+        'fecha_vencimiento',
+        'fecha_completado',
+        'estado',
+        'notas_resultado'
     ];
-    protected $useTimestamps = false;
 
     /**
      * Obtiene tareas del día para un usuario

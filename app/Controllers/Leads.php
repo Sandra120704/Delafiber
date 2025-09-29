@@ -6,18 +6,24 @@ use App\Controllers\BaseController;
 use App\Models\CampaniaModel;
 use App\Models\PersonaModel;
 use App\Models\LeadModel;
-use App\Models\EtapaModel;
+use App\Models\SeguimientoModel;
+use App\Models\TareaModel;
 use App\Models\OrigenModel;
+use App\Models\ModalidadModel;
+use App\Models\EtapaModel;
 use App\Models\DistritoModel;
 
 class Leads extends BaseController
 {
-    protected $personaModel;
     protected $leadModel;
-    protected $etapaModel;
+    protected $personaModel;
+    protected $seguimientoModel;
+    protected $tareaModel;
+    protected $campaniaModel;
     protected $origenModel;
-    protected $distritoModel;
-    protected $campaniaModel; 
+    protected $modalidadModel;
+    protected $etapaModel;
+    protected $distritoModel; 
 
     public function __construct()
     {
@@ -27,12 +33,15 @@ class Leads extends BaseController
             redirect()->to('/auth')->send();
             exit;
         }
-        $this->personaModel = new PersonaModel();
         $this->leadModel = new LeadModel();
-        $this->etapaModel = new EtapaModel();
-        $this->origenModel = new OrigenModel();
-        $this->distritoModel = new DistritoModel();
+        $this->personaModel = new PersonaModel();
+        $this->seguimientoModel = new SeguimientoModel();
+        $this->tareaModel = new TareaModel();
         $this->campaniaModel = new CampaniaModel(); 
+        $this->origenModel = new OrigenModel();
+        $this->modalidadModel = new ModalidadModel();
+        $this->etapaModel = new EtapaModel();
+        $this->distritoModel = new DistritoModel();
     }
 
     // Lista de leads con filtros

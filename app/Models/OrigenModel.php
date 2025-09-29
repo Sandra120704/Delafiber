@@ -8,6 +8,7 @@ class OrigenModel extends Model
 {
     protected $table = 'origenes';
     protected $primaryKey = 'idorigen';
+    protected $allowedFields = ['nombre', 'tipo'];
 
     // Obtener orígenes activos
     public function getOrigenesActivos()
