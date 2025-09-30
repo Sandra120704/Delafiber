@@ -8,10 +8,10 @@ use CodeIgniter\Router\RouteCollection;
 
 // === RUTAS PÚBLICAS ===
 $routes->get('/', 'Auth::index');
-$routes->get('login', 'Auth::index'); // Esta línea ya existe y es correcta
+$routes->get('login', 'Auth::index'); 
 $routes->get('auth', 'Auth::index');
-$routes->get('auth/login', 'Auth::login'); // ← agrega esta línea si no existe
-$routes->post('auth/login', 'Auth::login'); // ← ya existe
+$routes->get('auth/login', 'Auth::login'); 
+$routes->post('auth/login', 'Auth::login'); 
 $routes->get('auth/logout', 'Auth::logout');
 
 $routes->get('personas', 'PersonaController::index');
@@ -54,11 +54,12 @@ $routes->group('campanias', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'Campanias::index');
     $routes->get('create', 'Campanias::create');
     $routes->post('store', 'Campanias::store');
-    $routes->get('edit/(:num)', 'Campanias::edit/$1');
+    $routes->get('edit/(:num)', 'Campanias::edit/$1'); // <-- esta es la ruta para editar
     $routes->post('update/(:num)', 'Campanias::update/$1');
     $routes->get('delete/(:num)', 'Campanias::delete/$1');
     $routes->get('view/(:num)', 'Campanias::view/$1');
     $routes->get('toggleEstado/(:num)', 'Campanias::toggleEstado/$1');
+    $routes->get('show/(:num)', 'Campanias::show/$1');
 });
 
 // === PERSONAS/CONTACTOS ===
@@ -69,7 +70,7 @@ $routes->group('personas', ['filter' => 'auth'], function($routes) {
     $routes->get('edit/(:num)', 'PersonaController::edit/$1');
     $routes->post('edit/(:num)', 'PersonaController::edit/$1');
     $routes->get('delete/(:num)', 'PersonaController::delete/$1');
-    $routes->get('buscardni', 'PersonaController::buscardni'); // ← asegúrate que esta línea exista
+    $routes->get('buscardni', 'PersonaController::buscardni'); 
 });
 
 // === TAREAS (MEJORADAS) ===

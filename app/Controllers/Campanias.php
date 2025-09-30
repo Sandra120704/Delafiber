@@ -60,7 +60,8 @@ class Campanias extends BaseController
             'nombre' => 'required|min_length[3]|max_length[100]',
             'tipo' => 'required',
             'fecha_inicio' => 'required|valid_date',
-            'presupuesto' => 'permit_empty|decimal'
+            'presupuesto' => 'permit_empty|decimal',
+            'canal' => 'permit_empty|max_length[50]' 
         ]);
 
         if (!$validation->withRequest($this->request)->run()) {
@@ -78,7 +79,8 @@ class Campanias extends BaseController
             'fecha_fin' => $this->request->getPost('fecha_fin'),
             'presupuesto' => $this->request->getPost('presupuesto') ?: 0,
             'estado' => 'Activa',
-            'activo' => 1
+            'activo' => 1,
+            'canal' => $this->request->getPost('canal')
         ];
 
         // Guardar
@@ -130,7 +132,8 @@ class Campanias extends BaseController
             'nombre' => 'required|min_length[3]|max_length[100]',
             'tipo' => 'required',
             'fecha_inicio' => 'required|valid_date',
-            'presupuesto' => 'permit_empty|decimal'
+            'presupuesto' => 'permit_empty|decimal',
+            'canal' => 'permit_empty|max_length[50]' 
         ]);
 
         if (!$validation->withRequest($this->request)->run()) {
@@ -147,7 +150,8 @@ class Campanias extends BaseController
             'fecha_inicio' => $this->request->getPost('fecha_inicio'),
             'fecha_fin' => $this->request->getPost('fecha_fin'),
             'presupuesto' => $this->request->getPost('presupuesto') ?: 0,
-            'activo' => $this->request->getPost('activo') ? 1 : 0
+            'activo' => $this->request->getPost('activo') ? 1 : 0,
+            'canal' => $this->request->getPost('canal')
         ];
 
         // Actualizar
@@ -291,5 +295,29 @@ class Campanias extends BaseController
         
         return redirect()->back()
             ->with('success', "Campaña {$nuevoEstado} correctamente");
+    }
+
+    /**
+     * Nueva vista personalizada de campaña
+     */
+    public function show($id)
+    {
+        $campania = $this->campaniaModel->find($id);
+
+        if (!$campania) {
+            return redirect()->to('campanias')
+                ->with('error', 'Campaña no encontrada');
+        }
+
+        // Puedes agregar más lógica aquí si necesitas más datos
+        $leads = $this->leadModel->where('idcampania', $id)->findAll();
+
+        $data = [
+            'title' => 'Vista Detallada de Campaña',
+            'campania' => $campania,
+            'leads' => $leads
+        ];
+
+        return view('campanias/show', $data);
     }
 }

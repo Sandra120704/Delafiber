@@ -3,10 +3,6 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-/**
- * MODELO: CampaniaModel
- * Gestión de campañas de marketing
- */
 class CampaniaModel extends Model
 {
     protected $table = 'campanias';
