@@ -27,11 +27,6 @@ class Leads extends BaseController
 
     public function __construct()  
     {  
-        // ✅ Mejor usar filtros de autenticación en lugar de constructor
-        if (!session()->get('logged_in')) {  
-            return redirect()->to('/auth');  
-        }  
-
         $this->leadModel = new LeadModel();  
         $this->personaModel = new PersonaModel();  
         $this->seguimientoModel = new SeguimientoModel();  
@@ -42,8 +37,6 @@ class Leads extends BaseController
         $this->etapaModel = new EtapaModel();  
         $this->distritoModel = new DistritoModel();  
     }  
-
-    // 📌 Lista de leads con filtros  
     public function index()  
     {  
         $userId = session()->get('user_id');  
@@ -228,7 +221,7 @@ class Leads extends BaseController
 
         try {  
             $lead = $this->leadModel->find($idlead);  
-            $etapaAnterior = $lead['idetapa'];  
+            $etapaAnterior = $lead->idetapa;  
 
             $this->leadModel->update($idlead, ['idetapa' => $idetapa]);  
 
