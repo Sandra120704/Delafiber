@@ -106,4 +106,75 @@ class UsuarioModel extends Model
         
         return in_array('todo', $rolPermisos) || in_array($permiso, $rolPermisos);
     }
+    public function getUsuariosConDetalle()
+    {
+        try {
+            // Usar Query Builder del modelo para la consulta completa
+            return $this->select('
+                usuarios.idusuario,
+                usuarios.usuario as nombreUsuario,
+                usuarios.clave,
+                COALESCE(usuarios.activo, 1) as estadoActivo,
+                usuarios.idrol,
+                usuarios.idpersona,
+                COALESCE(CONCAT(personas.nombres, " ", personas.apellidos), "Sin asignar") as nombrePersona,
+                personas.correo as emailPersona,
+                personas.telefono,
+                roles.nombre as nombreRol,
+                roles.descripcion as descripcionRol,
+                0 as totalLeads,
+                0 as totalTareas,
+                0 as tasaConversion
+            ')
+            ->join('personas', 'usuarios.idpersona = personas.idpersona', 'left')
+            ->join('roles', 'usuarios.idrol = roles.idrol', 'left')
+            ->orderBy('usuarios.idusuario')
+            ->findAll();
+            
+        } catch (\Exception $error) {
+            // Si hay error en la consulta compleja, usar método simple
+            return $this->getUsuariosBasico();
+        }
+    }
+    public function getUsuariosBasico()
+    {
+        // Obtener todos los usuarios de forma simple
+        $listaUsuarios = $this->findAll();
+        
+        // Agregar campos faltantes con valores por defecto
+        foreach ($listaUsuarios as &$datosUsuario) {
+            $datosUsuario['nombreUsuario'] = $datosUsuario['usuario'] ?? '';
+            $datosUsuario['nombrePersona'] = 'Usuario ID: ' . $datosUsuario['idusuario'];
+            $datosUsuario['nombreRol'] = 'Sin rol asignado';
+            $datosUsuario['estadoActivo'] = $datosUsuario['activo'] ?? 1;
+            $datosUsuario['emailPersona'] = '';
+            $datosUsuario['telefono'] = '';
+            $datosUsuario['totalLeads'] = 0;
+            $datosUsuario['totalTareas'] = 0;
+            $datosUsuario['tasaConversion'] = 0;
+        }
+        
+        return $listaUsuarios;
+    }
+    public function obtenerUsuariosConNombres()
+    {
+        // Usar el Query Builder del modelo directamente
+        return $this->select('usuarios.*, CONCAT(personas.nombres, " ", personas.apellidos) as nombreCompleto')
+                    ->join('personas', 'usuarios.idpersona = personas.idpersona', 'left')
+                    ->findAll();
+    }
+     public function obtenerUsuarioCompleto($idUsuario)
+    {
+        // Usar Query Builder del modelo directamente
+        return $this->select('
+            usuarios.*,                                              
+            CONCAT(personas.nombres, " ", personas.apellidos) as nombrePersona,  
+            personas.correo, personas.telefono, personas.direccion,                
+            roles.nombre as nombreRol                             
+        ')
+        ->join('personas', 'usuarios.idpersona = personas.idpersona', 'left')    
+        ->join('roles', 'usuarios.idrol = roles.idrol', 'left')               
+        ->find($idUsuario);                                          
+    }
+    
 }

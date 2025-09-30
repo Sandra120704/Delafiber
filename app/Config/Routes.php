@@ -8,10 +8,20 @@ use CodeIgniter\Router\RouteCollection;
 
 // === RUTAS PÚBLICAS ===
 $routes->get('/', 'Auth::index');
-$routes->get('login', 'Auth::index');
+$routes->get('login', 'Auth::index'); // Esta línea ya existe y es correcta
 $routes->get('auth', 'Auth::index');
-$routes->post('auth/login', 'Auth::login');
+$routes->get('auth/login', 'Auth::login'); // ← agrega esta línea si no existe
+$routes->post('auth/login', 'Auth::login'); // ← ya existe
 $routes->get('auth/logout', 'Auth::logout');
+
+$routes->get('personas', 'PersonaController::index');
+$routes->get('personas/crear', 'PersonaController::create');
+$routes->get('personas/editar/(:num)', 'PersonaController::create/$1');
+$routes->post('personas/guardar', 'PersonaController::guardar');
+$routes->get('personas/eliminar/(:num)', 'PersonaController::delete/$1');
+$routes->get('api/personas/buscar', 'PersonaController::buscarAjax');
+$routes->get('personas/buscardni', 'PersonaController::buscardni');
+
 
 // === DASHBOARD ===
 $routes->group('dashboard', ['filter' => 'auth'], function($routes) {
@@ -33,7 +43,6 @@ $routes->group('leads', ['filter' => 'auth'], function($routes) {
     $routes->post('moverEtapa', 'Leads::moverEtapa');
     $routes->post('convertir/(:num)', 'Leads::convertir/$1');
     $routes->post('descartar/(:num)', 'Leads::descartar/$1');
-    $routes->get('buscarPorDni', 'Leads::buscarPorDni');
     $routes->post('agregarSeguimiento', 'Leads::agregarSeguimiento');
     $routes->post('crearTarea', 'Leads::crearTarea');
     $routes->post('completarTarea', 'Leads::completarTarea');
@@ -59,7 +68,7 @@ $routes->group('personas', ['filter' => 'auth'], function($routes) {
     $routes->get('edit/(:num)', 'PersonaController::edit/$1');
     $routes->post('edit/(:num)', 'PersonaController::edit/$1');
     $routes->get('delete/(:num)', 'PersonaController::delete/$1');
-    $routes->get('buscardni', 'PersonaController::buscardni');
+    $routes->get('buscardni', 'PersonaController::buscardni'); // ← asegúrate que esta línea exista
 });
 
 // === TAREAS ===
@@ -90,6 +99,15 @@ $routes->group('configuracion', ['filter' => 'auth'], function($routes) {
     $routes->get('obtener-preferencias', 'Configuracion::obtenerPreferencias');
     $routes->post('guardar-preferencias', 'Configuracion::guardarPreferencias');
     $routes->post('actualizar-preferencias', 'Configuracion::actualizarPreferencias');
+});
+// -------------------- USUARIOS --------------------
+$routes->group('usuarios', function($routes) {
+    $routes->get('/', 'UsuarioController::index');
+    $routes->get('crear', 'UsuarioController::crear');
+    $routes->post('crear', 'UsuarioController::crear');
+    $routes->post('editar/(:num)', 'UsuarioController::editar/$1');
+    $routes->delete('eliminar/(:num)', 'UsuarioController::eliminar/$1');
+    $routes->post('cambiarEstado/(:num)', 'UsuarioController::cambiarEstado/$1');
 });
 
 // === NOTIFICACIONES ===

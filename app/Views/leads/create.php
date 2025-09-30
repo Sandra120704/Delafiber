@@ -211,113 +211,126 @@
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const btnBuscarDni = document.getElementById('btnBuscarDni');
-    const dniInput = document.getElementById('dni');
-    const dniLoading = document.getElementById('dni-loading');
+const BASE_URL = '<?= base_url() ?>';
 
-    // Buscar por DNI
-    btnBuscarDni.addEventListener('click', function() {
-        const dni = dniInput.value.trim();
-        
-        if (dni.length !== 8) {
-            alert('El DNI debe tener 8 dígitos');
-            return;
-        }
+class PersonaManager {
+    constructor() {
+        this.initEvents();
+    }
 
-        // Mostrar loading
-        dniLoading.style.display = 'block';
-        btnBuscarDni.disabled = true;
+    initEvents() {
+        const btnBuscarDni = document.getElementById('btnBuscarDni');
+        const dniInput = document.getElementById('dni');
+        const dniLoading = document.getElementById('dni-loading');
 
-        // Realizar búsqueda
-        fetch('<?= base_url('leads/buscarPorDni') ?>?dni=' + dni, {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+        btnBuscarDni.addEventListener('click', () => {
+            const dni = dniInput.value.trim();
+            if (dni.length !== 8) {
+                alert('El DNI debe tener 8 dígitos');
+                return;
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            dniLoading.style.display = 'none';
-            btnBuscarDni.disabled = false;
 
-            if (data.success) {
-                // Autocompletar campos
-                const personaData = data.data;
-                
-                if (data.source === 'local') {
-                    alert('Cliente encontrado en la base de datos');
+            dniLoading.style.display = 'block';
+            btnBuscarDni.disabled = true;
+
+            fetch('<?= base_url('personas/buscardni') ?>?q=' + dni, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                const contentType = response.headers.get('content-type');
+                if (!response.ok) {
+                    // Si la respuesta es HTML, mostrar el texto recibido
+                    return response.text().then(text => {
+                        dniLoading.style.display = 'none';
+                        btnBuscarDni.disabled = false;
+                        console.error('Respuesta no OK:', text);
+                        alert('Error HTTP: ' + response.status + '\n' + text.substring(0, 500));
+                        throw new Error('Error HTTP: ' + response.status);
+                    });
+                }
+                if (!contentType || !contentType.includes('application/json')) {
+                    // Mostrar el texto recibido para depuración
+                    return response.text().then(text => {
+                        dniLoading.style.display = 'none';
+                        btnBuscarDni.disabled = false;
+                        console.error('Respuesta no es JSON:', text);
+                        alert('La respuesta del servidor no es JSON. Verifica la ruta y el controlador.\n' + text.substring(0, 500));
+                        throw new Error('La respuesta no es JSON. Content-Type: ' + contentType);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                dniLoading.style.display = 'none';
+                btnBuscarDni.disabled = false;
+                if (data.success) {
+                    document.getElementById('nombres').value = data.nombres || '';
+                    document.getElementById('apellidos').value = data.apellidos ||
+                        ((data.apepaterno || '') + ' ' + (data.apematerno || '')).trim();
+                    // No mostrar alert si se encontró
+                    if (!document.getElementById('telefono').value) {
+                        document.getElementById('telefono').focus();
+                    }
                 } else {
-                    alert('Datos obtenidos de RENIEC');
+                    alert(data.message || 'No se encontró información para este DNI. Complete manualmente.');
+                    document.getElementById('nombres').focus();
                 }
-
-                document.getElementById('nombres').value = personaData.nombres || '';
-                
-                // Si viene de API, concatenar apellidos
-                if (personaData.apellido_paterno && personaData.apellido_materno) {
-                    document.getElementById('apellidos').value = 
-                        personaData.apellido_paterno + ' ' + personaData.apellido_materno;
-                } else if (personaData.apellidos) {
-                    document.getElementById('apellidos').value = personaData.apellidos;
-                }
-
-                // Completar otros campos si existen
-                if (personaData.telefono) {
-                    document.getElementById('telefono').value = personaData.telefono;
-                }
-                if (personaData.correo) {
-                    document.getElementById('correo').value = personaData.correo;
-                }
-                if (personaData.direccion) {
-                    document.getElementById('direccion').value = personaData.direccion;
-                }
-                if (personaData.iddistrito) {
-                    document.getElementById('iddistrito').value = personaData.iddistrito;
-                }
-
-                // Enfocar en el campo de teléfono si está vacío
-                if (!personaData.telefono) {
-                    document.getElementById('telefono').focus();
-                }
-            } else {
-                alert(data.message || 'No se encontraron datos para este DNI. Complete manualmente.');
-                document.getElementById('nombres').focus();
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            dniLoading.style.display = 'none';
-            btnBuscarDni.disabled = false;
-            alert('Error al buscar DNI. Por favor, ingrese los datos manualmente.');
+            })
+            .catch(error => {
+                dniLoading.style.display = 'none';
+                btnBuscarDni.disabled = false;
+                console.error('Error completo:', error);
+                // El alert ya se muestra arriba, aquí solo loguea
+            });
         });
-    });
 
-    // Validación del formulario
-    const form = document.getElementById('formLead');
-    form.addEventListener('submit', function(e) {
-        const telefono = document.getElementById('telefono').value;
-        
-        // Validar teléfono
-        if (telefono.length !== 9 || !telefono.startsWith('9')) {
-            e.preventDefault();
-            alert('El teléfono debe tener 9 dígitos y comenzar con 9');
-            document.getElementById('telefono').focus();
-            return false;
-        }
+        // Validación del formulario
+        const form = document.getElementById('formLead');
+        form.addEventListener('submit', function(e) {
+            const telefono = document.getElementById('telefono').value;
+            
+            // Validar teléfono
+            if (telefono.length !== 9 || !telefono.startsWith('9')) {
+                e.preventDefault();
+                alert('El teléfono debe tener 9 dígitos y comenzar con 9');
+                document.getElementById('telefono').focus();
+                return false;
+            }
 
-        // Deshabilitar botón de guardar
-        document.getElementById('btnGuardar').disabled = true;
-        document.getElementById('btnGuardar').innerHTML = '<i class="icon-refresh rotating"></i> Guardando...';
-    });
+            // Deshabilitar botón de guardar
+            document.getElementById('btnGuardar').disabled = true;
+            document.getElementById('btnGuardar').innerHTML = '<i class="icon-refresh rotating"></i> Guardando...';
+        });
 
-    // Permitir búsqueda with Enter en DNI
-    dniInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            btnBuscarDni.click();
-        }
-    });
+        // Permitir búsqueda with Enter en DNI
+        dniInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                btnBuscarDni.click();
+            }
+        });
+    }
+}
+
+// Inicializar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => {
+    window.personaManager = new PersonaManager();
 });
+
+// Funciones globales para compatibilidad (si se necesitan)
+function activarBotonesEliminar() {
+    console.log('Función legacy - ahora manejada por PersonaManager');
+}
+function activarBotonesEditar() {
+    console.log('Función legacy - ahora manejada por PersonaManager');
+}
+function activarBotonesConvertirLead() {
+    console.log('Función legacy - ahora manejada por PersonaManager');
+}
 </script>
 
 <?= $this->endSection() ?>

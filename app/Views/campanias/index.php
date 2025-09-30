@@ -24,21 +24,19 @@
             <button type="button" class="close" data-dismiss="alert">&times;</button>
         </div>
         <?php endif; ?>
-
         <div class="card">
             <div class="card-body">
                 <?php if (!empty($campanias)): ?>
                 <div class="table-responsive">
                     <table class="table table-hover" id="tablaCampanias">
-                        <thead>
+                        <thead class="thead-light">
                             <tr>
-                                <th>Nombre</th>
-                                <th>Tipo</th>
+                                <th>Campaña</th>
                                 <th>Estado</th>
-                                <th>Fecha Inicio</th>
-                                <th>Fecha Fin</th>
+                                <th>Periodo</th>
                                 <th>Presupuesto</th>
                                 <th>Leads</th>
+                                <th>ROI</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -46,23 +44,33 @@
                             <?php foreach ($campanias as $campania): ?>
                             <tr>
                                 <td>
-                                    <strong><?= esc($campania['nombre']) ?></strong>
+                                    <strong><?= esc($campania['nombre']) ?></strong><br>
+                                    <small class="text-muted"><?= esc($campania['descripcion'] ?? '') ?></small>
                                 </td>
-                                <td><?= esc($campania['tipo'] ?? '-') ?></td>
                                 <td>
                                     <span class="badge badge-<?= ($campania['estado'] ?? 'Inactiva') == 'Activa' ? 'success' : 'secondary' ?>">
                                         <?= esc($campania['estado'] ?? 'Inactiva') ?>
                                     </span>
                                 </td>
-                                <td><?= date('d/m/Y', strtotime($campania['fecha_inicio'])) ?></td>
                                 <td>
-                                    <?= $campania['fecha_fin'] ? date('d/m/Y', strtotime($campania['fecha_fin'])) : '-' ?>
+                                    <?= date('d/m/Y', strtotime($campania['fecha_inicio'])) ?><br>
+                                    <small class="text-muted">
+                                        <?= $campania['fecha_fin'] ? 'hasta ' . date('d/m/Y', strtotime($campania['fecha_fin'])) : 'Sin fecha fin' ?>
+                                    </small>
                                 </td>
                                 <td>S/ <?= number_format($campania['presupuesto'] ?? 0, 2) ?></td>
                                 <td>
-                                    <span class="badge badge-info">
-                                        <?= $campania['total_leads'] ?? 0 ?>
+                                    <span class="badge badge-info badge-pill">
+                                        <?= $campania['total_leads'] ?? 0 ?> leads
                                     </span>
+                                </td>
+                                <td>
+                                    <?php 
+                                    $presupuesto = $campania['presupuesto'] ?? 0;
+                                    $leads = $campania['total_leads'] ?? 0;
+                                    $cpl = $leads > 0 ? $presupuesto / $leads : 0;
+                                    ?>
+                                    <small>S/ <?= number_format($cpl, 2) ?> / lead</small>
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">

@@ -33,30 +33,62 @@ class LeadModel extends Model
     ];
 
     /**
-     * Obtener leads con filtros - SIMPLE
+     * Obtener leads con filtros - COMPLETO
      */
     public function getLeadsConFiltros($userId, $filtros = [])
     {
-        $builder = $this->db->table('leads')
-            ->select('leads.*, personas.nombres, personas.apellidos')
-            ->join('personas', 'personas.idpersona = leads.idpersona')
-            ->where('leads.idusuario', $userId);
+        $builder = $this->db->table('leads l')
+            ->select('l.idlead, l.fecha_registro, l.estado,
+                     CONCAT(p.nombres, " ", p.apellidos) as nombre_completo,
+                     p.nombres, p.apellidos, p.telefono, p.correo, p.dni,
+                     e.nombre as etapa, e.idetapa,
+                     o.nombre as origen,
+                     c.nombre as campania,
+                     d.nombre as distrito')
+            ->join('personas p', 'p.idpersona = l.idpersona')
+            ->join('etapas e', 'e.idetapa = l.idetapa')
+            ->join('origenes o', 'o.idorigen = l.idorigen')
+            ->join('campanias c', 'c.idcampania = l.idcampania', 'LEFT')
+            ->join('distritos d', 'd.iddistrito = p.iddistrito', 'LEFT')
+            ->where('l.idusuario', $userId);
 
+        // Filtro por etapa
         if (!empty($filtros['etapa'])) {
-            $builder->where('leads.idetapa', $filtros['etapa']);
+            $builder->where('l.idetapa', $filtros['etapa']);
         }
+        
+        // Filtro por origen
         if (!empty($filtros['origen'])) {
-            $builder->where('leads.idorigen', $filtros['origen']);
+            $builder->where('l.idorigen', $filtros['origen']);
         }
+        
+        // Filtro por campaña
+        if (!empty($filtros['campania'])) {
+            $builder->where('l.idcampania', $filtros['campania']);
+        }
+        
+        // Filtro por estado
+        if (isset($filtros['estado'])) {
+            if ($filtros['estado'] === '') {
+                $builder->where('l.estado IS NULL');
+            } else {
+                $builder->where('l.estado', $filtros['estado']);
+            }
+        } else {
+            $builder->where('l.estado IS NULL'); // Por defecto solo activos
+        }
+        
+        // Búsqueda por nombre, teléfono o DNI
         if (!empty($filtros['busqueda'])) {
             $builder->groupStart()
-                ->like('persona.nombres', $filtros['busqueda'])
-                ->orLike('persona.apellidos', $filtros['busqueda'])
-                ->orLike('persona.telefono', $filtros['busqueda'])
+                ->like('p.nombres', $filtros['busqueda'])
+                ->orLike('p.apellidos', $filtros['busqueda'])
+                ->orLike('p.telefono', $filtros['busqueda'])
+                ->orLike('p.dni', $filtros['busqueda'])
                 ->groupEnd();
         }
 
-        return $builder->get()->getResultArray();
+        return $builder->orderBy('l.fecha_registro', 'DESC')->get()->getResultArray();
     }
 
     /**

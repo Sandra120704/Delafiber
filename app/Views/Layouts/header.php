@@ -1,282 +1,213 @@
 <?php helper('html'); ?>
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <title><?= isset($title) ? $title : 'Delafiber - CRM' ?></title>
-  
+
+  <!-- CSS Required -->
   <?= link_tag('assets/feather/feather.css') ?>
   <?= link_tag('assets/ti-icons/css/themify-icons.css') ?>
   <?= link_tag('assets/css/vendor.bundle.base.css') ?>
   <?= link_tag('assets/datatables.net-bs4/dataTables.bootstrap4.css') ?>
   <?= link_tag('css/vertical-layout-light/style.css') ?>
+
+  <!-- Bootstrap 5 CSS (CDN) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   
+  <!-- Font Awesome para iconos adicionales -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Favicon y CSRF Token -->
   <link rel="shortcut icon" href="<?= base_url('images/favicon.png') ?>" />
   <meta name="csrf-token" content="<?= csrf_hash() ?>">
-  
+
+  <!-- Estilos personalizados -->
   <style>
-  /* Mejoras de UX para el menú */
-  .nav-item {
-    transition: all 0.3s ease;
-  }
-  
-  .nav-item:hover {
-    background-color: rgba(0,0,0,0.02);
-  }
-  
-  .nav-link {
-    cursor: pointer;
-    position: relative;
-    padding: 12px 20px;
-  }
-  
-  .nav-item.active {
-    background-color: rgba(103, 126, 234, 0.1);
-  }
-  
-  .nav-item.active > .nav-link {
-    color: #667eea;
-    font-weight: 600;
-  }
-  
-  /* Mejorar hover en tarjetas */
-  .card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  
-  .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  }
-  
-  /* Tarjetas de métricas con hover */
-  .border-left-primary { border-left: 4px solid #4e73df; }
-  .border-left-success { border-left: 4px solid #1cc88a; }
-  .border-left-info { border-left: 4px solid #36b9cc; }
-  .border-left-warning { border-left: 4px solid #f6c23e; }
-  .border-left-danger { border-left: 4px solid #e74a3b; }
-  
-  .border-left-primary:hover { box-shadow: 0 2px 8px rgba(78, 115, 223, 0.3); }
-  .border-left-success:hover { box-shadow: 0 2px 8px rgba(28, 200, 138, 0.3); }
-  .border-left-warning:hover { box-shadow: 0 2px 8px rgba(246, 194, 62, 0.3); }
-  .border-left-danger:hover { box-shadow: 0 2px 8px rgba(231, 74, 59, 0.3); }
-  
-  /* Botón flotante mejorado */
-  .fab-container {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    z-index: 1000;
-  }
-  
-  .fab-button {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    transition: all 0.3s ease;
-    text-decoration: none;
-  }
-  
-  .fab-button:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-    color: white;
-  }
-  
-  .fab-button i {
-    font-size: 24px;
-  }
-  
-  /* Animación para elementos interactivos */
-  .quick-action {
-    transition: all 0.2s ease;
-  }
-  
-  .quick-action:hover {
-    transform: scale(1.05);
-  }
-  
-  /* Mejorar visibilidad de elementos clickeables */
-  .lead-card, .task-item {
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  
-  .lead-card:hover, .task-item:hover {
-    background-color: rgba(102, 126, 234, 0.05);
-    border-color: #667eea !important;
-  }
-  
-  /* Welcome banner más atractivo */
-  .welcome-banner {
-    padding: 20px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    margin-bottom: 20px;
-  }
-  
-  .welcome-banner h3 {
-    color: white;
-    margin-bottom: 8px;
-  }
-  
-  .welcome-banner p {
-    color: rgba(255,255,255,0.9);
-    margin: 0;
-  }
+    /* Mejoras de UX para el menú */
+    .nav-item { transition: all 0.3s ease; }
+    .nav-item:hover { background-color: rgba(0,0,0,0.02); }
+    .nav-link { cursor: pointer; padding: 12px 20px; }
+    .nav-item.active { background-color: rgba(103, 126, 234, 0.1); }
+    .nav-item.active > .nav-link { color: #667eea; font-weight: 600; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #e0e0e0; }
+    .notification-badge { position: absolute; top: 5px; right: 5px; background: #ff4757; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; }
+    .sidebar { min-height: calc(100vh - 70px); transition: all 0.3s ease; }
+    .main-panel { min-height: calc(100vh - 70px); }
+    
+    /* Sidebar collapse functionality */
+    .sidebar-icon-only .sidebar { width: 70px; }
+    .sidebar-icon-only .sidebar .nav .nav-item .nav-link { padding: 12px 20px; text-align: center; }
+    .sidebar-icon-only .sidebar .nav .nav-item .nav-link .menu-title { display: none; }
+    .sidebar-icon-only .sidebar .nav .nav-item .nav-link .menu-arrow { display: none; }
+    .sidebar-icon-only .main-panel { width: calc(100% - 70px); }
+    
+    /* Mobile sidebar */
+    @media (max-width: 991px) {
+      .sidebar-offcanvas { position: fixed; max-height: 100vh; top: 0; bottom: 0; overflow: auto; left: -260px; transition: all 0.25s ease-out; }
+      .sidebar-offcanvas.active { left: 0; }
+    }
+    
+    /* Botón flotante */
+    .fab-container { position: fixed; bottom: 30px; right: 30px; z-index: 999; }
+    .fab-button { display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50%; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); text-decoration: none; transition: all 0.3s ease; }
+    .fab-button:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6); color: white; }
+    .fab-button i { font-size: 24px; }
   </style>
 </head>
-
 <body>
   <div class="container-scroller">
+    <!-- Navbar -->
     <nav class="navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
       <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center">
-        <a class="navbar-brand brand-logo mr-5" href="<?= base_url('dashboard') ?>">
-          <img src="<?= base_url('images/logo-delafiber.png') ?>" class="mr-2" alt="logo"/>
+        <a class="navbar-brand brand-logo me-3" href="<?= base_url('dashboard') ?>">
+          <img src="<?= base_url('images/logo-delafiber.png') ?>" alt="Delafiber Logo" style="height: 36px;"/>
         </a>
         <a class="navbar-brand brand-logo-mini" href="<?= base_url('dashboard') ?>">
-          <img src="<?= base_url('images/logo-mini.svg') ?>" alt="logo"/>
+          <img src="<?= base_url('images/logo-mini.svg') ?>" alt="Logo Mini" style="height: 36px;"/>
         </a>
       </div>
-      
+
       <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
-        <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize">
+        <!-- Botón para minimizar sidebar -->
+        <button class="navbar-toggler navbar-toggler align-self-center" type="button" id="sidebarToggle">
           <span class="icon-menu"></span>
         </button>
-        
-        <ul class="navbar-nav mr-lg-2">
+
+        <!-- Barra de búsqueda -->
+        <ul class="navbar-nav me-lg-2">
           <li class="nav-item nav-search d-none d-lg-block">
             <div class="input-group">
-              <div class="input-group-prepend hover-cursor" id="navbar-search-icon">
-                <span class="input-group-text" id="search">
-                  <i class="icon-search"></i>
-                </span>
-              </div>
-              <input type="text" class="form-control" id="navbar-search-input" 
-                     placeholder="Buscar contactos, leads..." 
-                     aria-label="search" aria-describedby="search">
+              <input type="text" class="form-control" placeholder="Buscar contactos, leads..."
+                     aria-label="Buscar" data-url="<?= base_url('api/search') ?>">
+              <button class="btn btn-outline-light" type="button"><i class="ti-search"></i></button>
             </div>
           </li>
         </ul>
-        
+
+        <!-- Notificaciones y Perfil -->
         <ul class="navbar-nav navbar-nav-right">
+          <!-- Notificaciones -->
           <li class="nav-item dropdown">
-            <a class="nav-link count-indicator dropdown-toggle" id="notificationDropdown" 
-               href="#" data-toggle="dropdown">
-              <i class="icon-bell mx-0"></i>
-              <span class="count"><?= isset($notification_count) ? $notification_count : '0' ?></span>
+            <a class="nav-link position-relative" href="#" id="notificationDropdown" role="button"
+               data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="ti-bell"></i>
+              <span class="notification-badge"><?= isset($notification_count) ? $notification_count : '0' ?></span>
             </a>
-            <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list" aria-labelledby="notificationDropdown">
-              <p class="mb-0 font-weight-normal float-left dropdown-header">Notificaciones</p>
-              <a class="dropdown-item preview-item text-center">
-                <p class="mb-0">No hay notificaciones nuevas</p>
-              </a>
-            </div>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
+              <li><h6 class="dropdown-header">Notificaciones</h6></li>
+              <?php if(isset($notifications) && !empty($notifications)): ?>
+                <?php foreach($notifications as $notification): ?>
+                  <li>
+                    <a class="dropdown-item" href="<?= base_url($notification['url']) ?>">
+                      <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                          <i class="<?= $notification['icon'] ?> text-<?= $notification['type'] ?>"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                          <h6 class="mb-0"><?= $notification['title'] ?></h6>
+                          <small class="text-muted"><?= time_elapsed_string($notification['created_at']) ?></small>
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <li><a class="dropdown-item text-center">No hay notificaciones</a></li>
+              <?php endif; ?>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item text-center" href="<?= base_url('notifications') ?>">Ver todas</a></li>
+            </ul>
           </li>
-          
-          <li class="nav-item nav-profile dropdown">
-            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" data-toggle="dropdown" id="profileDropdown">
-              <span style="display:inline-flex;width:32px;height:32px;border-radius:50%;background:#667eea;align-items:center;justify-content:center;color:white;font-weight:bold;">
-                <?= strtoupper(substr(session()->get('nombre_completo') ?? 'U', 0, 1)) ?>
-              </span>
-              <span class="d-none d-md-inline ml-2" style="font-weight:500; color:#444;">
-                <?= session()->get('nombre_completo') ?? 'Usuario' ?>
-              </span>
+
+          <!-- Perfil de Usuario -->
+          <li class="nav-item dropdown">
+            <a class="nav-link d-flex align-items-center" href="#" id="profileDropdown" role="button"
+               data-bs-toggle="dropdown" aria-expanded="false">
+              <?php if (session()->has('avatar')): ?>
+                <img src="<?= base_url(session()->get('avatar')) ?>" alt="Avatar" class="user-avatar">
+              <?php else: ?>
+                <div class="user-avatar d-flex align-items-center justify-content-center bg-primary text-white">
+                  <?= strtoupper(substr(session()->get('nombre_completo') ?? 'U', 0, 1)) ?>
+                </div>
+              <?php endif; ?>
+              <span class="d-none d-md-inline ms-2"><?= session()->get('nombre_completo') ?? 'Usuario' ?></span>
             </a>
-            <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="profileDropdown">
-              <div class="dropdown-header">
-                <h6 class="mb-0"><?= session()->get('nombre_completo') ?? 'Usuario' ?></h6>
-                <small class="text-muted"><?= session()->get('correo') ?? '' ?></small>
-              </div>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="<?= base_url('perfil') ?>">
-                <i class="ti-user text-primary"></i> Mi Perfil
-              </a>
-              <a class="dropdown-item" href="<?= base_url('configuracion') ?>">
-                <i class="ti-settings text-primary"></i> Configuración
-              </a>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="#" onclick="cerrarSesion(); return false;">
-                <i class="ti-power-off text-danger"></i> Cerrar sesión
-              </a>
-            </div>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+              <li>
+                <div class="dropdown-header">
+                  <h6 class="mb-0"><?= session()->get('nombre_completo') ?? 'Usuario' ?></h6>
+                  <small class="text-muted"><?= session()->get('correo') ?? '' ?></small>
+                </div>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="<?= base_url('profile') ?>"><i class="ti-user me-2"></i>Mi Perfil</a></li>
+              <li><a class="dropdown-item" href="<?= base_url('settings') ?>"><i class="ti-settings me-2"></i>Configuración</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a class="dropdown-item" href="#" onclick="event.preventDefault(); cerrarSesion();">
+                  <i class="ti-power-off text-danger me-2"></i>Cerrar sesión
+                </a>
+              </li>
+            </ul>
           </li>
         </ul>
-        
-        <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" data-toggle="offcanvas">
+
+        <!-- Botón menú mobile -->
+        <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" id="mobileMenuToggle">
           <span class="icon-menu"></span>
         </button>
       </div>
     </nav>
 
+    <!-- Container -->
     <div class="container-fluid page-body-wrapper">
-      <div class="theme-setting-wrapper">
-        <div id="settings-trigger"><i class="ti-settings"></i></div>
-        <div id="theme-settings" class="settings-panel">
-          <i class="settings-close ti-close"></i>
-          <p class="settings-heading">APARIENCIA SIDEBAR</p>
-          <div class="sidebar-bg-options selected" id="sidebar-light-theme">
-            <div class="img-ss rounded-circle bg-light border mr-3"></div>Claro
-          </div>
-          <div class="sidebar-bg-options" id="sidebar-dark-theme">
-            <div class="img-ss rounded-circle bg-dark border mr-3"></div>Oscuro
-          </div>
-          <p class="settings-heading mt-2">COLORES DE HEADER</p>
-          <div class="color-tiles mx-0 px-4">
-            <div class="tiles success"></div>
-            <div class="tiles warning"></div>
-            <div class="tiles danger"></div>
-            <div class="tiles info"></div>
-            <div class="tiles dark"></div>
-            <div class="tiles default"></div>
-          </div>
-        </div>
-      </div>
-
+      <!-- Sidebar -->
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
         <ul class="nav">
-          <li class="nav-item <?= (uri_string() == '' || uri_string() == 'dashboard') ? 'active' : '' ?>">
+          <!-- Dashboard -->
+          <li class="nav-item <?= (uri_string() == 'dashboard') ? 'active' : '' ?>">
             <a class="nav-link" href="<?= base_url('dashboard') ?>">
-              <i class="icon-grid menu-icon"></i>
+              <i class="ti-home menu-icon"></i>
               <span class="menu-title">Dashboard</span>
             </a>
           </li>
-          
+          <!-- Leads -->
           <li class="nav-item <?= (strpos(uri_string(), 'leads') !== false) ? 'active' : '' ?>">
-            <a class="nav-link" data-toggle="collapse" href="#leads-menu" 
-               aria-expanded="<?= (strpos(uri_string(), 'leads') !== false) ? 'true' : 'false' ?>">
-              <i class="icon-target menu-icon"></i>
+            <a class="nav-link" data-bs-toggle="collapse" href="#leads-menu" role="button"
+               aria-expanded="<?= (strpos(uri_string(), 'leads') !== false) ? 'true' : 'false' ?>"
+               aria-controls="leads-menu">
+              <i class="ti-target menu-icon"></i>
               <span class="menu-title">Leads</span>
               <i class="menu-arrow"></i>
             </a>
             <div class="collapse <?= (strpos(uri_string(), 'leads') !== false) ? 'show' : '' ?>" id="leads-menu">
               <ul class="nav flex-column sub-menu">
                 <li class="nav-item">
-                  <a class="nav-link" href="<?= base_url('leads') ?>">Todos los Leads</a>
+                  <a class="nav-link <?= (uri_string() == 'leads') ? 'active' : '' ?>" href="<?= base_url('leads') ?>">
+                    Todos los Leads
+                  </a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link" href="<?= base_url('leads/create') ?>">Nuevo Lead</a>
+                  <a class="nav-link <?= (uri_string() == 'leads/create') ? 'active' : '' ?>" href="<?= base_url('leads/create') ?>">
+                    Nuevo Lead
+                  </a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link" href="<?= base_url('leads/pipeline') ?>">Pipeline</a>
+                  <a class="nav-link <?= (uri_string() == 'leads/pipeline') ? 'active' : '' ?>" href="<?= base_url('leads/pipeline') ?>">
+                    Pipeline
+                  </a>
                 </li>
               </ul>
             </div>
           </li>
-
+          <!-- Campañas -->
           <li class="nav-item <?= (strpos(uri_string(), 'campanias') !== false) ? 'active' : '' ?>">
-            <a class="nav-link" data-toggle="collapse" href="#campaigns-menu" 
-               aria-expanded="<?= (strpos(uri_string(), 'campanias') !== false) ? 'true' : 'false' ?>">
-              <i class="icon-layers menu-icon"></i>
+            <a class="nav-link" data-bs-toggle="collapse" href="#campaigns-menu" role="button"
+               aria-expanded="<?= (strpos(uri_string(), 'campanias') !== false) ? 'true' : 'false' ?>"
+               aria-controls="campaigns-menu">
+              <i class="ti-layers menu-icon"></i>
               <span class="menu-title">Campañas</span>
               <i class="menu-arrow"></i>
             </a>
@@ -291,54 +222,49 @@
               </ul>
             </div>
           </li>
-
+          <!-- Tareas -->
           <li class="nav-item <?= (strpos(uri_string(), 'tareas') !== false) ? 'active' : '' ?>">
             <a class="nav-link" href="<?= base_url('tareas') ?>">
-              <i class="icon-calendar menu-icon"></i>
+              <i class="ti-calendar menu-icon"></i>
               <span class="menu-title">Mis Tareas</span>
             </a>
           </li>
-
+          <!-- Reportes -->
+          <li class="nav-item <?= (strpos(uri_string(), 'reportes') !== false) ? 'active' : '' ?>">
+            <a class="nav-link" href="<?= base_url('reportes') ?>">
+              <i class="ti-bar-chart menu-icon"></i>
+              <span class="menu-title">Reportes</span>
+            </a>
+          </li>
+          <!-- Contactos -->
           <li class="nav-item <?= (strpos(uri_string(), 'personas') !== false) ? 'active' : '' ?>">
-            <a class="nav-link" data-toggle="collapse" href="#contacts-menu" 
-               aria-expanded="<?= (strpos(uri_string(), 'personas') !== false) ? 'true' : 'false' ?>">
-              <i class="icon-head menu-icon"></i>
+            <a class="nav-link" data-bs-toggle="collapse" href="#contacts-menu" role="button"
+               aria-expanded="<?= (strpos(uri_string(), 'personas') !== false) ? 'true' : 'false' ?>"
+               aria-controls="contacts-menu">
+              <i class="ti-id-badge menu-icon"></i>
               <span class="menu-title">Contactos</span>
               <i class="menu-arrow"></i>
             </a>
             <div class="collapse <?= (strpos(uri_string(), 'personas') !== false) ? 'show' : '' ?>" id="contacts-menu">
               <ul class="nav flex-column sub-menu">
-                <li class="nav-item">
-                  <a class="nav-link" href="<?= base_url('personas') ?>">Todos</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="<?= base_url('personas/create') ?>">Nuevo</a>
-                </li>
+                <li class="nav-item"><a class="nav-link" href="<?= base_url('personas') ?>">Todos</a></li>
+                <li class="nav-item"><a class="nav-link" href="<?= base_url('personas/create') ?>">Nuevo</a></li>
               </ul>
             </div>
           </li>
-          
-          <li class="nav-item <?= (strpos(uri_string(), 'reporte') !== false) ? 'active' : '' ?>">
-            <a class="nav-link" href="<?= base_url('reportes') ?>">
-              <i class="icon-bar-graph menu-icon"></i>
-              <span class="menu-title">Reportes</span>
-            </a>
-          </li>
-          
+          <!-- Usuarios (solo admin) -->
           <?php if(session()->get('rol') == 'admin'): ?>
-          <li class="nav-item <?= (strpos(uri_string(), 'configuracion') !== false) ? 'active' : '' ?>">
-            <a class="nav-link" href="<?= base_url('configuracion') ?>">
-              <i class="icon-settings menu-icon"></i>
-              <span class="menu-title">Configuración</span>
+          <li class="nav-item <?= (strpos(uri_string(), 'usuarios') !== false) ? 'active' : '' ?>">
+            <a class="nav-link" href="<?= base_url('usuarios') ?>">
+              <i class="ti-user menu-icon"></i>
+              <span class="menu-title">Usuarios</span>
             </a>
           </li>
           <?php endif; ?>
         </ul>
       </nav>
-      
       <div class="main-panel">
         <div class="content-wrapper">
           <?= $this->renderSection('content') ?>
         </div>
-        
-        
+

@@ -1,122 +1,155 @@
 <?php
-
 namespace App\Controllers;
 
 use App\Models\PersonaModel;
 use App\Models\DistritoModel;
+use CodeIgniter\HTTP\ResponseInterface;
 
 class PersonaController extends BaseController
 {
     protected $personaModel;
+    protected $distritoModel;
 
     public function __construct()
     {
         $this->personaModel = new PersonaModel();
+        $this->distritoModel = new DistritoModel();
     }
 
-    // ======================================
-    // Método para mostrar todas las personas
-    // ======================================
+    public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
+    {
+        parent::initController($request, $response, $logger);
+
+        // Métodos públicos que no requieren autenticación
+        $publicMethods = ['buscardni', 'buscarAjax', 'test'];
+        $currentMethod = $this->request->getUri()->getSegment(2) ?? $this->request->getUri()->getSegment(3);
+        
+        // Validar sesión solo si NO es un método público
+        if (!in_array($currentMethod, $publicMethods) && !session()->has('idusuario')) {
+            header('Location: ' . base_url('auth/login'));
+            exit;
+        }
+    }
+
+    // Listado de personas
     public function index(): string
     {
-        $datos = $this->getHeaderFooter();
-        $datos['personas'] = $this->personaModel->findAll();
-        return view('Personas/index', $datos);
-    }
+        $query = $this->request->getGet('q');
+        $builder = $this->personaModel->select('idpersona, nombres, apellidos, dni, telefono, correo, direccion, iddistrito')
+                                      ->orderBy('idpersona', 'DESC');
 
-    // ======================================
-    // Crear nueva persona
-    // ======================================
-    public function create()
-    {
-        $datos = $this->getHeaderFooter();
-
-        $distritoModel = new DistritoModel();
-        $datos['distritos'] = $distritoModel->findAll();
-
-        if ($this->request->getMethod() === 'post') {
-            $this->personaModel->insert($this->request->getPost());
-            return redirect()->to('/personas');
+        if (!empty($query)) {
+            $builder->groupStart()
+                    ->like('nombres', $query)
+                    ->orLike('apellidos', $query)
+                    ->orLike('dni', $query)
+                    ->orLike('telefono', $query)
+                    ->orLike('correo', $query)
+                    ->groupEnd()
+                    ->limit(50);
+        } else {
+            $builder->limit(20);
         }
 
-        return view('Personas/create', $datos);
+        $data = [
+            'personas' => $builder->findAll(),
+            'q' => $query,
+            'title' => 'Listado de Personas'
+        ];
+
+        return view('personas/index', $data);
     }
 
-    // ======================================
-    // Editar persona
-    // ======================================
-    public function edit($id = null)
+    // Formulario de creación/edición
+    public function create($id = null)
     {
-        $datos = $this->getHeaderFooter();
-        $datos['persona'] = $this->personaModel->find($id);
+        $data = [
+            'distritos' => $this->distritoModel->findAll(),
+            'title' => $id ? 'Editar Persona' : 'Nueva Persona'
+        ];
 
-        if ($this->request->getMethod() === 'post') {
-            $this->personaModel->update($id, $this->request->getPost());
-            return redirect()->to('/personas');
+        if ($id) {
+            $data['persona'] = $this->personaModel->find($id);
+            if (!$data['persona']) {
+                return redirect()->to(base_url('personas'))->with('error', 'Persona no encontrada');
+            }
         }
 
-        return view('Personas/edit', $datos);
+        return view('personas/form', $data);
     }
 
-    // ======================================
-    // Eliminar persona
-    // ======================================
-    public function delete($id = null)
+    // Guardar persona (crear/actualizar)
+    public function guardar()
     {
-        $this->personaModel->delete($id);
-        return redirect()->to('/personas');
-    }
+        // Validación de datos
+        $validation = \Config\Services::validation();
+        $validation->setRules([
+            'dni' => 'required|exact_length[8]|is_natural',
+            'apellidos' => 'required|min_length[2]',
+            'nombres' => 'required|min_length[2]',
+            'telefono' => 'required|exact_length[9]|is_natural',
+            'iddistrito' => 'required|is_natural_no_zero'
+        ]);
 
-    // ======================================
-    // Buscar personas vía AJAX
-    // ======================================
-    public function buscarAjax()
-    {
-        $query = trim($this->request->getGet('q'));
+        if (!$validation->withRequest($this->request)->run()) {
+            return redirect()->back()
+                            ->withInput()
+                            ->with('errors', $validation->getErrors());
+        }
+
+        $data = [
+            'dni' => $this->request->getPost('dni'),
+            'apellidos' => $this->request->getPost('apellidos'),
+            'nombres' => $this->request->getPost('nombres'),
+            'telefono' => $this->request->getPost('telefono'),
+            'correo' => $this->request->getPost('correo'),
+            'direccion' => $this->request->getPost('direccion'),
+            'iddistrito' => $this->request->getPost('iddistrito'),
+            'referencias' => $this->request->getPost('referencias')
+        ];
+
+        $id = $this->request->getPost('idpersona');
 
         try {
-            $builder = $this->personaModel->select('idpersona, nombres, apellidos, dni, telefono, correo, direccion')
-                                           ->orderBy('idpersona', 'DESC');
-
-            if (!empty($query)) {
-                $builder->groupStart()
-                        ->like('nombres', $query)
-                        ->orLike('apellidos', $query)
-                        ->orLike('dni', $query)
-                        ->orLike('telefono', $query)
-                        ->orLike('correo', $query)
-                        ->groupEnd()
-                        ->limit(50);
+            if ($id) {
+                // Actualizar
+                $this->personaModel->update($id, $data);
+                $message = 'Persona actualizada correctamente';
             } else {
-                $builder->limit(20);
+                // Insertar
+                $this->personaModel->insert($data);
+                $message = 'Persona registrada correctamente';
             }
 
-            $personas = array_map(function ($persona) {
-                return [
-                    'idpersona' => (int)$persona['idpersona'],
-                    'nombres' => htmlspecialchars($persona['nombres'], ENT_QUOTES, 'UTF-8'),
-                    'apellidos' => htmlspecialchars($persona['apellidos'], ENT_QUOTES, 'UTF-8'),
-                    'dni' => htmlspecialchars($persona['dni'], ENT_QUOTES, 'UTF-8'),
-                    'telefono' => htmlspecialchars($persona['telefono'], ENT_QUOTES, 'UTF-8'),
-                    'correo' => htmlspecialchars($persona['correo'] ?? '', ENT_QUOTES, 'UTF-8'),
-                    'direccion' => htmlspecialchars($persona['direccion'] ?? '', ENT_QUOTES, 'UTF-8')
-                ];
-            }, $builder->findAll());
-
-            return $this->response->setJSON($personas);
-
+            return redirect()->to(base_url('personas'))
+                            ->with('success', $message);
         } catch (\Exception $e) {
-            log_message('error', 'Error en buscarAjax: ' . $e->getMessage());
-            return $this->response->setJSON([]);
+            log_message('error', 'Error al guardar persona: ' . $e->getMessage());
+            return redirect()->back()
+                            ->withInput()
+                            ->with('error', 'Ocurrió un error al guardar la persona');
         }
     }
 
-    // ======================================
-    // Buscar persona por DNI (local o API RENIEC)
-    // ======================================
-    public function buscardni()
+    // Eliminar persona
+    public function delete($id)
     {
-        $dni = preg_replace('/\D/', '', $this->request->getGet('q')); // Solo números
+        try {
+            $this->personaModel->delete($id);
+            return redirect()->to(base_url('personas'))
+                            ->with('success', 'Persona eliminada correctamente');
+        } catch (\Exception $e) {
+            log_message('error', 'Error al eliminar persona: ' . $e->getMessage());
+            return redirect()->to(base_url('personas'))
+                            ->with('error', 'No se pudo eliminar la persona');
+        }
+    }
+
+    // Búsqueda por DNI (API y local)
+    public function buscardni($dni = "")
+    {
+        $dni = $this->request->getGet('q') ?: $dni;
+        $dni = preg_replace('/\D/', '', $dni); // Solo números
 
         if (strlen($dni) !== 8) {
             return $this->response->setStatusCode(400)->setJSON([
@@ -126,42 +159,55 @@ class PersonaController extends BaseController
         }
 
         try {
-            // 1️⃣ Revisar base local
             $persona = $this->personaModel->where('dni', $dni)->first();
             if ($persona) {
+                $apellidos = isset($persona['apellidos']) ? explode(' ', trim($persona['apellidos']), 2) : ['', ''];
                 return $this->response->setJSON([
                     'success' => true,
-                    'nombres' => $persona['nombres'],
-                    'apepaterno' => $persona['apepaterno'] ?? '',
-                    'apematerno' => $persona['apematerno'] ?? '',
-                    'registrado' => true
+                    'registrado' => true,
+                    'DNI' => $persona['dni'],
+                    'nombres' => $persona['nombres'] ?? '',
+                    'apepaterno' => $apellidos[0] ?? '',
+                    'apematerno' => $apellidos[1] ?? '',
+                    'message' => 'Persona encontrada en la base de datos local'
                 ]);
             }
 
-            // 2️⃣ Si no está local, llamar a RENIEC
-            $api_token = 'TU_API_TOKEN_AQUI'; // <- reemplazar
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, "https://api.reniec.example/dni/$dni");
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Authorization: Bearer ' . $api_token,
-            ]);
-            $api_response = curl_exec($ch);
-            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if ($api_response !== false && $http_code === 200) {
-                $decoded = json_decode($api_response, true);
-                return $this->response->setJSON([
-                    'success' => true,
-                    'registrado' => false,
-                    'nombres' => $decoded['first_name'] ?? '',
-                    'apepaterno' => $decoded['first_last_name'] ?? '',
-                    'apematerno' => $decoded['second_last_name'] ?? '',
-                    'message' => 'Datos obtenidos de RENIEC'
+            // API DE RENIEC (si tienes token)
+            $api_token = env('API_DECOLECTA_TOKEN');
+            
+            if ($api_token) {
+                $api_endpoint = "https://api.decolecta.com/v1/reniec/dni?numero=" . $dni;
+                
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $api_endpoint);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . $api_token,
                 ]);
+                
+                $api_response = curl_exec($ch);
+                $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+
+                if ($api_response !== false && $http_code === 200) {
+                    $decoded_response = json_decode($api_response, true);
+                    
+                    if (isset($decoded_response['first_name'])) {
+                        return $this->response->setJSON([
+                            'success' => true,
+                            'registrado' => false,
+                            'apepaterno' => $decoded_response['first_last_name'] ?? '',
+                            'apematerno' => $decoded_response['second_last_name'] ?? '',
+                            'nombres' => $decoded_response['first_name'] ?? '',
+                        ]);
+                    }
+                }
             }
 
+            // Si no se encontró en API externa
             return $this->response->setStatusCode(404)->setJSON([
                 'success' => false,
                 'message' => 'No se encontró información para este DNI'
@@ -169,6 +215,7 @@ class PersonaController extends BaseController
 
         } catch (\Exception $e) {
             log_message('error', 'Error en buscardni: ' . $e->getMessage());
+            
             return $this->response->setStatusCode(500)->setJSON([
                 'success' => false,
                 'message' => 'Error interno del servidor'
@@ -176,11 +223,51 @@ class PersonaController extends BaseController
         }
     }
 
-    private function getHeaderFooter(): array
+    // Búsqueda AJAX de personas por DNI
+    public function buscarAjax()
     {
-        return [
-            'header' => view('Layouts/header'),
-            'footer' => view('Layouts/footer')
-        ];
+        $dni = $this->request->getGet('dni') ?? $this->request->getGet('q') ?? '';
+        $dni = preg_replace('/\D/', '', $dni);
+
+        if (strlen($dni) !== 8) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'El DNI debe tener exactamente 8 dígitos numéricos'
+            ]);
+        }
+
+        try {
+            $persona = $this->personaModel->where('dni', $dni)->first();
+            if ($persona) {
+                $apellidos = isset($persona['apellidos']) ? explode(' ', trim($persona['apellidos']), 2) : ['', ''];
+                return $this->response->setJSON([
+                    'success' => true,
+                    'registrado' => true,
+                    'DNI' => $persona['dni'],
+                    'nombres' => $persona['nombres'] ?? '',
+                    'apepaterno' => $apellidos[0] ?? '',
+                    'apematerno' => $apellidos[1] ?? '',
+                    'message' => 'Persona encontrada en la base de datos local'
+                ]);
+            }
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No se encontró persona con ese DNI'
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error en buscarAjax: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al buscar'
+            ]);
+        }
+    }
+    
+    /**
+     * Método de prueba para verificar si el controlador funciona
+     */
+    public function test()
+    {
+        return $this->response->setJSON(['status' => 'ok', 'message' => 'Controlador funcionando']);
     }
 }
