@@ -54,7 +54,7 @@ $routes->group('campanias', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'Campanias::index');
     $routes->get('create', 'Campanias::create');
     $routes->post('store', 'Campanias::store');
-    $routes->get('edit/(:num)', 'Campanias::edit/$1'); // <-- esta es la ruta para editar
+    $routes->get('edit/(:num)', 'Campanias::edit/$1');
     $routes->post('update/(:num)', 'Campanias::update/$1');
     $routes->get('delete/(:num)', 'Campanias::delete/$1');
     $routes->get('view/(:num)', 'Campanias::view/$1');
@@ -126,4 +126,3 @@ $routes->get('notificaciones', 'Dashboard::notificaciones', ['filter' => 'auth']
 $routes->get('dashboard', 'Dashboard::index');
 $routes->get('campanias', 'Campanias::index');
 $routes->get('tareas', 'Tareas::index');
-// Agrega las rutas que falten...

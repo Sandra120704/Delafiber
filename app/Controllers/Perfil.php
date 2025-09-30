@@ -198,19 +198,17 @@ class Perfil extends BaseController
     {
         $actividades = [];
 
-        // Seguimientos recientes
-        $seguimientos = $this->seguimientoModel
-            ->select('seguimientos.*, leads.nombres, leads.apellidos, "seguimiento" as tipo_actividad')
-            ->join('leads', 'leads.idlead = seguimientos.idlead')
-            ->where('seguimientos.idusuario', $idusuario)
-            ->orderBy('seguimientos.fecha', 'DESC')
-            ->limit(5)
-            ->findAll();
+        // Seguimientos recientes: usar el método del modelo que ya construye la información correctamente
+        $seguimientos = $this->seguimientoModel->getActividadReciente($idusuario, 5);
 
         foreach ($seguimientos as $seg) {
+            // getActividadReciente devuelve 'cliente_nombre' y 'modalidad' entre otros campos
+            $clienteNombre = $seg['cliente_nombre'] ?? (trim(($seg['nombres'] ?? '') . ' ' . ($seg['apellidos'] ?? '')) ?: 'Cliente');
+            $modalidad = $seg['modalidad'] ?? 'seguimiento';
+
             $actividades[] = [
-                'descripcion' => "Seguimiento a {$seg['nombres']} {$seg['apellidos']}: {$seg['tipo']}",
-                'fecha' => $seg['fecha'],
+                'descripcion' => "Seguimiento a {$clienteNombre}: {$modalidad}",
+                'fecha' => $seg['fecha'] ?? ($seg['created_at'] ?? date('Y-m-d H:i:s')),
                 'tipo_badge' => 'info',
                 'icono' => 'icon-activity'
             ];
