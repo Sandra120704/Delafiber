@@ -13,17 +13,22 @@ class LeadModel extends Model
         'idetapa',
         'idusuario',
         'idorigen',
+        'idcampania',
         'medio_comunicacion',
         'idusuario_registro',
         'referido_por',
         'estado',
         'numero_contrato_externo',
         'fecha_conversion_contrato',
-        'fecha_registro'
+        'fecha_registro',
+        'cliente',
+        'nombre',
+        'telefono',
+        'etapa_actual'
     ];
     protected $useTimestamps = true;
-    protected $createdField = 'fecha_creacion';
-    protected $updatedField = 'fecha_modificacion';
+    protected $createdField = 'created_at';
+    protected $updatedField = 'updated_at';
     
     protected $validationRules = [
         'idpersona' => 'required|numeric',

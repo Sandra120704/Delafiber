@@ -1,4 +1,4 @@
-<?= $this->extend('Layouts/header') ?>
+<?= $this->extend('Layouts/base') ?>
 <?= $this->section('content') ?>
 
 <div class="row mb-4">

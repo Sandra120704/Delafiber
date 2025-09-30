@@ -1,10 +1,9 @@
-<?= $this->extend('layouts/header') ?>
+<?= $this->extend('Layouts/base') ?>
 
 <?= $this->section('content') ?>
 
 <div class="row">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
             <h3 class="mb-0">Gestión de Campañas</h3>
             <a href="<?= base_url('campanias/create') ?>" class="btn btn-primary">
                 <i class="icon-plus"></i> Nueva Campaña
@@ -24,6 +23,13 @@
             <button type="button" class="close" data-dismiss="alert">&times;</button>
         </div>
         <?php endif; ?>
+
+        <?php if (isset($error)): ?>
+            <div class="alert alert-danger">
+                <?= esc($error) ?>
+            </div>
+        <?php endif; ?>
+
         <div class="card">
             <div class="card-body">
                 <?php if (!empty($campanias)): ?>

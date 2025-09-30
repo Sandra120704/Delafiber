@@ -18,10 +18,13 @@ class CampaniaModel extends Model
         'fecha_fin', 
         'presupuesto', 
         'estado', 
-        'responsable'
+        'responsable',
+        'tipo',
+        'activo'
     ];
     protected $useTimestamps = true;
-    protected $createdField = 'fecha_creacion';
+    protected $createdField = 'created_at';
+    protected $updatedField = 'updated_at';
     
     /**
      * Obtener campañas con información del responsable
@@ -44,7 +47,7 @@ class CampaniaModel extends Model
         }
         
         $builder->groupBy('c.idcampania');
-        $builder->orderBy('c.fecha_creacion', 'DESC');
+        $builder->orderBy('c.created_at', 'DESC');
         
         return $builder->get()->getResultArray();
     }

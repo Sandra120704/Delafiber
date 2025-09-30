@@ -1,10 +1,9 @@
-<?= $this->extend('layouts/header') ?>
+<?= $this->extend('Layouts/base') ?>
 
 <?= $this->section('content') ?>
 
 <div class="row">
     <div class="col-lg-8 mx-auto">
-        <div class="d-flex justify-content-between align-items-center mb-4">
             <h3 class="mb-0">Editar Campaña</h3>
             <a href="<?= base_url('campanias') ?>" class="btn btn-outline-secondary">
                 <i class="icon-arrow-left"></i> Volver

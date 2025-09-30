@@ -198,49 +198,84 @@ class Campanias extends BaseController
      */
     public function view($id)
     {
-        $campania = $this->campaniaModel->find($id);
-        
-        if (!$campania) {
-            return redirect()->to('campanias')
-                ->with('error', 'Campaña no encontrada');
+        // Validar que el ID sea numérico
+        if (!is_numeric($id)) {
+            return redirect()->to('/campanias')->with('error', 'ID de campaña inválido');
         }
 
-        // Obtener leads de la campaña
-        $leads = $this->leadModel
-            ->where('idcampania', $id)
-            ->orderBy('fecha_registro', 'DESC')
-            ->findAll();
+        $campania = $this->campaniaModel->find($id);
+        if (!$campania) {
+            return redirect()->to('/campanias')->with('error', 'Campaña no encontrada');
+        }
 
-        // Leads recientes (últimos 5)
-        $leads_recientes = array_slice($leads, 0, 5);
-
-        // Calcular estadísticas
-        $totalLeads = count($leads);
-        $convertidos = count(array_filter($leads, fn($l) => isset($l['estado']) && $l['estado'] === 'Convertido'));
-        $activos = count(array_filter($leads, fn($l) => isset($l['estado']) && $l['estado'] === 'Activo'));
+        // Validar y asegurar campos para evitar errores
+        $campania['nombre'] = $campania['nombre'] ?? 'Sin nombre';
+        $campania['descripcion'] = $campania['descripcion'] ?? 'Sin descripción';
+        $campania['fecha_inicio'] = !empty($campania['fecha_inicio']) && strtotime($campania['fecha_inicio']) 
+            ? $campania['fecha_inicio'] 
+            : date('Y-m-d');
+        $campania['fecha_fin'] = !empty($campania['fecha_fin']) && strtotime($campania['fecha_fin']) 
+            ? $campania['fecha_fin'] 
+            : null;
+        $campania['presupuesto'] = isset($campania['presupuesto']) && is_numeric($campania['presupuesto']) 
+            ? (float)$campania['presupuesto'] 
+            : 0.00;
+        $campania['estado'] = $campania['estado'] ?? 'Inactiva';
+        $campania['tipo'] = $campania['tipo'] ?? 'Sin definir';
         
-        $estadisticas = [
-            'total_leads' => $totalLeads,
-            'convertidos' => $convertidos,
-            'activos' => $activos,
-            'tasa_conversion' => $totalLeads > 0 ? ($convertidos / $totalLeads) * 100 : 0
-        ];
+        // Manejar created_at con fallback
+        if (isset($campania['created_at']) && strtotime($campania['created_at'])) {
+            // Ya tiene created_at válido
+        } elseif (isset($campania['fecha_creacion']) && strtotime($campania['fecha_creacion'])) {
+            $campania['created_at'] = $campania['fecha_creacion'];
+        } else {
+            $campania['created_at'] = $campania['fecha_inicio'];
+        }
+
+        // Obtener estadísticas con manejo de errores
+        try {
+            $estadisticas = [
+                'total_leads' => $this->leadModel->where('idcampania', $id)->countAllResults(),
+                'convertidos' => $this->leadModel->where(['idcampania' => $id, 'estado' => 'Convertido'])->countAllResults(),
+                'activos' => $this->leadModel->where(['idcampania' => $id, 'estado' => 'Activo'])->countAllResults(),
+                'tasa_conversion' => 0
+            ];
+            
+            if ($estadisticas['total_leads'] > 0 && $estadisticas['convertidos'] > 0) {
+                $estadisticas['tasa_conversion'] = ($estadisticas['convertidos'] / $estadisticas['total_leads']) * 100;
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Error al obtener estadísticas de campaña: ' . $e->getMessage());
+            $estadisticas = [
+                'total_leads' => 0,
+                'convertidos' => 0,
+                'activos' => 0,
+                'tasa_conversion' => 0
+            ];
+        }
+
+        // Obtener leads recientes con manejo de errores
+        try {
+            $leads_recientes = $this->leadModel
+                ->where('idcampania', $id)
+                ->orderBy('created_at', 'DESC')
+                ->findAll(5);
+        } catch (\Exception $e) {
+            log_message('error', 'Error al obtener leads recientes: ' . $e->getMessage());
+            $leads_recientes = [];
+        }
 
         $data = [
-            'title' => $campania['nombre'],
+            'title' => 'Detalle de Campaña - ' . $campania['nombre'],
             'campania' => $campania,
-            'leads_recientes' => $leads_recientes,
             'estadisticas' => $estadisticas,
-            'difusiones' => [], // Aquí deberías cargar las difusiones reales
-            'medios' => [] // Aquí deberías cargar los medios disponibles
+            'leads_recientes' => $leads_recientes ?? []
         ];
-
+        
         return view('campanias/view', $data);
     }
 
-    /**
-     * Cambiar estado de campaña (Activa/Inactiva)
-     */
+ 
     public function toggleEstado($id)
     {
         $campania = $this->campaniaModel->find($id);

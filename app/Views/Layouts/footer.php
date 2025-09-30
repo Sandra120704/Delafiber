@@ -23,8 +23,6 @@
 
   <!-- plugins:js -->
   <script src="<?= base_url('assets/js/vendor.bundle.base.js') ?>"></script>
-
-  <!-- Plugin js for this page -->
   <script src="<?= base_url('assets/chart.js/Chart.min.js') ?>"></script>
   <script src="<?= base_url('assets/datatables/js/jquery.dataTables.min.js') ?>"></script>
   <script src="<?= base_url('assets/datatables/js/dataTables.bootstrap4.min.js') ?>"></script>
@@ -71,5 +69,8 @@
     };
   });
   </script>
+
+  <!-- Scripts específicos de cada página -->
+  <?= $this->renderSection('scripts') ?>
 </body>
 </html>

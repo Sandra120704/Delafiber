@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/header') ?>
+<?= $this->extend('Layouts/base') ?>
 
 <?= $this->section('content') ?>
 
@@ -86,11 +86,15 @@
                                 <label for="iddistrito">Distrito *</label>
                                 <select class="form-control" id="iddistrito" name="iddistrito" required>
                                     <option value="">Seleccione un distrito</option>
-                                    <?php foreach ($distritos as $distrito): ?>
-                                        <option value="<?= $distrito['iddistrito'] ?>">
-                                            <?= esc(isset($distrito['nombre']) ? $distrito['nombre'] : '') ?>
-                                        </option>
-                                    <?php endforeach; ?>
+                                    <?php if (!empty($distritos) && is_array($distritos)): ?>
+                                        <?php foreach ($distritos as $distrito): ?>
+                                            <option value="<?= $distrito['iddistrito'] ?>">
+                                                <?= esc(isset($distrito['nombre']) ? $distrito['nombre'] : '') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <option value="">No hay distritos disponibles</option>
+                                    <?php endif; ?>
                                 </select>
                             </div>
 

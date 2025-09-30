@@ -74,7 +74,7 @@ class Leads extends BaseController
     {  
         $data = [  
             'title' => 'Nuevo Lead - Delafiber CRM',  
-            'distritos' => $this->distritoModel->getDistritosDelafiber(),  
+            'distritos' => $this->distritoModel->findAll(),  
             'origenes' => $this->origenModel->getOrigenesActivos(),  
             'campanias' => $this->campaniaModel->getCampaniasActivas(),  
             'etapas' => $this->etapaModel->getEtapasActivas(),  
@@ -250,4 +250,31 @@ class Leads extends BaseController
             ]);  
         }  
     }  
-}  
+
+    public function pipeline()
+    {
+        // Obtén las etapas activas
+        $etapas = $this->etapaModel->getEtapasActivas();
+
+        // Obtén los leads agrupados por etapa (ajusta según tu modelo)
+        $pipeline = [];
+        foreach ($etapas as $etapa) {
+            $leads = $this->leadModel
+                ->where('idetapa', $etapa['idetapa'])
+                ->findAll();
+
+            $pipeline[] = [
+                'etapa_id' => $etapa['idetapa'],
+                'etapa_nombre' => $etapa['nombre'],
+                'total_leads' => count($leads),
+                'leads' => $leads
+            ];
+        }
+
+        $data = [
+            'title' => 'Pipeline de Ventas',
+            'pipeline' => $pipeline
+        ];
+        return view('leads/pipeline', $data);
+    }
+}

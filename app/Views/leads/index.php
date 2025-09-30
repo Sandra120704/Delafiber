@@ -1,13 +1,13 @@
-<?= $this->extend('layouts/header') ?>
+<?= $this->extend('Layouts/base') ?>
 
 <?= $this->section('content') ?>
 
 <!-- Mensajes Flash -->
 <?php if (session()->getFlashdata('success')): ?>
-<div class="alert alert-success alert-dismissible fade show" role="alert">
-    <?= session()->getFlashdata('success') ?>
-    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-</div>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <?= session()->getFlashdata('success') ?>
+        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+    </div>
 <?php endif; ?>
 
 <?php if (session()->getFlashdata('error')): ?>
@@ -179,6 +179,9 @@
     </div>
 </div>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
 <script>
 $(document).ready(function() {
     $('#tableLeads').DataTable({
@@ -193,6 +196,4 @@ $(document).ready(function() {
     });
 });
 </script>
-
 <?= $this->endSection() ?>
-<?= $this->include('Layouts/footer') ?>

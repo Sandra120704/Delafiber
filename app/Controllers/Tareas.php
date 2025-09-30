@@ -3,7 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\TareaModel;
-use App\Models\LeadModel; 
+use App\Models\LeadModel;
 
 class Tareas extends BaseController
 {
@@ -13,12 +13,9 @@ class Tareas extends BaseController
     public function __construct()
     {
         $this->tareaModel = new TareaModel();
-        $this->leadModel = new LeadModel(); 
+        $this->leadModel = new LeadModel();
     }
 
-    /**
-     * Vista principal de tareas
-     */
     public function index()
     {
         if (!session()->get('logged_in')) {
@@ -26,258 +23,287 @@ class Tareas extends BaseController
         }
 
         $idusuario = session()->get('idusuario');
-
-        // Obtener tareas por estado
-        $pendientes = $this->tareaModel->getTareasPendientes($idusuario);
-        $hoy = $this->tareaModel->getTareasHoy($idusuario);
-        $vencidas = $this->tareaModel->getTareasVencidas($idusuario);
-        $completadas = $this->tareaModel->getTareasCompletas([
-            'idusuario' => $idusuario,
-            'estado' => 'Completada'
-        ]);
-
-        // Si necesitas mostrar leads en el select de tareas
-        $leads = $this->leadModel->getLeadsBasicos([
-            'idusuario' => $idusuario,
-            'activos' => true
-        ]);
-
+        
+        // Datos básicos para evitar errores
         $data = [
             'title' => 'Mis Tareas - Delafiber CRM',
-            'user_name' => session()->get('nombre_completo'),
-            'user_email' => session()->get('correo'),
-            'user_role' => session()->get('rol'),
-            'pendientes' => $pendientes,
-            'hoy' => $hoy,
-            'vencidas' => $vencidas,
-            'completadas' => $completadas,
-            'leads' => $leads // Solo si lo necesitas en la vista
+            'pendientes' => [],
+            'hoy' => [],
+            'vencidas' => [],
+            'completadas' => [],
+            'leads' => [],
+            'tareas_pendientes_count' => 0
         ];
 
+        try {
+            // Intentar obtener tareas básicas
+            $pendientes = $this->tareaModel
+                ->where('idusuario', $idusuario)
+                ->where('estado', 'Pendiente')
+                ->findAll();
+            
+            $data['pendientes'] = $pendientes;
+            $data['tareas_pendientes_count'] = count($pendientes);
+            
+            // Obtener leads básicos
+            $leads = $this->leadModel->findAll(20);
+            $data['leads'] = $leads;
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error en Tareas::index: ' . $e->getMessage());
+        }
+
         return view('tareas/index', $data);
+    }
+
+    private function getTareasPendientes($idusuario)
+    {
+        try {
+            return $this->tareaModel
+                ->select('tareas.*, COALESCE(CONCAT(p.nombres, " ", p.apellidos), "Sin lead") as lead_nombre, COALESCE(p.telefono, "") as lead_telefono')
+                ->join('leads l', 'l.idlead = tareas.idlead', 'left')
+                ->join('personas p', 'p.idpersona = l.idpersona', 'left')
+                ->where('tareas.idusuario', $idusuario)
+                ->where('tareas.estado', 'Pendiente')
+                ->where('tareas.fecha_vencimiento >', date('Y-m-d H:i:s'))
+                ->orderBy('tareas.prioridad', 'DESC')
+                ->orderBy('tareas.fecha_vencimiento', 'ASC')
+                ->findAll();
+        } catch (\Exception $e) {
+            log_message('error', 'Error en getTareasPendientes: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    private function getTareasHoy($idusuario)
+    {
+        try {
+            $hoy_inicio = date('Y-m-d 00:00:00');
+            $hoy_fin = date('Y-m-d 23:59:59');
+            
+            return $this->tareaModel
+                ->select('tareas.*, COALESCE(CONCAT(p.nombres, " ", p.apellidos), "Sin lead") as lead_nombre')
+                ->join('leads l', 'l.idlead = tareas.idlead', 'left')
+                ->join('personas p', 'p.idpersona = l.idpersona', 'left')
+                ->where('tareas.idusuario', $idusuario)
+                ->where('tareas.estado', 'Pendiente')
+                ->where('tareas.fecha_vencimiento >=', $hoy_inicio)
+                ->where('tareas.fecha_vencimiento <=', $hoy_fin)
+                ->orderBy('tareas.fecha_vencimiento', 'ASC')
+                ->findAll();
+        } catch (\Exception $e) {
+            log_message('error', 'Error en getTareasHoy: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    private function getTareasVencidas($idusuario)
+    {
+        try {
+            return $this->tareaModel
+                ->select('tareas.*, COALESCE(CONCAT(p.nombres, " ", p.apellidos), "Sin lead") as lead_nombre')
+                ->join('leads l', 'l.idlead = tareas.idlead', 'left')
+                ->join('personas p', 'p.idpersona = l.idpersona', 'left')
+                ->where('tareas.idusuario', $idusuario)
+                ->where('tareas.estado', 'Pendiente')
+                ->where('tareas.fecha_vencimiento <', date('Y-m-d H:i:s'))
+                ->orderBy('tareas.fecha_vencimiento', 'ASC')
+                ->findAll();
+        } catch (\Exception $e) {
+            log_message('error', 'Error en getTareasVencidas: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    private function getTareasCompletadas($idusuario)
+    {
+        return $this->tareaModel
+            ->select('tareas.*, CONCAT(p.nombres, " ", p.apellidos) as lead_nombre')
+            ->join('leads l', 'l.idlead = tareas.idlead', 'left')
+            ->join('personas p', 'p.idpersona = l.idpersona', 'left')
+            ->where('tareas.idusuario', $idusuario)
+            ->where('tareas.estado', 'Completada')
+            ->orderBy('tareas.fecha_completado', 'DESC')
+            ->limit(50)
+            ->findAll();
     }
 
     /**
      * Guardar nueva tarea
      */
-    public function store()
+    public function crear()
     {
         // Validación
-        $validation = \Config\Services::validation();
-        $validation->setRules([
-            'titulo' => 'required|min_length[3]|max_length[200]',
-            'fecha_vencimiento' => 'required',
-            'prioridad' => 'required|in_list[Baja,Media,Alta]',
-            'estado' => 'required|in_list[Pendiente,En Progreso,Completada,Cancelada]'
-        ]);
+        $rules = [
+            'titulo' => 'required|min_length[5]|max_length[200]',
+            'tipo_tarea' => 'required',
+            'prioridad' => 'required|in_list[baja,media,alta,urgente]',
+            'fecha_vencimiento' => 'required'
+        ];
 
-        if (!$validation->withRequest($this->request)->run()) {
+        if (!$this->validate($rules)) {
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Por favor corrige los errores en el formulario');
         }
 
-        // Preparar datos
         $data = [
             'idlead' => $this->request->getPost('idlead') ?: null,
             'idusuario' => session()->get('idusuario'),
             'titulo' => $this->request->getPost('titulo'),
             'descripcion' => $this->request->getPost('descripcion'),
-            'fecha_vencimiento' => $this->request->getPost('fecha_vencimiento'),
+            'tipo_tarea' => $this->request->getPost('tipo_tarea'),
             'prioridad' => $this->request->getPost('prioridad'),
-            'estado' => $this->request->getPost('estado')
+            'fecha_vencimiento' => $this->request->getPost('fecha_vencimiento'),
+            'fecha_inicio' => date('Y-m-d'),
+            'estado' => 'Pendiente'
         ];
 
-        // Guardar
-        if ($this->tareaModel->insert($data)) {
-            // Determinar redirección
-            $redirect = $this->request->getGet('redirect') ?: 'tareas';
+        try {
+            $this->tareaModel->insert($data);
             
-            return redirect()->to($redirect)
+            return redirect()->to('tareas')
                 ->with('success', 'Tarea creada exitosamente');
-        } else {
+        } catch (\Exception $e) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Error al crear la tarea');
+                ->with('error', 'Error al crear la tarea: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Actualizar tarea existente
-     */
-    public function update($id)
+    public function completar($id = null)
     {
-        // Verificar que existe y pertenece al usuario
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
         $tarea = $this->tareaModel->find($id);
+        
         if (!$tarea || $tarea['idusuario'] != session()->get('idusuario')) {
-            return redirect()->to('tareas')
-                ->with('error', 'Tarea no encontrada');
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No autorizado'
+            ]);
         }
 
-        // Validación
-        $validation = \Config\Services::validation();
-        $validation->setRules([
-            'titulo' => 'required|min_length[3]|max_length[200]',
-            'fecha_vencimiento' => 'required',
-            'prioridad' => 'required|in_list[Baja,Media,Alta]',
-            'estado' => 'required|in_list[Pendiente,En Progreso,Completada,Cancelada]'
-        ]);
-
-        if (!$validation->withRequest($this->request)->run()) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Por favor corrige los errores en el formulario');
-        }
-
-        // Preparar datos
-        $data = [
-            'idlead' => $this->request->getPost('idlead') ?: null,
-            'titulo' => $this->request->getPost('titulo'),
-            'descripcion' => $this->request->getPost('descripcion'),
-            'fecha_vencimiento' => $this->request->getPost('fecha_vencimiento'),
-            'prioridad' => $this->request->getPost('prioridad'),
-            'estado' => $this->request->getPost('estado')
-        ];
-
-        // Si se marca como completada, registrar fecha
-        if ($data['estado'] == 'Completada' && $tarea['estado'] != 'Completada') {
-            $data['fecha_completado'] = date('Y-m-d H:i:s');
-        }
-
-        // Actualizar
-        if ($this->tareaModel->update($id, $data)) {
-            return redirect()->to('tareas')
-                ->with('success', 'Tarea actualizada exitosamente');
-        } else {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Error al actualizar la tarea');
-        }
-    }
-
-    /**
-     * Marcar tarea como completada (acción rápida)
-     */
-    public function completar($id)
-    {
-        // Verificar que existe y pertenece al usuario
-        $tarea = $this->tareaModel->find($id);
-        if (!$tarea || $tarea['idusuario'] != session()->get('idusuario')) {
-            return redirect()->to('tareas')
-                ->with('error', 'Tarea no encontrada');
-        }
-
-        // Actualizar estado
         $data = [
             'estado' => 'Completada',
-            'fecha_completado' => date('Y-m-d H:i:s')
+            'fecha_completado' => date('Y-m-d H:i:s'),
+            'notas_resultado' => $this->request->getPost('notas_resultado')
         ];
 
-        if ($this->tareaModel->update($id, $data)) {
-            // Determinar redirección
-            $redirect = $this->request->getGet('redirect') ?: 'tareas';
+        try {
+            $this->tareaModel->update($id, $data);
             
-            return redirect()->to($redirect)
-                ->with('success', 'Tarea completada exitosamente');
-        } else {
-            return redirect()->back()
-                ->with('error', 'Error al completar la tarea');
-        }
-    }
-
-    /**
-     * Eliminar tarea
-     */
-    public function delete($id)
-    {
-        // Verificar que existe y pertenece al usuario
-        $tarea = $this->tareaModel->find($id);
-        if (!$tarea || $tarea['idusuario'] != session()->get('idusuario')) {
-            return redirect()->to('tareas')
-                ->with('error', 'Tarea no encontrada');
-        }
-
-        // Eliminar
-        if ($this->tareaModel->delete($id)) {
-            return redirect()->to('tareas')
-                ->with('success', 'Tarea eliminada exitosamente');
-        } else {
-            return redirect()->to('tareas')
-                ->with('error', 'Error al eliminar la tarea');
-        }
-    }
-
-    /**
-     * API: Obtener tareas por lead (para AJAX)
-     */
-    public function getTareasByLead($idlead)
-    {
-        $tareas = $this->tareaModel->getTareasConDetalles([
-            'idlead' => $idlead,
-            'idusuario' => session()->get('idusuario')
-        ]);
-
-        return $this->response->setJSON([
-            'success' => true,
-            'tareas' => $tareas
-        ]);
-    }
-
-    /**
-     * API: Cambiar estado de tarea (para AJAX)
-     */
-    public function cambiarEstado($id)
-    {
-        // Verificar que existe y pertenece al usuario
-        $tarea = $this->tareaModel->find($id);
-        if (!$tarea || $tarea['idusuario'] != session()->get('idusuario')) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Tarea no encontrada'
-            ]);
-        }
-
-        $nuevoEstado = $this->request->getJSON()->estado ?? 'Completada';
-        
-        $data = [
-            'estado' => $nuevoEstado
-        ];
-
-        if ($nuevoEstado == 'Completada') {
-            $data['fecha_completado'] = date('Y-m-d H:i:s');
-        }
-
-        if ($this->tareaModel->update($id, $data)) {
+            // Seguimiento automático si se solicita
+            if ($this->request->getPost('fecha_seguimiento')) {
+                $nuevaTarea = [
+                    'idlead' => $tarea['idlead'],
+                    'idusuario' => $tarea['idusuario'],
+                    'titulo' => 'Seguimiento: ' . $tarea['titulo'],
+                    'descripcion' => 'Tarea de seguimiento generada automáticamente',
+                    'tipo_tarea' => 'seguimiento',
+                    'prioridad' => 'media',
+                    'fecha_vencimiento' => $this->request->getPost('fecha_seguimiento'),
+                    'fecha_inicio' => date('Y-m-d'),
+                    'estado' => 'Pendiente'
+                ];
+                $this->tareaModel->insert($nuevaTarea);
+            }
+            
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Estado actualizado'
+                'message' => 'Tarea completada'
             ]);
-        } else {
+        } catch (\Exception $e) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Error al actualizar'
+                'message' => 'Error'
             ]);
         }
     }
 
-    /**
-     * Obtener tareas vencidas (para notificaciones)
-     */
-    public function getVencidas()
+    // Resto de métodos...
+    public function reprogramar()
     {
-        $idusuario = session()->get('idusuario');
+        if (!$this->request->isAJAX()) return redirect()->back();
+
+        $json = $this->request->getJSON(true);
+        $tarea = $this->tareaModel->find($json['idtarea']);
         
-        $tareas = $this->tareaModel
-            ->where('idusuario', $idusuario)
-            ->where('estado !=', 'Completada')
-            ->where('fecha_vencimiento <', date('Y-m-d H:i:s'))
-            ->orderBy('fecha_vencimiento', 'ASC')
-            ->findAll();
+        if (!$tarea || $tarea['idusuario'] != session()->get('idusuario')) {
+            return $this->response->setJSON(['success' => false]);
+        }
+
+        $this->tareaModel->update($json['idtarea'], [
+            'fecha_vencimiento' => $json['nueva_fecha']
+        ]);
+        
+        return $this->response->setJSON(['success' => true]);
+    }
+
+    public function completarMultiples()
+    {
+        if (!$this->request->isAJAX()) return redirect()->back();
+
+        $ids = $this->request->getJSON(true)['ids'];
+        
+        foreach ($ids as $id) {
+            $tarea = $this->tareaModel->find($id);
+            if ($tarea && $tarea['idusuario'] == session()->get('idusuario')) {
+                $this->tareaModel->update($id, [
+                    'estado' => 'Completada',
+                    'fecha_completado' => date('Y-m-d H:i:s')
+                ]);
+            }
+        }
+        
+        return $this->response->setJSON(['success' => true]);
+    }
+
+    public function eliminarMultiples()
+    {
+        if (!$this->request->isAJAX()) return redirect()->back();
+
+        $ids = $this->request->getJSON(true)['ids'];
+        
+        foreach ($ids as $id) {
+            $tarea = $this->tareaModel->find($id);
+            if ($tarea && $tarea['idusuario'] == session()->get('idusuario')) {
+                $this->tareaModel->delete($id);
+            }
+        }
+        
+        return $this->response->setJSON(['success' => true]);
+    }
+
+    public function detalle($id)
+    {
+        if (!$this->request->isAJAX()) return redirect()->back();
+
+        $tarea = $this->tareaModel
+            ->select('tareas.*, CONCAT(p.nombres, " ", p.apellidos) as lead_nombre, p.telefono, p.correo')
+            ->join('leads l', 'l.idlead = tareas.idlead')
+            ->join('personas p', 'p.idpersona = l.idpersona')
+            ->find($id);
 
         return $this->response->setJSON([
-            'success' => true,
-            'count' => count($tareas),
-            'tareas' => $tareas
+            'success' => !!$tarea,
+            'tarea' => $tarea
         ]);
+    }
+
+    public function verificarProximasVencer()
+    {
+        if (!$this->request->isAJAX()) return redirect()->back();
+
+        $count = $this->tareaModel
+            ->where('idusuario', session()->get('idusuario'))
+            ->where('estado', 'Pendiente')
+            ->where('fecha_vencimiento <=', date('Y-m-d H:i:s', strtotime('+2 hours')))
+            ->where('fecha_vencimiento >', date('Y-m-d H:i:s'))
+            ->countAllResults();
+
+        return $this->response->setJSON(['count' => $count]);
     }
 }

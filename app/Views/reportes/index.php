@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/header') ?>
+<?= $this->extend('Layouts/base') ?>
 
 <?= $this->section('content') ?>
 
@@ -262,14 +262,75 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
     </div>
 </div>
 
-<!-- Cargar Chart.js y tu JS externo -->
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-<script src="<?= base_url('js/reportes.js') ?>"></script>
+<script>
+// Funciones básicas para reportes
+function imprimirReporte() {
+    window.print();
+}
+
+function exportarExcel() {
+    alert('Función de exportación en desarrollo');
+}
+
+// Cambio de período
+document.getElementById('periodoSelect').addEventListener('change', function() {
+    const rangoFechas = document.getElementById('rangoFechas');
+    if (this.value === 'personalizado') {
+        rangoFechas.style.display = 'inline-flex';
+    } else {
+        rangoFechas.style.display = 'none';
+    }
+});
+
+// Gráficos básicos (datos de ejemplo)
+$(document).ready(function() {
+    // Gráfico de Etapas
+    if (document.getElementById('chartEtapas')) {
+        const ctxEtapas = document.getElementById('chartEtapas').getContext('2d');
+        new Chart(ctxEtapas, {
+            type: 'doughnut',
+            data: {
+                labels: ['Contacto Inicial', 'Calificado', 'Propuesta', 'Negociación', 'Cerrado'],
+                datasets: [{
+                    data: [30, 25, 20, 15, 10],
+                    backgroundColor: ['#007bff', '#28a745', '#ffc107', '#fd7e14', '#dc3545']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+    
+    // Gráfico de Orígenes
+    if (document.getElementById('chartOrigenes')) {
+        const ctxOrigenes = document.getElementById('chartOrigenes').getContext('2d');
+        new Chart(ctxOrigenes, {
+            type: 'bar',
+            data: {
+                labels: ['Facebook', 'Google Ads', 'Referidos', 'Web', 'Llamadas'],
+                datasets: [{
+                    label: 'Leads',
+                    data: [45, 35, 25, 20, 15],
+                    backgroundColor: '#007bff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+});
+</script>
 
 <style>
 @media print {
@@ -277,6 +338,4 @@
     .card { page-break-inside: avoid; }
 }
 </style>
-
-<?= $this->endsection() ?>
-<?= $this->include('Layouts/footer') ?>
+<?= $this->endSection() ?>

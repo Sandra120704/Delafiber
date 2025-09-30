@@ -1,9 +1,18 @@
 <?php
 namespace App\Controllers;
-use CodeIgniter\Controller;
 
-class Dashboard extends Controller
+class Dashboard extends BaseController
 {
+    public function index()
+    {
+        // Verifica si el usuario está autenticado
+        if (!session()->get('isLoggedIn')) {
+            return redirect()->to('auth/login');
+        }
+        // ...prepara datos si es necesario...
+        return view('dashboard/index');
+    }
+
     public function perfil()
     {
         // Devuelve datos de perfil (simulado)

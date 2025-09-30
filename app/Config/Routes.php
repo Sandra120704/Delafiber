@@ -58,6 +58,7 @@ $routes->group('campanias', ['filter' => 'auth'], function($routes) {
     $routes->post('update/(:num)', 'Campanias::update/$1');
     $routes->get('delete/(:num)', 'Campanias::delete/$1');
     $routes->get('view/(:num)', 'Campanias::view/$1');
+    $routes->get('toggleEstado/(:num)', 'Campanias::toggleEstado/$1');
 });
 
 // === PERSONAS/CONTACTOS ===
@@ -71,13 +72,20 @@ $routes->group('personas', ['filter' => 'auth'], function($routes) {
     $routes->get('buscardni', 'PersonaController::buscardni'); // ← asegúrate que esta línea exista
 });
 
-// === TAREAS ===
+// === TAREAS (MEJORADAS) ===
 $routes->group('tareas', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'Tareas::index');
+    $routes->post('crear', 'Tareas::crear');
+    $routes->get('editar/(:num)', 'Tareas::editar/$1');
+    $routes->post('editar/(:num)', 'Tareas::actualizar/$1');
+    $routes->post('completar/(:num)', 'Tareas::completar/$1');
+    $routes->post('reprogramar', 'Tareas::reprogramar');
+    $routes->post('completarMultiples', 'Tareas::completarMultiples');
+    $routes->post('eliminarMultiples', 'Tareas::eliminarMultiples');
+    $routes->get('detalle/(:num)', 'Tareas::detalle/$1');
+    $routes->get('verificarProximasVencer', 'Tareas::verificarProximasVencer');
     $routes->get('pendientes', 'Tareas::pendientes');
     $routes->get('vencidas', 'Tareas::vencidas');
-    $routes->post('completar/(:num)', 'Tareas::completar/$1');
-    $routes->post('create', 'Tareas::create');
 });
 
 // === REPORTES ===
@@ -112,3 +120,9 @@ $routes->group('usuarios', function($routes) {
 
 // === NOTIFICACIONES ===
 $routes->get('notificaciones', 'Dashboard::notificaciones', ['filter' => 'auth']);
+
+// Rutas principales
+$routes->get('dashboard', 'Dashboard::index');
+$routes->get('campanias', 'Campanias::index');
+$routes->get('tareas', 'Tareas::index');
+// Agrega las rutas que falten...

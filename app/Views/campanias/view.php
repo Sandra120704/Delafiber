@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/main') ?>
+<?= $this->extend('Layouts/base') ?>
 
 <?= $this->section('content') ?>
 
@@ -15,7 +15,7 @@
                     <i class="icon-pencil"></i> Editar
                 </a>
                 <button class="btn btn-<?= ($campania['estado'] ?? 'Inactiva') == 'Activa' ? 'danger' : 'success' ?>" 
-                        onclick="toggleEstado(<?= $campania['idcampania'] ?>)">
+                        onclick="toggleEstado(<?= $campania['idcampania'] ?? 0 ?>)">
                     <?= ($campania['estado'] ?? 'Inactiva') == 'Activa' ? 'Desactivar' : 'Activar' ?>
                 </button>
             </div>
@@ -42,11 +42,23 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <p><strong>Fecha Inicio:</strong><br>
-                                <?= date('d/m/Y', strtotime($campania['fecha_inicio'])) ?></p>
+                                <?php
+                                $fechaInicio = $campania['fecha_inicio'] ?? null;
+                                echo ($fechaInicio && strtotime($fechaInicio)) 
+                                    ? date('d/m/Y', strtotime($fechaInicio)) 
+                                    : 'Sin definir';
+                                ?>
+                                </p>
                             </div>
                             <div class="col-md-6">
                                 <p><strong>Fecha Fin:</strong><br>
-                                <?= $campania['fecha_fin'] ? date('d/m/Y', strtotime($campania['fecha_fin'])) : 'Sin definir' ?></p>
+                                <?php
+                                $fechaFin = $campania['fecha_fin'] ?? null;
+                                echo ($fechaFin && strtotime($fechaFin)) 
+                                    ? date('d/m/Y', strtotime($fechaFin)) 
+                                    : 'Sin definir';
+                                ?>
+                                </p>
                             </div>
                         </div>
 
@@ -123,14 +135,19 @@
                         <h5 class="mb-0">Leads Recientes</h5>
                     </div>
                     <div class="card-body">
-                        <?php if (!empty($leads_recientes)): ?>
+                        <?php if (!empty($leads_recientes) && is_array($leads_recientes)): ?>
                         <div class="list-group">
                             <?php foreach ($leads_recientes as $lead): ?>
-                            <a href="<?= base_url('leads/view/' . $lead['idlead']) ?>" 
+                            <a href="<?= base_url('leads/view/' . ($lead['idlead'] ?? '')) ?>" 
                                class="list-group-item list-group-item-action">
                                 <div class="d-flex w-100 justify-content-between">
                                     <strong><?= esc($lead['cliente'] ?? $lead['nombre'] ?? 'Sin nombre') ?></strong>
-                                    <small><?= date('d/m', strtotime($lead['fecha_registro'] ?? $lead['created_at'])) ?></small>
+                                    <small>
+                                        <?php 
+                                        $fecha = $lead['fecha_registro'] ?? $lead['created_at'] ?? null;
+                                        echo $fecha && strtotime($fecha) ? date('d/m', strtotime($fecha)) : 'S/F';
+                                        ?>
+                                    </small>
                                 </div>
                                 <small class="text-muted"><?= esc($lead['telefono'] ?? 'Sin teléfono') ?></small>
                                 <br>
@@ -196,7 +213,12 @@
 
                         <div class="text-center">
                             <small class="text-muted">Campaña creada el</small><br>
-                            <strong><?= date('d/m/Y', strtotime($campania['created_at'] ?? $campania['fecha_inicio'])) ?></strong>
+                            <?php
+                            $fechaCreacion = $campania['created_at'] ?? $campania['fecha_inicio'] ?? null;
+                            echo ($fechaCreacion && strtotime($fechaCreacion)) 
+                                ? '<strong>' . date('d/m/Y', strtotime($fechaCreacion)) . '</strong>' 
+                                : '<strong>Sin definir</strong>';
+                            ?>
                         </div>
                     </div>
                 </div>
@@ -214,3 +236,4 @@ function toggleEstado(id) {
 </script>
 
 <?= $this->endSection() ?>
+<?= $this->include('Layouts/footer') ?>
