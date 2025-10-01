@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/header') ?>
+<?= $this->extend('layouts/base') ?>
 
 <?= $this->section('content') ?>
 <link rel="stylesheet" href="<?= base_url('css/personas.css') ?>">

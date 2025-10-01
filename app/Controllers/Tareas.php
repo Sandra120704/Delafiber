@@ -306,4 +306,251 @@ class Tareas extends BaseController
 
         return $this->response->setJSON(['count' => $count]);
     }
+
+    /**
+     * Vista de calendario
+     */
+    public function calendario()
+    {
+        if (!session()->get('logged_in')) {
+            return redirect()->to('/auth/login');
+        }
+
+        $data = [
+            'title' => 'Calendario de Tareas - Delafiber CRM',
+            'leads' => $this->leadModel->findAll()
+        ];
+
+        return view('tareas/calendario', $data);
+    }
+
+    /**
+     * API: Obtener tareas para el calendario (formato FullCalendar)
+     */
+    public function getTareasCalendario()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['error' => 'Acceso no autorizado']);
+        }
+
+        $idusuario = session()->get('user_id');
+        $start = $this->request->getGet('start');
+        $end = $this->request->getGet('end');
+
+        $tareas = $this->tareaModel
+            ->select('tareas.*, CONCAT(p.nombres, " ", p.apellidos) as lead_nombre')
+            ->join('leads l', 'l.idlead = tareas.idlead', 'left')
+            ->join('personas p', 'p.idpersona = l.idpersona', 'left')
+            ->where('tareas.idusuario', $idusuario)
+            ->where('tareas.fecha_vencimiento >=', $start)
+            ->where('tareas.fecha_vencimiento <=', $end)
+            ->findAll();
+
+        // Formatear para FullCalendar
+        $eventos = [];
+        foreach ($tareas as $tarea) {
+            $color = $this->getColorPorEstado($tarea['estado'], $tarea['prioridad']);
+            
+            $eventos[] = [
+                'id' => $tarea['idtarea'],
+                'title' => $tarea['titulo'],
+                'start' => $tarea['fecha_vencimiento'],
+                'backgroundColor' => $color['bg'],
+                'borderColor' => $color['border'],
+                'textColor' => '#fff',
+                'extendedProps' => [
+                    'descripcion' => $tarea['descripcion'],
+                    'tipo_tarea' => $tarea['tipo_tarea'],
+                    'prioridad' => $tarea['prioridad'],
+                    'estado' => $tarea['estado'],
+                    'lead_nombre' => $tarea['lead_nombre'] ?? 'Sin lead',
+                    'idlead' => $tarea['idlead']
+                ]
+            ];
+        }
+
+        return $this->response->setJSON($eventos);
+    }
+
+    /**
+     * API: Crear tarea desde calendario
+     */
+    public function crearTareaCalendario()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Acceso no autorizado']);
+        }
+
+        $data = $this->request->getJSON(true);
+        
+        $tareaData = [
+            'idlead' => $data['idlead'] ?? null,
+            'idusuario' => session()->get('user_id'),
+            'titulo' => $data['titulo'],
+            'descripcion' => $data['descripcion'] ?? '',
+            'tipo_tarea' => $data['tipo_tarea'] ?? 'llamada',
+            'prioridad' => $data['prioridad'] ?? 'media',
+            'fecha_vencimiento' => $data['fecha_vencimiento'],
+            'fecha_inicio' => date('Y-m-d'),
+            'estado' => 'Pendiente'
+        ];
+
+        try {
+            $id = $this->tareaModel->insert($tareaData);
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Tarea creada exitosamente',
+                'idtarea' => $id
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al crear la tarea: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * API: Actualizar fecha de tarea (drag & drop)
+     */
+    public function actualizarFechaTarea()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false]);
+        }
+
+        $data = $this->request->getJSON(true);
+        $idtarea = $data['id'];
+        $nuevaFecha = $data['fecha_vencimiento'];
+
+        $tarea = $this->tareaModel->find($idtarea);
+        
+        if (!$tarea || $tarea['idusuario'] != session()->get('user_id')) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No autorizado'
+            ]);
+        }
+
+        try {
+            $this->tareaModel->update($idtarea, [
+                'fecha_vencimiento' => $nuevaFecha
+            ]);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Fecha actualizada'
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al actualizar'
+            ]);
+        }
+    }
+
+    /**
+     * API: Actualizar tarea completa
+     */
+    public function actualizarTarea()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false]);
+        }
+
+        $data = $this->request->getJSON(true);
+        $idtarea = $data['idtarea'];
+
+        $tarea = $this->tareaModel->find($idtarea);
+        
+        if (!$tarea || $tarea['idusuario'] != session()->get('user_id')) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No autorizado'
+            ]);
+        }
+
+        $updateData = [
+            'titulo' => $data['titulo'],
+            'descripcion' => $data['descripcion'] ?? '',
+            'tipo_tarea' => $data['tipo_tarea'],
+            'prioridad' => $data['prioridad'],
+            'fecha_vencimiento' => $data['fecha_vencimiento'],
+            'estado' => $data['estado']
+        ];
+
+        if (isset($data['idlead'])) {
+            $updateData['idlead'] = $data['idlead'];
+        }
+
+        try {
+            $this->tareaModel->update($idtarea, $updateData);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Tarea actualizada exitosamente'
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al actualizar: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * API: Eliminar tarea
+     */
+    public function eliminarTarea($id)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false]);
+        }
+
+        $tarea = $this->tareaModel->find($id);
+        
+        if (!$tarea || $tarea['idusuario'] != session()->get('user_id')) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No autorizado'
+            ]);
+        }
+
+        try {
+            $this->tareaModel->delete($id);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Tarea eliminada'
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al eliminar'
+            ]);
+        }
+    }
+
+    /**
+     * Helper: Obtener color según estado y prioridad
+     */
+    private function getColorPorEstado($estado, $prioridad)
+    {
+        if ($estado === 'Completada') {
+            return ['bg' => '#28a745', 'border' => '#1e7e34'];
+        }
+
+        switch ($prioridad) {
+            case 'urgente':
+                return ['bg' => '#dc3545', 'border' => '#bd2130'];
+            case 'alta':
+                return ['bg' => '#fd7e14', 'border' => '#e8590c'];
+            case 'media':
+                return ['bg' => '#007bff', 'border' => '#0056b3'];
+            case 'baja':
+                return ['bg' => '#6c757d', 'border' => '#545b62'];
+            default:
+                return ['bg' => '#007bff', 'border' => '#0056b3'];
+        }
+    }
 }

@@ -1,0 +1,243 @@
+<?= $this->extend('layouts/base') ?>
+
+<?= $this->section('content') ?>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="ti-package me-2"></i>Catálogo de Servicios
+                    </h4>
+                    <div>
+                        <a href="<?= base_url('servicios/estadisticas') ?>" class="btn btn-outline-info me-2">
+                            <i class="ti-bar-chart me-1"></i>Estadísticas
+                        </a>
+                        <a href="<?= base_url('servicios/create') ?>" class="btn btn-primary">
+                            <i class="ti-plus me-1"></i>Nuevo Servicio
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <?php if (session()->getFlashdata('success')): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <?= session()->getFlashdata('success') ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (session()->getFlashdata('error')): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <?= session()->getFlashdata('error') ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Filtros -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <select class="form-select" id="filtro-estado">
+                                <option value="">Todos los estados</option>
+                                <option value="activo">Activos</option>
+                                <option value="inactivo">Inactivos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" id="buscar-servicio" placeholder="Buscar servicio...">
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-outline-secondary" onclick="limpiarFiltros()">
+                                <i class="ti-refresh me-1"></i>Limpiar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Grid de servicios -->
+                    <div class="row" id="servicios-grid">
+                        <?php if (empty($servicios)): ?>
+                            <div class="col-12">
+                                <div class="text-center py-5">
+                                    <i class="ti-package" style="font-size: 64px; color: #ccc;"></i>
+                                    <h4 class="mt-3 text-muted">No hay servicios registrados</h4>
+                                    <p class="text-muted">Comience agregando servicios a su catálogo</p>
+                                    <a href="<?= base_url('servicios/create') ?>" class="btn btn-primary">
+                                        <i class="ti-plus me-1"></i>Crear primer servicio
+                                    </a>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($servicios as $servicio): ?>
+                                <div class="col-lg-4 col-md-6 mb-4 servicio-card" 
+                                     data-estado="<?= $servicio['activo'] ? 'activo' : 'inactivo' ?>"
+                                     data-nombre="<?= strtolower(esc($servicio['nombre'])) ?>">
+                                    <div class="card h-100 <?= $servicio['activo'] ? '' : 'opacity-75' ?>">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <h6 class="card-title mb-0 fw-bold">
+                                                <?= esc($servicio['nombre']) ?>
+                                            </h6>
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                        type="button" data-bs-toggle="dropdown">
+                                                    <i class="ti-more-alt"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <a class="dropdown-item" href="<?= base_url('servicios/edit/' . $servicio['idservicio']) ?>">
+                                                            <i class="ti-pencil me-2"></i>Editar
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="#" 
+                                                           onclick="toggleEstado(<?= $servicio['idservicio'] ?>, <?= $servicio['activo'] ? 'false' : 'true' ?>)">
+                                                            <i class="ti-power-off me-2"></i>
+                                                            <?= $servicio['activo'] ? 'Desactivar' : 'Activar' ?>
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <!-- Velocidad -->
+                                            <div class="d-flex align-items-center mb-2">
+                                                <i class="ti-dashboard text-primary me-2"></i>
+                                                <span class="fw-bold"><?= esc($servicio['velocidad']) ?></span>
+                                            </div>
+
+                                            <!-- Descripción -->
+                                            <?php if (!empty($servicio['descripcion'])): ?>
+                                                <p class="text-muted small mb-3">
+                                                    <?= esc(substr($servicio['descripcion'], 0, 100)) ?>
+                                                    <?= strlen($servicio['descripcion']) > 100 ? '...' : '' ?>
+                                                </p>
+                                            <?php endif; ?>
+
+                                            <!-- Precios -->
+                                            <div class="row text-center mb-3">
+                                                <div class="col-6">
+                                                    <div class="border-end">
+                                                        <h5 class="text-primary mb-0">
+                                                            S/ <?= number_format($servicio['precio_referencial'], 2) ?>
+                                                        </h5>
+                                                        <small class="text-muted">Mensual</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <h6 class="text-secondary mb-0">
+                                                        S/ <?= number_format($servicio['precio_instalacion'], 2) ?>
+                                                    </h6>
+                                                    <small class="text-muted">Instalación</small>
+                                                </div>
+                                            </div>
+
+                                            <!-- Estadísticas -->
+                                            <div class="row text-center">
+                                                <div class="col-4">
+                                                    <div class="text-center">
+                                                        <h6 class="text-info mb-0"><?= $servicio['total_cotizaciones'] ?? 0 ?></h6>
+                                                        <small class="text-muted">Cotizaciones</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="text-center">
+                                                        <h6 class="text-success mb-0"><?= $servicio['cotizaciones_aceptadas'] ?? 0 ?></h6>
+                                                        <small class="text-muted">Aceptadas</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="text-center">
+                                                        <?php 
+                                                        $conversion = 0;
+                                                        if (($servicio['total_cotizaciones'] ?? 0) > 0) {
+                                                            $conversion = round((($servicio['cotizaciones_aceptadas'] ?? 0) / $servicio['total_cotizaciones']) * 100, 1);
+                                                        }
+                                                        ?>
+                                                        <h6 class="text-warning mb-0"><?= $conversion ?>%</h6>
+                                                        <small class="text-muted">Conversión</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="badge <?= $servicio['activo'] ? 'bg-success' : 'bg-secondary' ?>">
+                                                    <?= $servicio['activo'] ? 'Activo' : 'Inactivo' ?>
+                                                </span>
+                                                <small class="text-muted">
+                                                    Precio promedio: S/ <?= number_format($servicio['precio_promedio_cotizado'] ?? $servicio['precio_referencial'], 2) ?>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Filtros en tiempo real
+document.getElementById('filtro-estado').addEventListener('change', function() {
+    filtrarServicios();
+});
+
+document.getElementById('buscar-servicio').addEventListener('keyup', function() {
+    filtrarServicios();
+});
+
+function filtrarServicios() {
+    const estadoFiltro = document.getElementById('filtro-estado').value.toLowerCase();
+    const nombreFiltro = document.getElementById('buscar-servicio').value.toLowerCase();
+    const tarjetas = document.querySelectorAll('.servicio-card');
+
+    tarjetas.forEach(function(tarjeta) {
+        const estado = tarjeta.dataset.estado;
+        const nombre = tarjeta.dataset.nombre;
+        
+        const mostrarEstado = !estadoFiltro || estado === estadoFiltro;
+        const mostrarNombre = !nombreFiltro || nombre.includes(nombreFiltro);
+        
+        tarjeta.style.display = (mostrarEstado && mostrarNombre) ? '' : 'none';
+    });
+}
+
+function limpiarFiltros() {
+    document.getElementById('filtro-estado').value = '';
+    document.getElementById('buscar-servicio').value = '';
+    filtrarServicios();
+}
+
+// Cambiar estado de servicio
+function toggleEstado(idservicio, activar) {
+    const accion = activar ? 'activar' : 'desactivar';
+    
+    if (!confirm(`¿Está seguro de ${accion} este servicio?`)) {
+        return;
+    }
+
+    fetch(`<?= base_url('servicios/toggleEstado') ?>/${idservicio}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al cambiar el estado del servicio');
+    });
+}
+</script>
+
+<?= $this->endSection() ?>

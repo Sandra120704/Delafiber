@@ -417,4 +417,51 @@ class LeadModel extends Model
         }
         return $builder->get()->getResultArray();
     }
+
+    /**
+     * Obtener leads con detalles completos para exportación
+     */
+    public function getLeadsConDetalles($filtros = [])
+    {
+        $builder = $this->db->table('leads l')
+            ->select('
+                p.dni,
+                CONCAT(p.nombres, " ", p.apellidos) as cliente,
+                p.telefono,
+                p.correo,
+                e.nombre as etapa_actual,
+                o.nombre as origen,
+                CONCAT(pu.nombres, " ", pu.apellidos) as vendedor_asignado,
+                l.fecha_registro,
+                l.estado,
+                c.nombre as campania
+            ')
+            ->join('personas p', 'l.idpersona = p.idpersona')
+            ->join('etapas e', 'l.idetapa = e.idetapa', 'left')
+            ->join('origenes o', 'l.idorigen = o.idorigen', 'left')
+            ->join('usuarios u', 'l.idusuario = u.idusuario', 'left')
+            ->join('personas pu', 'u.idpersona = pu.idpersona', 'left')
+            ->join('campanias c', 'l.idcampania = c.idcampania', 'left');
+
+        // Filtros opcionales
+        if (!empty($filtros['fecha_inicio'])) {
+            $builder->where('l.fecha_registro >=', $filtros['fecha_inicio']);
+        }
+        
+        if (!empty($filtros['fecha_fin'])) {
+            $builder->where('l.fecha_registro <=', $filtros['fecha_fin'] . ' 23:59:59');
+        }
+        
+        if (!empty($filtros['idusuario'])) {
+            $builder->where('l.idusuario', $filtros['idusuario']);
+        }
+        
+        if (!empty($filtros['estado'])) {
+            $builder->where('l.estado', $filtros['estado']);
+        }
+
+        $builder->orderBy('l.fecha_registro', 'DESC');
+        
+        return $builder->get()->getResultArray();
+    }
 }

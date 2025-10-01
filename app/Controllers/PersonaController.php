@@ -25,7 +25,7 @@ class PersonaController extends BaseController
         $currentMethod = $this->request->getUri()->getSegment(2) ?? $this->request->getUri()->getSegment(3);
         
         // Validar sesión solo si NO es un método público
-        if (!in_array($currentMethod, $publicMethods) && !session()->has('idusuario')) {
+        if (!in_array($currentMethod, $publicMethods) && !session()->get('logged_in')) {
             header('Location: ' . base_url('auth/login'));
             exit;
         }
@@ -75,7 +75,7 @@ class PersonaController extends BaseController
             }
         }
 
-        return view('personas/form', $data);
+        return view('personas/crear', $data);
     }
 
     // Guardar persona (crear/actualizar)

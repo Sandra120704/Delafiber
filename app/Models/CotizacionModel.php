@@ -20,8 +20,7 @@ class CotizacionModel extends Model
         'precio_instalacion',
         'vigencia_dias',
         'estado',
-        'observaciones',
-        'created_at'
+        'observaciones'
     ];
 
     // Dates
@@ -37,6 +36,7 @@ class CotizacionModel extends Model
         'precio_cotizado' => 'required|decimal',
         'vigencia_dias' => 'integer'
     ];
+    
     protected $validationMessages = [
         'idlead' => [
             'required' => 'El lead es obligatorio'
@@ -48,12 +48,41 @@ class CotizacionModel extends Model
             'required' => 'El precio es obligatorio'
         ]
     ];
+    
     protected $skipValidation = false;
 
     /**
-     * Obtener cotizaciones de un lead con información del servicio
+     * Obtener cotizaciones completas con filtros
      */
-    public function getCotizacionesByLead($idlead)
+    public function getCotizacionesCompletas($userId = null, $rol = null)
+    {
+        $builder = $this->db->table($this->table . ' c');
+        $builder->select('
+            c.*,
+            s.nombre as servicio_nombre,
+            s.velocidad,
+            CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre,
+            p.telefono as cliente_telefono,
+            l.idlead
+        ');
+        $builder->join('servicios_catalogo s', 'c.idservicio = s.idservicio', 'left');
+        $builder->join('leads l', 'c.idlead = l.idlead', 'left');
+        $builder->join('personas p', 'l.idpersona = p.idpersona', 'left');
+        
+        // Si no es admin, solo mostrar cotizaciones de sus leads
+        if ($rol !== 'admin' && $userId) {
+            $builder->where('l.idusuario', $userId);
+        }
+        
+        $builder->orderBy('c.created_at', 'DESC');
+        
+        return $builder->get()->getResultArray();
+    }
+
+    /**
+     * Obtener cotizaciones por lead
+     */
+    public function getCotizacionesPorLead($idlead)
     {
         return $this->select('cotizaciones.*, servicios_catalogo.nombre as servicio_nombre, 
                              servicios_catalogo.velocidad, servicios_catalogo.descripcion as servicio_descripcion')
@@ -180,43 +209,5 @@ class CotizacionModel extends Model
         ->first();
 
         return $resultado;
-    }
-
-    /**
-     * Obtener servicios más cotizados
-     */
-    public function getServiciosMasCotizados($limit = 5)
-    {
-        return $this->select('
-            servicios_catalogo.nombre,
-            servicios_catalogo.velocidad,
-            COUNT(cotizaciones.idcotizacion) as total_cotizaciones,
-            SUM(CASE WHEN cotizaciones.estado = "aceptada" THEN 1 ELSE 0 END) as aceptadas,
-            AVG(cotizaciones.precio_cotizado) as precio_promedio
-        ')
-        ->join('servicios_catalogo', 'servicios_catalogo.idservicio = cotizaciones.idservicio')
-        ->groupBy('cotizaciones.idservicio')
-        ->orderBy('total_cotizaciones', 'DESC')
-        ->limit($limit)
-        ->findAll();
-    }
-
-    /**
-     * Duplicar cotización (para revisiones)
-     */
-    public function duplicarCotizacion($idcotizacion)
-    {
-        $cotizacion = $this->find($idcotizacion);
-        
-        if (!$cotizacion) {
-            return false;
-        }
-
-        // Remover el ID y actualizar estado
-        unset($cotizacion['idcotizacion']);
-        $cotizacion['estado'] = 'vigente';
-        $cotizacion['created_at'] = date('Y-m-d H:i:s');
-
-        return $this->insert($cotizacion);
     }
 }

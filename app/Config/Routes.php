@@ -14,14 +14,6 @@ $routes->get('auth/login', 'Auth::login');
 $routes->post('auth/login', 'Auth::login'); 
 $routes->get('auth/logout', 'Auth::logout');
 
-$routes->get('personas', 'PersonaController::index');
-$routes->get('personas/crear', 'PersonaController::create');
-$routes->get('personas/editar/(:num)', 'PersonaController::create/$1');
-$routes->post('personas/guardar', 'PersonaController::guardar');
-$routes->get('personas/eliminar/(:num)', 'PersonaController::delete/$1');
-$routes->get('api/personas/buscar', 'PersonaController::buscarAjax');
-$routes->get('personas/buscardni', 'PersonaController::buscardni');
-
 
 // === DASHBOARD ===
 $routes->group('dashboard', ['filter' => 'auth'], function($routes) {
@@ -63,20 +55,31 @@ $routes->group('campanias', ['filter' => 'auth'], function($routes) {
 });
 
 // === PERSONAS/CONTACTOS ===
+$routes->get('api/personas/buscar', 'PersonaController::buscarAjax');
+$routes->get('personas/buscardni', 'PersonaController::buscardni');
+
+// === PERSONAS/CONTACTOS (CON filtro de autenticación) ===
 $routes->group('personas', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'PersonaController::index');
-    $routes->get('create', 'PersonaController::create');
-    $routes->post('create', 'PersonaController::create');
-    $routes->get('edit/(:num)', 'PersonaController::edit/$1');
-    $routes->post('edit/(:num)', 'PersonaController::edit/$1');
-    $routes->get('delete/(:num)', 'PersonaController::delete/$1');
-    $routes->get('buscardni', 'PersonaController::buscardni'); 
+    $routes->get('crear', 'PersonaController::create');
+    $routes->get('editar/(:num)', 'PersonaController::create/$1');
+    $routes->post('guardar', 'PersonaController::guardar');
+    $routes->get('eliminar/(:num)', 'PersonaController::delete/$1');
 });
+
+// API PÚBLICA (fuera del grupo con filtro)
+$routes->get('api/personas/buscar', 'PersonaController::buscarAjax');
 
 // === TAREAS (MEJORADAS) ===
 $routes->group('tareas', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'Tareas::index');
+    $routes->get('calendario', 'Tareas::calendario');
+    $routes->get('getTareasCalendario', 'Tareas::getTareasCalendario');
     $routes->post('crear', 'Tareas::crear');
+    $routes->post('crearTareaCalendario', 'Tareas::crearTareaCalendario');
+    $routes->post('actualizarFechaTarea', 'Tareas::actualizarFechaTarea');
+    $routes->post('actualizarTarea', 'Tareas::actualizarTarea');
+    $routes->delete('eliminarTarea/(:num)', 'Tareas::eliminarTarea/$1');
     $routes->get('editar/(:num)', 'Tareas::editar/$1');
     $routes->post('editar/(:num)', 'Tareas::actualizar/$1');
     $routes->post('completar/(:num)', 'Tareas::completar/$1');
@@ -89,10 +92,34 @@ $routes->group('tareas', ['filter' => 'auth'], function($routes) {
     $routes->get('vencidas', 'Tareas::vencidas');
 });
 
+// === COTIZACIONES ===
+$routes->group('cotizaciones', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'Cotizaciones::index');
+    $routes->get('create', 'Cotizaciones::create');
+    $routes->post('store', 'Cotizaciones::store');
+    $routes->get('show/(:num)', 'Cotizaciones::show/$1');
+    $routes->get('edit/(:num)', 'Cotizaciones::edit/$1');
+    $routes->post('update/(:num)', 'Cotizaciones::update/$1');
+    $routes->post('cambiarEstado/(:num)', 'Cotizaciones::cambiarEstado/$1');
+    $routes->get('pdf/(:num)', 'Cotizaciones::generarPDF/$1');
+    $routes->get('porLead/(:num)', 'Cotizaciones::porLead/$1');
+});
+
+// === SERVICIOS ===
+$routes->group('servicios', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'Servicios::index');
+    $routes->get('create', 'Servicios::create');
+    $routes->post('store', 'Servicios::store');
+    $routes->get('edit/(:num)', 'Servicios::edit/$1');
+    $routes->post('update/(:num)', 'Servicios::update/$1');
+    $routes->post('toggleEstado/(:num)', 'Servicios::toggleEstado/$1');
+    $routes->get('estadisticas', 'Servicios::estadisticas');
+});
+
 // === REPORTES ===
 $routes->group('reportes', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'Reportes::index');
-    $routes->get('exportar', 'Reportes::exportar');
+    $routes->get('exportar-excel', 'Reportes::exportarExcel');
 });
 
 // === PERFIL ===

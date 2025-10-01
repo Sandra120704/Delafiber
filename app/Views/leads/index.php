@@ -145,6 +145,12 @@
                                                class="btn btn-sm btn-warning" title="Editar">
                                                 <i class="ti-pencil"></i>
                                             </a>
+                                            <?php if (in_array($lead['etapa'], ['INTERES', 'COTIZACION', 'NEGOCIACION'])): ?>
+                                                <a href="<?= base_url('cotizaciones/create?lead=' . $lead['idlead']) ?>" 
+                                                   class="btn btn-sm btn-primary" title="Crear Cotización">
+                                                    <i class="ti-receipt"></i>
+                                                </a>
+                                            <?php endif; ?>
                                             <a href="https://wa.me/51<?= esc($lead['telefono']) ?>?text=Hola%20<?= urlencode($lead['nombres'] ?? '') ?>,%20te%20contacto%20desde%20Delafiber" 
                                                target="_blank" class="btn btn-sm btn-success" title="WhatsApp">
                                                 <i class="ti-comment"></i>

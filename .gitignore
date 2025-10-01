@@ -125,42 +125,4 @@ _modules/*
 /results/
 /phpunit*.xml
 
-# CodeIgniter 4 recommended ignores
-
-# System folders
-/vendor/
-/writable/
-/tests/
-/node_modules/
-
-# IDE/editor files
-*.swp
-*.swo
-*.bak
-*.tmp
-*.log
-*.idea/
-*.vscode/
-.DS_Store
-
-# Environment and config
-.env
-.env.*
-*.sqlite
-*.db
-
-# Cache and session
-writable/cache/*
-writable/logs/*
-writable/session/*
-writable/debugbar/*
-
-# Uploads
-writable/uploads/*
-public/uploads/*
-
-# Composer
-composer.lock
-
-# Others
-Thumbs.db
+README1.md
