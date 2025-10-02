@@ -202,6 +202,25 @@ class Perfil extends BaseController
     {
         $actividades = [];
 
+<<<<<<< HEAD
+=======
+        // Seguimientos recientes: usar el método del modelo que ya construye la información correctamente
+        $seguimientos = $this->seguimientoModel->getActividadReciente($idusuario, 5);
+
+        foreach ($seguimientos as $seg) {
+            // getActividadReciente devuelve 'cliente_nombre' y 'modalidad' entre otros campos
+            $clienteNombre = $seg['cliente_nombre'] ?? (trim(($seg['nombres'] ?? '') . ' ' . ($seg['apellidos'] ?? '')) ?: 'Cliente');
+            $modalidad = $seg['modalidad'] ?? 'seguimiento';
+
+            $actividades[] = [
+                'descripcion' => "Seguimiento a {$clienteNombre}: {$modalidad}",
+                'fecha' => $seg['fecha'] ?? ($seg['created_at'] ?? date('Y-m-d H:i:s')),
+                'tipo_badge' => 'info',
+                'icono' => 'icon-activity'
+            ];
+        }
+
+>>>>>>> fb976a401cdac6d63e0a979f04740b975457099a
         // Tareas completadas recientes
         $tareasCompletadas = $this->tareaModel
             ->where('idusuario', $idusuario)

@@ -41,7 +41,7 @@
    O usa Laragon/XAMPP y accede por el navegador.
 
 7. **Accede a la aplicación**
-   - Abre `http://localhost:8080` o la URL configurada.
+   - Abre `http://delafiber.test` o la URL configurada.
 
 ## Notas
 
