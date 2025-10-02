@@ -197,18 +197,16 @@ class Perfil extends BaseController
     }
 
     /**
+     * Obtener actividad reciente del usuario
      */
     private function obtenerActividadReciente($idusuario, $limite = 10)
     {
         $actividades = [];
 
-<<<<<<< HEAD
-=======
-        // Seguimientos recientes: usar el método del modelo que ya construye la información correctamente
+        // Seguimientos recientes
         $seguimientos = $this->seguimientoModel->getActividadReciente($idusuario, 5);
 
         foreach ($seguimientos as $seg) {
-            // getActividadReciente devuelve 'cliente_nombre' y 'modalidad' entre otros campos
             $clienteNombre = $seg['cliente_nombre'] ?? (trim(($seg['nombres'] ?? '') . ' ' . ($seg['apellidos'] ?? '')) ?: 'Cliente');
             $modalidad = $seg['modalidad'] ?? 'seguimiento';
 
@@ -220,7 +218,6 @@ class Perfil extends BaseController
             ];
         }
 
->>>>>>> fb976a401cdac6d63e0a979f04740b975457099a
         // Tareas completadas recientes
         $tareasCompletadas = $this->tareaModel
             ->where('idusuario', $idusuario)
