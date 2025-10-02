@@ -32,19 +32,30 @@
                             <h5 class="mb-0">1. Buscar o Ingresar Datos del Cliente</h5>
                         </div>
                         <div class="card-body">
+                            <?php if (!empty($persona)): ?>
+                            <!-- Persona autocompletada -->
+                            <input type="hidden" name="idpersona" value="<?= $persona['idpersona'] ?>">
+                            <div class="alert alert-success">
+                                <i class="icon-check"></i> <strong>Datos autocompletados</strong> desde el contacto existente.
+                            </div>
+                            <?php endif; ?>
+
                             <div class="form-group">
                                 <label for="dni">DNI del Cliente</label>
                                 <div class="input-group">
                                     <input type="text" class="form-control" id="dni" name="dni" 
-                                           placeholder="Ingrese DNI de 8 dígitos" maxlength="8" required>
+                                           value="<?= !empty($persona) ? esc($persona['dni']) : '' ?>"
+                                           placeholder="Ingrese DNI de 8 dígitos" maxlength="8" required
+                                           <?= !empty($persona) ? 'readonly' : '' ?>>
                                     <div class="input-group-append">
-                                        <button class="btn btn-primary" type="button" id="btnBuscarDni">
+                                        <button class="btn btn-primary" type="button" id="btnBuscarDni"
+                                                <?= !empty($persona) ? 'disabled' : '' ?>>
                                             <i class="icon-search"></i> Buscar
                                         </button>
                                     </div>
                                 </div>
                                 <small class="form-text text-muted">
-                                    Ingrese el DNI y presione buscar para autocompletar los datos
+                                    <?= !empty($persona) ? 'Datos cargados desde contacto existente' : 'Ingrese el DNI y presione buscar para autocompletar los datos' ?>
                                 </small>
                                 <div id="dni-loading" class="text-primary mt-2" style="display:none;">
                                     <i class="icon-refresh rotating"></i> Buscando...
@@ -55,13 +66,15 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="nombres">Nombres *</label>
-                                        <input type="text" class="form-control" id="nombres" name="nombres" required>
+                                        <input type="text" class="form-control" id="nombres" name="nombres" 
+                                               value="<?= !empty($persona) ? esc($persona['nombres']) : '' ?>" required>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="apellidos">Apellidos *</label>
-                                        <input type="text" class="form-control" id="apellidos" name="apellidos" required>
+                                        <input type="text" class="form-control" id="apellidos" name="apellidos" 
+                                               value="<?= !empty($persona) ? esc($persona['apellidos']) : '' ?>" required>
                                     </div>
                                 </div>
                             </div>
@@ -71,13 +84,15 @@
                                     <div class="form-group">
                                         <label for="telefono">Teléfono *</label>
                                         <input type="text" class="form-control" id="telefono" name="telefono" 
+                                               value="<?= !empty($persona) ? esc($persona['telefono']) : '' ?>"
                                                maxlength="9" placeholder="9XXXXXXXX" required>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="correo">Correo Electrónico</label>
-                                        <input type="email" class="form-control" id="correo" name="correo">
+                                        <input type="email" class="form-control" id="correo" name="correo"
+                                               value="<?= !empty($persona) ? esc($persona['correo']) : '' ?>">
                                     </div>
                                 </div>
                             </div>
@@ -88,7 +103,8 @@
                                     <option value="">Seleccione un distrito</option>
                                     <?php if (!empty($distritos) && is_array($distritos)): ?>
                                         <?php foreach ($distritos as $distrito): ?>
-                                            <option value="<?= $distrito['iddistrito'] ?>">
+                                            <option value="<?= $distrito['iddistrito'] ?>"
+                                                    <?= (!empty($persona) && $persona['iddistrito'] == $distrito['iddistrito']) ? 'selected' : '' ?>>
                                                 <?= esc(isset($distrito['nombre']) ? $distrito['nombre'] : '') ?>
                                             </option>
                                         <?php endforeach; ?>
@@ -230,65 +246,108 @@ class PersonaManager {
         btnBuscarDni.addEventListener('click', () => {
             const dni = dniInput.value.trim();
             if (dni.length !== 8) {
-                alert('El DNI debe tener 8 dígitos');
+                Swal.fire('Error', 'El DNI debe tener 8 dígitos', 'error');
                 return;
             }
 
             dniLoading.style.display = 'block';
             btnBuscarDni.disabled = true;
 
-            fetch('<?= base_url('personas/buscardni') ?>?q=' + dni, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => {
-                const contentType = response.headers.get('content-type');
-                if (!response.ok) {
-                    // Si la respuesta es HTML, mostrar el texto recibido
-                    return response.text().then(text => {
-                        dniLoading.style.display = 'none';
-                        btnBuscarDni.disabled = false;
-                        console.error('Respuesta no OK:', text);
-                        alert('Error HTTP: ' + response.status + '\n' + text.substring(0, 500));
-                        throw new Error('Error HTTP: ' + response.status);
-                    });
-                }
-                if (!contentType || !contentType.includes('application/json')) {
-                    // Mostrar el texto recibido para depuración
-                    return response.text().then(text => {
-                        dniLoading.style.display = 'none';
-                        btnBuscarDni.disabled = false;
-                        console.error('Respuesta no es JSON:', text);
-                        alert('La respuesta del servidor no es JSON. Verifica la ruta y el controlador.\n' + text.substring(0, 500));
-                        throw new Error('La respuesta no es JSON. Content-Type: ' + contentType);
-                    });
-                }
-                return response.json();
-            })
+            // Primero verificar si ya existe en la BD
+            fetch('<?= base_url('personas/verificarDni') ?>?dni=' + dni)
+            .then(response => response.json())
             .then(data => {
-                dniLoading.style.display = 'none';
-                btnBuscarDni.disabled = false;
-                if (data.success) {
-                    document.getElementById('nombres').value = data.nombres || '';
-                    document.getElementById('apellidos').value = data.apellidos ||
-                        ((data.apepaterno || '') + ' ' + (data.apematerno || '')).trim();
-                    // No mostrar alert si se encontró
-                    if (!document.getElementById('telefono').value) {
-                        document.getElementById('telefono').focus();
-                    }
-                } else {
-                    alert(data.message || 'No se encontró información para este DNI. Complete manualmente.');
-                    document.getElementById('nombres').focus();
+                if (data.existe) {
+                    dniLoading.style.display = 'none';
+                    btnBuscarDni.disabled = false;
+                    
+                    Swal.fire({
+                        icon: 'warning',
+                        title: '⚠️ Persona Ya Registrada',
+                        html: `
+                            <div class="text-start">
+                                <p><strong>Esta persona ya está en el sistema:</strong></p>
+                                <ul class="list-unstyled">
+                                    <li>👤 <strong>Nombre:</strong> ${data.persona.nombres} ${data.persona.apellidos}</li>
+                                    <li>📞 <strong>Teléfono:</strong> ${data.persona.telefono || 'No registrado'}</li>
+                                    <li>📧 <strong>Correo:</strong> ${data.persona.correo || 'No registrado'}</li>
+                                </ul>
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: 'Usar estos datos',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#3085d6'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Autocompletar con datos existentes
+                            document.getElementById('nombres').value = data.persona.nombres;
+                            document.getElementById('apellidos').value = data.persona.apellidos;
+                            document.getElementById('telefono').value = data.persona.telefono || '';
+                            document.getElementById('correo').value = data.persona.correo || '';
+                            if (data.persona.iddistrito) {
+                                document.getElementById('iddistrito').value = data.persona.iddistrito;
+                            }
+                            
+                            // Agregar campo hidden con idpersona
+                            let hiddenInput = document.getElementById('idpersona_hidden');
+                            if (!hiddenInput) {
+                                hiddenInput = document.createElement('input');
+                                hiddenInput.type = 'hidden';
+                                hiddenInput.name = 'idpersona';
+                                hiddenInput.id = 'idpersona_hidden';
+                                document.getElementById('formLead').appendChild(hiddenInput);
+                            }
+                            hiddenInput.value = data.persona.idpersona;
+                            
+                            Swal.fire({
+                                icon: 'success',
+                                title: '✅ Datos Cargados',
+                                text: 'Ahora completa la información del lead',
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                        }
+                    });
+                    return;
                 }
-            })
-            .catch(error => {
-                dniLoading.style.display = 'none';
-                btnBuscarDni.disabled = false;
-                console.error('Error completo:', error);
-                // El alert ya se muestra arriba, aquí solo loguea
+
+                // Si no existe, buscar en RENIEC
+                fetch('<?= base_url('api/personas/buscar') ?>?dni=' + dni)
+                .then(response => response.json())
+                .then(data => {
+                    dniLoading.style.display = 'none';
+                    btnBuscarDni.disabled = false;
+                    
+                    if (data.success && data.persona) {
+                        document.getElementById('nombres').value = data.persona.nombres || '';
+                        document.getElementById('apellidos').value = data.persona.apellidos || '';
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: '✅ Datos de RENIEC',
+                            text: 'Completa los demás campos',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        
+                        document.getElementById('telefono').focus();
+                    } else {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'DNI no encontrado',
+                            text: 'Puedes registrar manualmente los datos',
+                            confirmButtonText: 'Entendido'
+                        });
+                        document.getElementById('nombres').focus();
+                    }
+                })
+                .catch(error => {
+                    dniLoading.style.display = 'none';
+                    btnBuscarDni.disabled = false;
+                    console.error('Error:', error);
+                    Swal.fire('Error', 'No se pudo conectar al servidor', 'error');
+                });
             });
         });
 
@@ -337,5 +396,9 @@ function activarBotonesConvertirLead() {
 }
 </script>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <?= $this->endSection() ?>
 <?= $this->include('Layouts/footer') ?>

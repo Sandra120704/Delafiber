@@ -57,7 +57,7 @@ class Leads extends BaseController
             'busqueda' => $filtro_busqueda
         ]);
         // Obtener campañas desde el modelo
-        $campaignsModel = new CampaniaModel(); // Usa el modelo correcto
+        $campaignsModel = new CampaniaModel(); 
         $campanias = $campaignsModel->findAll();
 
         $data = [
@@ -72,17 +72,32 @@ class Leads extends BaseController
             'user_name' => session()->get('user_name'),
             'campanias' => $campanias,
         ];
-        return view('leads/index', $data); // leads/index.php debe tener extend('Layouts/header'), section('content'), endSection()
+        return view('leads/index', $data);
     }
       public function create()   
       {
         // Obtén solo los datos relevantes y ordenados
         $distritos = $this->distritoModel->getDistritosDelafiber();
         $origenes = $this->origenModel->getOrigenesActivos();
-        $campanias = $this->campaniaModel->getCampaniasActivas(); // Usa el método filtrado si lo tienes
+        $campanias = $this->campaniaModel->getCampaniasActivas(); 
         $etapas = $this->etapaModel->getEtapasActivas();
-        $modalidades = $this->modalidadModel->getModalidadesActivas(); // Agregar modalidades
+        $modalidades = $this->modalidadModel->getModalidadesActivas(); 
     
+        // Verificar si viene desde conversión de persona
+        $personaId = $this->request->getGet('persona_id');
+        $personaData = null;
+        
+        if ($personaId) {
+            $personaData = $this->personaModel->find($personaId);
+            
+            // Verificar si la persona ya es un lead
+            $leadExistente = $this->leadModel->where('idpersona', $personaId)->first();
+            if ($leadExistente) {
+                return redirect()->to('leads/view/' . $leadExistente['idlead'])
+                    ->with('info', 'Esta persona ya es un lead existente');
+            }
+        }
+
         $data = [
             'title' => 'Nuevo Lead - Delafiber CRM',
             'distritos' => $distritos,
@@ -90,7 +105,8 @@ class Leads extends BaseController
             'campanias' => $campanias,
             'etapas' => $etapas,
             'modalidades' => $modalidades, 
-            'user_name' => session()->get('user_name')
+            'user_name' => session()->get('user_name'),
+            'persona' => $personaData  // Datos de la persona para autocompletar
         ];
     
         return view('leads/create', $data);
@@ -130,18 +146,31 @@ public function store()
         $db = \Config\Database::connect();
         $db->transStart();
         try {
-            $personaData = [
-                'nombres' => $this->request->getPost('nombres'),
-                'apellidos' => $this->request->getPost('apellidos'),
-                'dni' => $this->request->getPost('dni'),
-                'correo' => $this->request->getPost('correo'),
-                'telefono' => $this->request->getPost('telefono'),
-                'direccion' => $this->request->getPost('direccion'),
-                'referencias' => $this->request->getPost('referencias'),
-                'iddistrito' => $this->request->getPost('distrito')
-            ];
-            $personaId = $this->personaModel->insert($personaData);
-            if (!$personaId) throw new \Exception('Error al crear la persona');
+            // Verificar si viene desde conversión de persona existente
+            $personaId = $this->request->getPost('idpersona');
+            
+            if ($personaId) {
+                // Usar persona existente
+                $persona = $this->personaModel->find($personaId);
+                if (!$persona) throw new \Exception('Persona no encontrada');
+                $nombreCompleto = $persona['nombres'] . ' ' . $persona['apellidos'];
+            } else {
+                // Crear nueva persona
+                $personaData = [
+                    'nombres' => $this->request->getPost('nombres'),
+                    'apellidos' => $this->request->getPost('apellidos'),
+                    'dni' => $this->request->getPost('dni'),
+                    'correo' => $this->request->getPost('correo'),
+                    'telefono' => $this->request->getPost('telefono'),
+                    'direccion' => $this->request->getPost('direccion'),
+                    'referencias' => $this->request->getPost('referencias'),
+                    'iddistrito' => $this->request->getPost('distrito')
+                ];
+                $personaId = $this->personaModel->insert($personaData);
+                if (!$personaId) throw new \Exception('Error al crear la persona');
+                $nombreCompleto = $personaData['nombres'] . ' ' . $personaData['apellidos'];
+            }
+            
             $leadData = [
                 'idpersona' => $personaId,
                 'idetapa' => 1, // CAPTACION
@@ -154,7 +183,6 @@ public function store()
             if (!$leadId) throw new \Exception('Error al crear el lead');
             $db->transComplete();
             if ($db->transStatus() === false) throw new \Exception('Error en la transacción');
-            $nombreCompleto = $personaData['nombres'] . ' ' . $personaData['apellidos'];
             return redirect()->to('/leads')
                 ->with('success', "Lead '$nombreCompleto' creado exitosamente");
         } catch (\Exception $e) {
@@ -179,6 +207,8 @@ public function store()
             'lead' => $lead,
             'historial' => $this->leadModel->getHistorialLead($leadId),
             'tareas' => $this->leadModel->getTareasLead($leadId),
+            'etapas' => $this->etapaModel->getEtapasActivas(),
+            'modalidades' => $this->modalidadModel->getModalidadesActivas(),
             'user_name' => session()->get('user_name')
         ];
         return view('leads/view', $data);
@@ -388,6 +418,102 @@ public function store()
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'No se encontró lead con ese DNI'
+            ]);
+        }
+    }
+
+    /**
+     * Agregar seguimiento a un lead
+     */
+    public function agregarSeguimiento()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $data = [
+            'idlead' => $this->request->getPost('idlead'),
+            'idusuario' => session()->get('user_id'),
+            'idmodalidad' => $this->request->getPost('idmodalidad'),
+            'nota' => $this->request->getPost('nota'),
+            'fecha' => date('Y-m-d H:i:s')
+        ];
+
+        try {
+            $db = \Config\Database::connect();
+            $db->table('seguimiento')->insert($data);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Seguimiento agregado'
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al agregar seguimiento'
+            ]);
+        }
+    }
+
+    /**
+     * Crear tarea desde vista de lead
+     */
+    public function crearTarea()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $data = [
+            'idlead' => $this->request->getPost('idlead'),
+            'idusuario' => session()->get('user_id'),
+            'titulo' => $this->request->getPost('titulo'),
+            'descripcion' => $this->request->getPost('descripcion'),
+            'prioridad' => $this->request->getPost('prioridad'),
+            'fecha_vencimiento' => $this->request->getPost('fecha_vencimiento'),
+            'fecha_inicio' => date('Y-m-d'),
+            'estado' => 'Pendiente'
+        ];
+
+        try {
+            $db = \Config\Database::connect();
+            $db->table('tareas')->insert($data);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Tarea creada'
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al crear tarea'
+            ]);
+        }
+    }
+
+    /**
+     * Completar tarea desde vista de lead
+     */
+    public function completarTarea()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $idtarea = $this->request->getPost('idtarea');
+
+        try {
+            $db = \Config\Database::connect();
+            $db->table('tareas')->update(['estado' => 'Completada', 'fecha_completado' => date('Y-m-d H:i:s')], ['idtarea' => $idtarea]);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Tarea completada'
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error'
             ]);
         }
     }

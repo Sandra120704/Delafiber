@@ -1,7 +1,6 @@
-<?= $this->extend('layouts/header') ?>
+<?= $this->extend('layouts/base') ?>
 
 <?= $this->section('content') ?>
-
 <div class="row">
     <div class="col-md-4">
         <!-- Tarjeta de Perfil -->
@@ -9,31 +8,27 @@
             <div class="card-body text-center">
                 <div class="mb-3">
                     <div class="avatar-xl bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width:120px;height:120px;font-size:48px;">
-                        <?= strtoupper(substr($usuario['nombres'], 0, 1) . substr($usuario['apellidos'], 0, 1)) ?>
+                        <?= strtoupper(substr($usuario['nombrePersona'] ?? 'U', 0, 1)) ?>
                     </div>
                 </div>
-                <h4><?= esc($usuario['nombres'] . ' ' . $usuario['apellidos']) ?></h4>
-                <p class="text-muted"><?= esc($usuario['correo']) ?></p>
-                <span class="badge badge-<?= $usuario['activo'] ? 'success' : 'secondary' ?>">
-                    <?= $usuario['activo'] ? 'Activo' : 'Inactivo' ?>
+                <h4><?= esc($usuario['nombrePersona'] ?? 'Usuario') ?></h4>
+                <p class="text-muted"><?= esc($usuario['correo'] ?? 'Sin correo') ?></p>
+                <span class="badge badge-<?= ($usuario['estadoActivo'] ?? 1) ? 'success' : 'secondary' ?>">
+                    <?= ($usuario['estadoActivo'] ?? 1) ? 'Activo' : 'Inactivo' ?>
                 </span>
 
                 <hr>
 
                 <div class="text-left">
                     <p class="mb-2">
-                        <strong>Usuario:</strong> <?= esc($usuario['usuario']) ?>
+                        <strong>Usuario:</strong> <?= esc($usuario['nombreUsuario'] ?? $usuario['usuario'] ?? 'N/A') ?>
                     </p>
                     <p class="mb-2">
                         <strong>Rol:</strong> 
-                        <span class="badge badge-info"><?= esc($usuario['rol']) ?></span>
+                        <span class="badge badge-info"><?= esc($usuario['nombreRol'] ?? 'Sin rol') ?></span>
                     </p>
                     <p class="mb-2">
-                        <strong>Teléfono:</strong> <?= esc($usuario['telefono']) ?>
-                    </p>
-                    <p class="mb-2">
-                        <strong>Fecha Registro:</strong><br>
-                        <small><?= date('d/m/Y H:i', strtotime($usuario['fecha_registro'])) ?></small>
+                        <strong>Teléfono:</strong> <?= esc($usuario['telefono'] ?? 'Sin teléfono') ?>
                     </p>
                 </div>
             </div>

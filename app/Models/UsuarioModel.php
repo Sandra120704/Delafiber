@@ -17,28 +17,31 @@ class UsuarioModel extends Model
     public function validarCredenciales($usuario, $password)
     {
         $builder = $this->db->table('usuarios u')
-            ->join('personas p', 'u.idpersona = p.idpersona')
-            ->join('roles r', 'u.idrol = r.idrol')
+            ->join('personas p', 'u.idpersona = p.idpersona', 'left')
+            ->join('roles r', 'u.idrol = r.idrol', 'left')
             ->select('u.idusuario, u.usuario, u.clave, u.activo,
-                     CONCAT(p.nombres, " ", p.apellidos) as nombre_completo,
-                     p.correo, r.nombre as rol')
+                     COALESCE(CONCAT(p.nombres, " ", p.apellidos), u.usuario) as nombre_completo,
+                     p.correo, 
+                     COALESCE(r.nombre, "Usuario") as rol')
             ->where('u.usuario', $usuario)
             ->where('u.activo', 1);
         
         $user = $builder->get()->getRowArray();
         
         if (!$user) {
+            log_message('error', 'Usuario no encontrado o inactivo: ' . $usuario);
             return false;
         }
         
-        // Verificar contraseña
-        // NOTA: En producción deberías usar password_verify() con hashes
-        if ($user['clave'] === $password) {
+        // Verificar contraseña (comparación directa - en producción usar password_verify)
+        if ($user['clave'] === $password || password_verify($password, $user['clave'])) {
             // No devolver la contraseña en el resultado
             unset($user['clave']);
+            log_message('info', 'Login exitoso para usuario: ' . $usuario);
             return $user;
         }
         
+        log_message('warning', 'Contraseña incorrecta para usuario: ' . $usuario);
         return false;
     }
     
@@ -163,11 +166,17 @@ class UsuarioModel extends Model
                     ->join('personas', 'usuarios.idpersona = personas.idpersona', 'left')
                     ->findAll();
     }
-     public function obtenerUsuarioCompleto($idUsuario)
+    
+    /**
+     * Obtener usuario completo por ID
+     */
+    public function obtenerUsuarioCompleto($idUsuario)
     {
         // Usar Query Builder del modelo directamente
         return $this->select('
-            usuarios.*,                                              
+            usuarios.*,
+            personas.nombres,
+            personas.apellidos,
             CONCAT(personas.nombres, " ", personas.apellidos) as nombrePersona,  
             personas.correo, personas.telefono, personas.direccion,                
             roles.nombre as nombreRol                             

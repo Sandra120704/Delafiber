@@ -32,21 +32,25 @@ class PersonaModel extends Model
         'apellidos' => 'required|min_length[2]|max_length[100]',
         'dni' => 'permit_empty|exact_length[8]|numeric|is_unique[personas.dni,idpersona,{idpersona}]',
         'correo' => 'permit_empty|valid_email|max_length[150]',
-        'telefono' => 'permit_empty|exact_length[9]|numeric'
+        'telefono' => 'permit_empty|exact_length[9]|regex_match[/^[0-9]{9}$/]',
+        'iddistrito' => 'permit_empty|numeric'
     ];
     
     protected $validationMessages = [
         'dni' => [
             'required' => 'El DNI es obligatorio',
-            'exact_length' => 'El DNI debe tener 8 dígitos',
+            'exact_length' => 'El DNI debe tener exactamente 8 dígitos',
+            'numeric' => 'El DNI solo debe contener números',
             'is_unique' => 'Este DNI ya está registrado'
         ],
         'nombres' => [
             'required' => 'Los nombres son obligatorios',
+            'min_length' => 'Los nombres deben tener al menos 2 caracteres',
             'max_length' => 'Los nombres no pueden exceder 100 caracteres'
         ],
         'apellidos' => [
-            'required' => 'Los apellidos son obligatorios', 
+            'required' => 'Los apellidos son obligatorios',
+            'min_length' => 'Los apellidos deben tener al menos 2 caracteres', 
             'max_length' => 'Los apellidos no pueden exceder 100 caracteres'
         ],
         'correo' => [
@@ -55,7 +59,12 @@ class PersonaModel extends Model
         ],
         'telefono' => [
             'required' => 'El teléfono es obligatorio',
-            'max_length' => 'El teléfono no puede exceder 20 caracteres'
+            'exact_length' => 'El teléfono debe tener exactamente 9 dígitos',
+            'regex_match' => 'El teléfono solo debe contener números'
+        ],
+        'iddistrito' => [
+            'required' => 'Debe seleccionar un distrito',
+            'numeric' => 'El distrito seleccionado no es válido'
         ]
     ];
     

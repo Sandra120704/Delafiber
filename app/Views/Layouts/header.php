@@ -183,6 +183,10 @@
             </a>
           </li>
 
+          <li class="nav-item nav-category">
+            <span class="nav-link">VENTAS</span>
+          </li>
+
           <!-- Leads -->
           <li class="nav-item <?= (strpos(uri_string(), 'leads') !== false) ? 'active' : '' ?>">
             <a class="nav-link" data-bs-toggle="collapse" data-bs-target="#leads-menu" role="button"
@@ -252,12 +256,37 @@
             </div>
           </li>
 
+          <li class="nav-item nav-category">
+            <span class="nav-link">ANÁLISIS</span>
+          </li>
+
           <!-- Reportes -->
           <li class="nav-item <?= (strpos(uri_string(), 'reportes') !== false) ? 'active' : '' ?>">
             <a class="nav-link" href="<?= base_url('reportes') ?>">
               <i class="ti-bar-chart menu-icon"></i>
               <span class="menu-title">Reportes</span>
             </a>
+          </li>
+
+          <!-- Mapa -->
+          <li class="nav-item <?= (strpos(uri_string(), 'mapa') !== false) ? 'active' : '' ?>">
+            <a class="nav-link" href="<?= base_url('mapa') ?>">
+              <i class="ti-location-pin menu-icon"></i>
+              <span class="menu-title">Mapa</span>
+            </a>
+          </li>
+
+          <!-- WhatsApp (Próximamente) -->
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="Swal.fire('Próximamente', 'Módulo de WhatsApp en desarrollo', 'info'); return false;">
+              <i class="ti-comments menu-icon text-success"></i>
+              <span class="menu-title">WhatsApp</span>
+              <span class="badge badge-warning badge-pill ms-auto">Pronto</span>
+            </a>
+          </li>
+
+          <li class="nav-item nav-category">
+            <span class="nav-link">GESTIÓN</span>
           </li>
 
           <!-- Contactos -->

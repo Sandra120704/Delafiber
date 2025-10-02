@@ -46,17 +46,18 @@ $routes->group('campanias', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'Campanias::index');
     $routes->get('create', 'Campanias::create');
     $routes->post('store', 'Campanias::store');
-    $routes->get('edit/(:num)', 'Campanias::edit/$1'); // <-- esta es la ruta para editar
+    $routes->get('edit/(:num)', 'Campanias::edit/$1'); 
     $routes->post('update/(:num)', 'Campanias::update/$1');
     $routes->get('delete/(:num)', 'Campanias::delete/$1');
     $routes->get('view/(:num)', 'Campanias::view/$1');
     $routes->get('toggleEstado/(:num)', 'Campanias::toggleEstado/$1');
-    $routes->get('show/(:num)', 'Campanias::show/$1');
 });
 
 // === PERSONAS/CONTACTOS ===
 $routes->get('api/personas/buscar', 'PersonaController::buscarAjax');
 $routes->get('personas/buscardni', 'PersonaController::buscardni');
+$routes->get('personas/verificarDni', 'PersonaController::verificarDni');
+$routes->post('personas/verificarDni', 'PersonaController::verificarDni');
 
 // === PERSONAS/CONTACTOS (CON filtro de autenticación) ===
 $routes->group('personas', ['filter' => 'auth'], function($routes) {
@@ -64,13 +65,11 @@ $routes->group('personas', ['filter' => 'auth'], function($routes) {
     $routes->get('crear', 'PersonaController::create');
     $routes->get('editar/(:num)', 'PersonaController::create/$1');
     $routes->post('guardar', 'PersonaController::guardar');
-    $routes->get('eliminar/(:num)', 'PersonaController::delete/$1');
+    $routes->post('eliminar/(:num)', 'PersonaController::delete/$1');
 });
 
 // API PÚBLICA (fuera del grupo con filtro)
 $routes->get('api/personas/buscar', 'PersonaController::buscarAjax');
-
-// === TAREAS (MEJORADAS) ===
 $routes->group('tareas', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'Tareas::index');
     $routes->get('calendario', 'Tareas::calendario');
@@ -120,6 +119,15 @@ $routes->group('servicios', ['filter' => 'auth'], function($routes) {
 $routes->group('reportes', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'Reportes::index');
     $routes->get('exportar-excel', 'Reportes::exportarExcel');
+});
+
+// === MAPA ===
+$routes->group('mapa', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'Mapa::index');
+    $routes->get('getLeadsParaMapa', 'Mapa::getLeadsParaMapa');
+    $routes->get('getEstadisticasPorZona', 'Mapa::getEstadisticasPorZona');
+    $routes->get('getCampaniasPorZona', 'Mapa::getCampaniasPorZona');
+    $routes->get('getZonasCobertura', 'Mapa::getZonasCobertura');
 });
 
 // === PERFIL ===

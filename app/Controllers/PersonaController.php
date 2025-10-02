@@ -21,7 +21,7 @@ class PersonaController extends BaseController
         parent::initController($request, $response, $logger);
 
         // Métodos públicos que no requieren autenticación
-        $publicMethods = ['buscardni', 'buscarAjax', 'test'];
+        $publicMethods = ['buscardni', 'buscarAjax', 'test', 'verificarDni'];
         $currentMethod = $this->request->getUri()->getSegment(2) ?? $this->request->getUri()->getSegment(3);
         
         // Validar sesión solo si NO es un método público
@@ -78,6 +78,52 @@ class PersonaController extends BaseController
         return view('personas/crear', $data);
     }
 
+    // Verificar si DNI ya existe (AJAX)
+    public function verificarDni()
+    {
+        $dni = $this->request->getPost('dni') ?? $this->request->getGet('dni');
+        $idpersona = $this->request->getPost('idpersona') ?? $this->request->getGet('idpersona');
+        
+        if (empty($dni) || strlen($dni) != 8) {
+            return $this->response->setJSON([
+                'success' => false,
+                'existe' => false,
+                'message' => 'DNI inválido'
+            ]);
+        }
+
+        $builder = $this->personaModel->where('dni', $dni);
+        
+        // Si es edición, excluir el registro actual
+        if ($idpersona) {
+            $builder->where('idpersona !=', $idpersona);
+        }
+        
+        $persona = $builder->first();
+        
+        if ($persona) {
+            return $this->response->setJSON([
+                'success' => true,
+                'existe' => true,
+                'persona' => [
+                    'idpersona' => $persona['idpersona'],
+                    'nombres' => $persona['nombres'],
+                    'apellidos' => $persona['apellidos'],
+                    'telefono' => $persona['telefono'],
+                    'correo' => $persona['correo'],
+                    'dni' => $persona['dni']
+                ],
+                'message' => 'El DNI ya está registrado'
+            ]);
+        }
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'existe' => false,
+            'message' => 'DNI disponible'
+        ]);
+    }
+
     // Guardar persona (crear/actualizar)
     public function guardar()
     {
@@ -97,8 +143,25 @@ class PersonaController extends BaseController
                             ->with('errors', $validation->getErrors());
         }
 
+        $dni = $this->request->getPost('dni');
+        $id = $this->request->getPost('idpersona');
+        
+        // Verificar DNI duplicado
+        $builder = $this->personaModel->where('dni', $dni);
+        if ($id) {
+            $builder->where('idpersona !=', $id);
+        }
+        $existente = $builder->first();
+        
+        if ($existente) {
+            return redirect()->back()
+                            ->withInput()
+                            ->with('error', 'El DNI ' . $dni . ' ya está registrado a nombre de ' . 
+                                   $existente['nombres'] . ' ' . $existente['apellidos']);
+        }
+
         $data = [
-            'dni' => $this->request->getPost('dni'),
+            'dni' => $dni,
             'apellidos' => $this->request->getPost('apellidos'),
             'nombres' => $this->request->getPost('nombres'),
             'telefono' => $this->request->getPost('telefono'),
@@ -107,8 +170,6 @@ class PersonaController extends BaseController
             'iddistrito' => $this->request->getPost('iddistrito'),
             'referencias' => $this->request->getPost('referencias')
         ];
-
-        $id = $this->request->getPost('idpersona');
 
         try {
             if ($id) {
@@ -223,7 +284,7 @@ class PersonaController extends BaseController
         }
     }
 
-    // Búsqueda AJAX de personas por DNI
+    // Búsqueda AJAX de personas por DNI (para formularios)
     public function buscarAjax()
     {
         $dni = $this->request->getGet('dni') ?? $this->request->getGet('q') ?? '';
@@ -237,28 +298,78 @@ class PersonaController extends BaseController
         }
 
         try {
+            // Buscar en base de datos local
             $persona = $this->personaModel->where('dni', $dni)->first();
             if ($persona) {
-                $apellidos = isset($persona['apellidos']) ? explode(' ', trim($persona['apellidos']), 2) : ['', ''];
                 return $this->response->setJSON([
                     'success' => true,
                     'registrado' => true,
-                    'DNI' => $persona['dni'],
-                    'nombres' => $persona['nombres'] ?? '',
-                    'apepaterno' => $apellidos[0] ?? '',
-                    'apematerno' => $apellidos[1] ?? '',
+                    'persona' => [
+                        'dni' => $persona['dni'],
+                        'nombres' => $persona['nombres'] ?? '',
+                        'apellidos' => $persona['apellidos'] ?? '',
+                        'telefono' => $persona['telefono'] ?? '',
+                        'correo' => $persona['correo'] ?? '',
+                        'direccion' => $persona['direccion'] ?? '',
+                        'iddistrito' => $persona['iddistrito'] ?? ''
+                    ],
                     'message' => 'Persona encontrada en la base de datos local'
                 ]);
             }
+
+            // Si no está en BD local, buscar en RENIEC
+            $api_token = env('API_DECOLECTA_TOKEN');
+            
+            if ($api_token) {
+                $api_endpoint = "https://api.decolecta.com/v1/reniec/dni?numero=" . $dni;
+                
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $api_endpoint);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . $api_token,
+                ]);
+                
+                $api_response = curl_exec($ch);
+                $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+
+                if ($api_response !== false && $http_code === 200) {
+                    $decoded_response = json_decode($api_response, true);
+                    
+                    if (isset($decoded_response['first_name'])) {
+                        $apellidos = trim(($decoded_response['first_last_name'] ?? '') . ' ' . ($decoded_response['second_last_name'] ?? ''));
+                        return $this->response->setJSON([
+                            'success' => true,
+                            'registrado' => false,
+                            'persona' => [
+                                'dni' => $dni,
+                                'nombres' => $decoded_response['first_name'] ?? '',
+                                'apellidos' => $apellidos,
+                                'telefono' => '',
+                                'correo' => '',
+                                'direccion' => '',
+                                'iddistrito' => ''
+                            ],
+                            'message' => 'Datos obtenidos de RENIEC'
+                        ]);
+                    }
+                }
+            }
+
+            // No encontrado
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'No se encontró persona con ese DNI'
+                'message' => 'DNI no encontrado en RENIEC ni en base de datos local'
             ]);
+            
         } catch (\Exception $e) {
             log_message('error', 'Error en buscarAjax: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Error al buscar'
+                'message' => 'Error al buscar: ' . $e->getMessage()
             ]);
         }
     }

@@ -36,17 +36,26 @@ class Tareas extends BaseController
         ];
 
         try {
-            // Intentar obtener tareas básicas
-            $pendientes = $this->tareaModel
-                ->where('idusuario', $idusuario)
-                ->where('estado', 'Pendiente')
-                ->findAll();
+            // Obtener todas las tareas
+            $data['pendientes'] = $this->getTareasPendientes($idusuario);
+            $data['hoy'] = $this->getTareasHoy($idusuario);
+            $data['vencidas'] = $this->getTareasVencidas($idusuario);
+            $data['completadas'] = $this->getTareasCompletadas($idusuario);
+            $data['tareas_pendientes_count'] = count($data['pendientes']);
             
-            $data['pendientes'] = $pendientes;
-            $data['tareas_pendientes_count'] = count($pendientes);
-            
-            // Obtener leads básicos
-            $leads = $this->leadModel->findAll(20);
+            // Obtener leads con datos de personas
+            $db = \Config\Database::connect();
+            $leads = $db->query("
+                SELECT 
+                    l.idlead,
+                    CONCAT(p.nombres, ' ', p.apellidos) as cliente,
+                    p.telefono,
+                    l.estado
+                FROM leads l
+                INNER JOIN personas p ON l.idpersona = p.idpersona
+                ORDER BY l.fecha_registro DESC
+                LIMIT 50
+            ")->getResultArray();
             $data['leads'] = $leads;
             
         } catch (\Exception $e) {
@@ -149,7 +158,7 @@ class Tareas extends BaseController
 
         $data = [
             'idlead' => $this->request->getPost('idlead') ?: null,
-            'idusuario' => session()->get('idusuario'),
+            'idusuario' => session()->get('user_id'),
             'titulo' => $this->request->getPost('titulo'),
             'descripcion' => $this->request->getPost('descripcion'),
             'tipo_tarea' => $this->request->getPost('tipo_tarea'),
@@ -179,7 +188,7 @@ class Tareas extends BaseController
 
         $tarea = $this->tareaModel->find($id);
         
-        if (!$tarea || $tarea['idusuario'] != session()->get('idusuario')) {
+        if (!$tarea || $tarea['idusuario'] != session()->get('user_id')) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'No autorizado'
@@ -231,7 +240,7 @@ class Tareas extends BaseController
         $json = $this->request->getJSON(true);
         $tarea = $this->tareaModel->find($json['idtarea']);
         
-        if (!$tarea || $tarea['idusuario'] != session()->get('idusuario')) {
+        if (!$tarea || $tarea['idusuario'] != session()->get('user_id')) {
             return $this->response->setJSON(['success' => false]);
         }
 
@@ -250,7 +259,7 @@ class Tareas extends BaseController
         
         foreach ($ids as $id) {
             $tarea = $this->tareaModel->find($id);
-            if ($tarea && $tarea['idusuario'] == session()->get('idusuario')) {
+            if ($tarea && $tarea['idusuario'] == session()->get('user_id')) {
                 $this->tareaModel->update($id, [
                     'estado' => 'Completada',
                     'fecha_completado' => date('Y-m-d H:i:s')
@@ -269,7 +278,7 @@ class Tareas extends BaseController
         
         foreach ($ids as $id) {
             $tarea = $this->tareaModel->find($id);
-            if ($tarea && $tarea['idusuario'] == session()->get('idusuario')) {
+            if ($tarea && $tarea['idusuario'] == session()->get('user_id')) {
                 $this->tareaModel->delete($id);
             }
         }
@@ -298,7 +307,7 @@ class Tareas extends BaseController
         if (!$this->request->isAJAX()) return redirect()->back();
 
         $count = $this->tareaModel
-            ->where('idusuario', session()->get('idusuario'))
+            ->where('idusuario', session()->get('user_id'))
             ->where('estado', 'Pendiente')
             ->where('fecha_vencimiento <=', date('Y-m-d H:i:s', strtotime('+2 hours')))
             ->where('fecha_vencimiento >', date('Y-m-d H:i:s'))
@@ -316,9 +325,23 @@ class Tareas extends BaseController
             return redirect()->to('/auth/login');
         }
 
+        // Obtener leads con datos de personas
+        $db = \Config\Database::connect();
+        $leads = $db->query("
+            SELECT 
+                l.idlead,
+                CONCAT(p.nombres, ' ', p.apellidos) as cliente,
+                p.telefono,
+                l.estado
+            FROM leads l
+            INNER JOIN personas p ON l.idpersona = p.idpersona
+            ORDER BY l.fecha_registro DESC
+            LIMIT 100
+        ")->getResultArray();
+
         $data = [
             'title' => 'Calendario de Tareas - Delafiber CRM',
-            'leads' => $this->leadModel->findAll()
+            'leads' => $leads
         ];
 
         return view('tareas/calendario', $data);

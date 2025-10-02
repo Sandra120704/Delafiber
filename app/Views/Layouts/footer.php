@@ -24,20 +24,19 @@
   <!-- plugins:js -->
   <script src="<?= base_url('assets/js/vendor.bundle.base.js') ?>"></script>
   <script src="<?= base_url('assets/chart.js/Chart.min.js') ?>"></script>
-  <script src="<?= base_url('assets/datatables/js/jquery.dataTables.min.js') ?>"></script>
-  <script src="<?= base_url('assets/datatables/js/dataTables.bootstrap4.min.js') ?>"></script>
+  <script src="<?= base_url('assets/datatables.net/jquery.dataTables.js') ?>"></script>
+  <script src="<?= base_url('assets/datatables.net-bs4/dataTables.bootstrap4.js') ?>"></script>
 
   <!-- inject:js -->
-  <script src="<?= base_url('assets/js/off-canvas.js') ?>"></script>
-  <script src="<?= base_url('assets/js/hoverable-collapse.js') ?>"></script>
-  <script src="<?= base_url('assets/js/template.js') ?>"></script>
-  <script src="<?= base_url('assets/js/settings.js') ?>"></script>
-  <script src="<?= base_url('assets/js/todolist.js') ?>"></script>
+  <script src="<?= base_url('js/off-canvas.js') ?>"></script>
+  <script src="<?= base_url('js/hoverable-collapse.js') ?>"></script>
+  <script src="<?= base_url('js/template.js') ?>"></script>
+  <script src="<?= base_url('js/settings.js') ?>"></script>
+  <script src="<?= base_url('js/todolist.js') ?>"></script>
 
   <!-- Custom js for this page-->
-
-  <script src="<?= base_url('assets/js/dashboard.js') ?>"></script>
-  <script src="<?= base_url('assets/js/Chart.roundedBarCharts.js') ?>"></script>
+  <script src="<?= base_url('js/dashboard.js') ?>"></script>
+  <script src="<?= base_url('js/Chart.roundedBarCharts.js') ?>"></script>
 
   <!-- Script para funcionalidad del menú -->
   <script>

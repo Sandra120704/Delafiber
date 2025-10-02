@@ -1,7 +1,6 @@
-<?= $header ?>
+<?= $this->extend('layouts/base') ?>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
+<?= $this->section('content') ?>
 
 <div class="content-wrapper">
     <!-- Header de la página -->
@@ -189,7 +188,6 @@
                     <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#modalUsuario">
                         <i class="bx bx-plus"></i> Crear primer usuario
                     </button>
-                </div>
             <?php endif; ?>
         </div>
     </div>
@@ -197,72 +195,145 @@
 
 <!-- Modal para crear/editar usuario -->
 <div class="modal fade" id="modalUsuario" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <form id="formUsuario">
-                <div class="modal-header">
-                    <h5 class="modal-title">Nuevo Usuario</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">👤 Nuevo Usuario</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="idusuario" name="idusuario">
+                    <input type="hidden" id="idpersona" name="idpersona">
                     
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Usuario/Username</label>
-                                <input type="text" class="form-control" name="usuario" required>
-                                <small class="text-muted">Será usado para iniciar sesión</small>
+                    <!-- Tabs para organizar el formulario -->
+                    <ul class="nav nav-tabs mb-3" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#tabDatosPersona">
+                                📋 Datos de Persona
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#tabDatosUsuario">
+                                🔐 Datos de Usuario
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- TAB 1: DATOS DE PERSONA -->
+                        <div class="tab-pane fade show active" id="tabDatosPersona">
+                            <div class="alert alert-info">
+                                <i class="bx bx-info-circle"></i> Primero registra los datos personales. Puedes buscar por DNI usando la API RENIEC.
+                            </div>
+
+                            <!-- Búsqueda por DNI -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">DNI *</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="dni" name="dni" maxlength="8" pattern="[0-9]{8}" required>
+                                        <button class="btn btn-primary" type="button" id="buscar-dni">
+                                            <i class="bx bx-search"></i> Buscar
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Ingresa el DNI y presiona Buscar</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Teléfono *</label>
+                                    <input type="text" class="form-control" id="telefono" name="telefono" maxlength="9" pattern="[0-9]{9}" required>
+                                </div>
+                            </div>
+
+                            <!-- Nombres y Apellidos -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Nombres *</label>
+                                    <input type="text" class="form-control" id="nombres" name="nombres" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Apellidos *</label>
+                                    <input type="text" class="form-control" id="apellidos" name="apellidos" required>
+                                </div>
+                            </div>
+
+                            <!-- Correo y Distrito -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Correo Electrónico</label>
+                                    <input type="email" class="form-control" id="correo" name="correo">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Distrito</label>
+                                    <select class="form-select" id="iddistrito" name="iddistrito">
+                                        <option value="">Seleccionar distrito</option>
+                                        <option value="1">Chincha Alta</option>
+                                        <option value="2">Sunampe</option>
+                                        <option value="3">Grocio Prado</option>
+                                        <option value="4">Pueblo Nuevo</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Dirección y Referencias -->
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <label class="form-label">Dirección</label>
+                                    <input type="text" class="form-control" id="direccion" name="direccion" placeholder="Ej: Av. Los Incas 123">
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <label class="form-label">Referencias</label>
+                                    <textarea class="form-control" id="referencias" name="referencias" rows="2" placeholder="Ej: Frente al parque, casa de dos pisos"></textarea>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Contraseña</label>
-                                <input type="password" class="form-control" name="clave">
-                                <small class="text-muted">Déjalo vacío para mantener la actual (solo edición)</small>
+
+                        <!-- TAB 2: DATOS DE USUARIO -->
+                        <div class="tab-pane fade" id="tabDatosUsuario">
+                            <div class="alert alert-warning">
+                                <i class="bx bx-lock"></i> Configura las credenciales de acceso al sistema.
                             </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Persona Asociada</label>
-                                <select class="form-select" name="idpersona">
-                                    <option value="">Seleccionar persona</option>
-                                    <?php if (!empty($personas)): ?>
-                                        <?php foreach ($personas as $persona): ?>
-                                            <option value="<?= $persona['idpersona'] ?>">
-                                                <?= esc($persona['nombres'] . ' ' . $persona['apellidos']) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </select>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Usuario/Username *</label>
+                                    <input type="text" class="form-control" name="usuario" id="usuario" required>
+                                    <small class="text-muted">Será usado para iniciar sesión</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Contraseña *</label>
+                                    <input type="password" class="form-control" name="clave" id="clave" required>
+                                    <small class="text-muted">Mínimo 6 caracteres</small>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Rol</label>
-                                <select class="form-select" name="idrol" required>
-                                    <option value="">Seleccionar rol</option>
-                                    <?php if (!empty($roles)): ?>
-                                        <?php foreach ($roles as $rol): ?>
-                                            <option value="<?= $rol['idrol'] ?>">
-                                                <?= esc($rol['nombre']) ?> - <?= esc($rol['descripcion']) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </select>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Rol *</label>
+                                    <select class="form-select" name="idrol" id="idrol" required>
+                                        <option value="">Seleccionar rol</option>
+                                        <?php if (!empty($roles)): ?>
+                                            <?php foreach ($roles as $rol): ?>
+                                                <option value="<?= $rol['idrol'] ?>">
+                                                    <?= esc($rol['nombre']) ?> - <?= esc($rol['descripcion']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Estado</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" name="activo" id="activoSwitch" checked>
+                                        <label class="form-check-label" for="activoSwitch">
+                                            Usuario activo
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="activo" id="activoSwitch" checked>
-                            <label class="form-check-label" for="activoSwitch">
-                                Usuario activo
-                            </label>
                         </div>
                     </div>
                 </div>
@@ -294,11 +365,11 @@
     const base_url = "<?= rtrim(base_url(), '/') ?>";
 </script>
 
-<script type="module" src="<?= base_url('js/usuariosJS/usuario.js') ?>"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<?= $this->endSection() ?>
 
-<?= $footer ?>
+<?= $this->section('scripts') ?>
+<script src="<?= base_url('js/usuariosJS/usuario.js') ?>"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<?= $this->endSection() ?>
 
 

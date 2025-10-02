@@ -1,6 +1,7 @@
-<?= $this->extend('layouts/base') ?>
+<?= $this->extend('Layouts/base') ?>
 
 <?= $this->section('content') ?>
+
 <link rel="stylesheet" href="<?= base_url('css/personas.css') ?>">
 <style>
   /* Estilos adicionales para mantener tu diseño original */
@@ -43,6 +44,14 @@
         <i class="ti-plus me-1"></i> Crear persona
       </a>
     </div>
+
+    <!-- Contador de registros -->
+    <?php if (!empty($personas)): ?>
+    <div class="records-counter">
+      <i class="ti-user"></i>
+      Mostrando <strong><?= count($personas) ?></strong> persona<?= count($personas) != 1 ? 's' : '' ?> registrada<?= count($personas) != 1 ? 's' : '' ?>
+    </div>
+    <?php endif; ?>
 
     <!-- Formulario de búsqueda -->
     <form class="mb-4" method="get" action="<?= base_url('personas') ?>">
@@ -128,8 +137,9 @@
                   <button type="button"
                           class="btn btn-sm btn-success btn-convertir-lead"
                           data-id="<?= $p['idpersona'] ?>"
-                          title="Convertir en Lead">
-                    <i class="ti-arrow-right"></i> Lead
+                          data-nombre="<?= esc($p['nombres'] . ' ' . $p['apellidos']) ?>"
+                          title="Convertir a Lead">
+                    <i class="ti-arrow-right"></i> Convertir a Lead
                   </button>
                 </div>
               </td>
@@ -225,15 +235,19 @@
   document.querySelectorAll('.btn-convertir-lead').forEach(button => {
     button.addEventListener('click', function() {
       const id = this.getAttribute('data-id');
+      const nombre = this.getAttribute('data-nombre');
 
       Swal.fire({
-        title: 'Convertir a Lead',
-        text: '¿Deseas convertir este contacto en un Lead?',
+        title: '¿Convertir a Lead?',
+        html: `
+          <p>Vas a convertir a <strong>${nombre}</strong> en un Lead.</p>
+          <p class="text-muted small">Los datos personales se autocompletarán y solo necesitarás agregar la información comercial del lead.</p>
+        `,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#28a745',
         cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Sí, convertir',
+        confirmButtonText: '<i class="ti-check"></i> Sí, convertir',
         cancelButtonText: 'Cancelar'
       }).then((result) => {
         if (result.isConfirmed) {

@@ -23,18 +23,23 @@ class Perfil extends BaseController
     }
 
     /**
-     * Mostrar perfil del usuario
+     * Mostrar Perfil del usuario
      */
     public function index()
     {
-        $idusuario = session()->get('idusuario');
+        $idusuario = session()->get('idusuario') ?: session()->get('user_id');
         
-        // Obtener información del usuario
-        $usuario = $this->usuarioModel->find($idusuario);
+        if (!$idusuario) {
+            return redirect()->to('auth/login')
+                ->with('error', 'Sesión inválida');
+        }
+        
+        // Obtener información del usuario con datos de persona
+        $usuario = $this->usuarioModel->obtenerUsuarioCompleto($idusuario);
         
         if (!$usuario) {
             return redirect()->to('auth/login')
-                ->with('error', 'Sesión inválida');
+                ->with('error', 'Usuario no encontrado');
         }
 
         // Calcular estadísticas personales
@@ -192,29 +197,10 @@ class Perfil extends BaseController
     }
 
     /**
-     * Obtener actividad reciente del usuario
      */
     private function obtenerActividadReciente($idusuario, $limite = 10)
     {
         $actividades = [];
-
-        // Seguimientos recientes
-        $seguimientos = $this->seguimientoModel
-            ->select('seguimientos.*, leads.nombres, leads.apellidos, "seguimiento" as tipo_actividad')
-            ->join('leads', 'leads.idlead = seguimientos.idlead')
-            ->where('seguimientos.idusuario', $idusuario)
-            ->orderBy('seguimientos.fecha', 'DESC')
-            ->limit(5)
-            ->findAll();
-
-        foreach ($seguimientos as $seg) {
-            $actividades[] = [
-                'descripcion' => "Seguimiento a {$seg['nombres']} {$seg['apellidos']}: {$seg['tipo']}",
-                'fecha' => $seg['fecha'],
-                'tipo_badge' => 'info',
-                'icono' => 'icon-activity'
-            ];
-        }
 
         // Tareas completadas recientes
         $tareasCompletadas = $this->tareaModel
@@ -239,15 +225,15 @@ class Perfil extends BaseController
             ->select('leads.*, personas.nombres, personas.apellidos')
             ->join('personas', 'personas.idpersona = leads.idpersona')
             ->where('leads.idusuario', $idusuario)
-            ->where('leads.fecha_registro >=', date('Y-m-d H:i:s', strtotime('-7 days')))
-            ->orderBy('leads.fecha_registro', 'DESC')
-            ->limit(3)
+            ->where('leads.fecha_creacion >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+            ->orderBy('leads.fecha_creacion', 'DESC')
+            ->limit(5)
             ->findAll();
 
         foreach ($leadsCreados as $lead) {
             $actividades[] = [
                 'descripcion' => "Nuevo lead registrado: {$lead['nombres']} {$lead['apellidos']}",
-                'fecha' => $lead['fecha_registro'],
+                'fecha' => $lead['fecha_creacion'],
                 'tipo_badge' => 'primary',
                 'icono' => 'icon-user-plus'
             ];

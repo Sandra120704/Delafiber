@@ -1,6 +1,19 @@
-<?= $this->extend('layouts/header') ?>
+<?= $this->extend('layouts/base') ?>
 
 <?= $this->section('content') ?>
+
+<?php
+// Inicializa variables para evitar error 500
+$lead = $lead ?? [];
+$error = $error ?? null;
+$seguimientos = $seguimientos ?? [];
+$tareas = $tareas ?? [];
+$campania = $campania ?? [];
+$persona = $persona ?? [];
+$etapas = $etapas ?? [];
+$modalidades = $modalidades ?? [];
+$historial = $historial ?? [];
+?>
 
 <div class="row">
     <div class="col-12">
@@ -32,13 +45,17 @@
                 <div class="card mb-4">
                     <div class="card-body">
                         <div class="d-flex align-items-center mb-3">
+                            <?php 
+                            $nombreCompleto = ($lead['nombres'] ?? '') . ' ' . ($lead['apellidos'] ?? '');
+                            $iniciales = strtoupper(substr($lead['nombres'] ?? 'L', 0, 1) . substr($lead['apellidos'] ?? 'L', 0, 1));
+                            ?>
                             <div class="avatar-lg bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mr-3" style="width:80px;height:80px;">
-                                <h2 class="mb-0"><?= strtoupper(substr($lead['cliente'], 0, 2)) ?></h2>
+                                <h2 class="mb-0"><?= $iniciales ?></h2>
                             </div>
                             <div>
-                                <h3 class="mb-1"><?= esc($lead['cliente']) ?></h3>
-                                <p class="text-muted mb-0">DNI: <?= esc($lead['dni']) ?></p>
-                                <span class="badge badge-<?= $lead['estado'] == 'Convertido' ? 'success' : ($lead['estado'] == 'Descartado' ? 'danger' : 'info') ?>">
+                                <h3 class="mb-1"><?= esc($nombreCompleto) ?></h3>
+                                <p class="text-muted mb-0">DNI: <?= esc($lead['dni'] ?? 'Sin DNI') ?></p>
+                                <span class="badge badge-<?= ($lead['estado'] ?? '') == 'Convertido' ? 'success' : (($lead['estado'] ?? '') == 'Descartado' ? 'danger' : 'info') ?>">
                                     <?= $lead['estado'] ?? 'Activo' ?>
                                 </span>
                             </div>
@@ -64,7 +81,7 @@
                             </div>
                             <div class="col-md-6">
                                 <p><strong><i class="icon-map mr-2"></i>Distrito:</strong><br>
-                                <?= esc($lead['distrito'] ?? 'No registrado') ?></p>
+                                <?= esc($lead['distrito_nombre'] ?? 'No registrado') ?></p>
                             </div>
                         </div>
 
@@ -84,23 +101,23 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="text-muted">Etapa Actual</label>
-                                <h6><?= esc($lead['etapa_actual']) ?></h6>
+                                <h6><?= esc($lead['etapa_nombre'] ?? 'Sin etapa') ?></h6>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="text-muted">Origen</label>
-                                <h6><?= esc($lead['origen']) ?></h6>
+                                <h6><?= esc($lead['origen_nombre'] ?? 'Sin origen') ?></h6>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="text-muted">Campaña</label>
-                                <h6><?= esc($lead['campania'] ?? 'Sin campaña') ?></h6>
+                                <h6><?= esc($lead['campania_nombre'] ?? 'Sin campaña') ?></h6>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="text-muted">Vendedor Asignado</label>
-                                <h6><?= esc($lead['vendedor_asignado']) ?></h6>
+                                <h6><?= esc(session()->get('user_name') ?? 'Sin asignar') ?></h6>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="text-muted">Fecha de Registro</label>
-                                <h6><?= date('d/m/Y H:i', strtotime($lead['fecha_registro'])) ?></h6>
+                                <h6><?= isset($lead['created_at']) ? date('d/m/Y H:i', strtotime($lead['created_at'])) : 'No disponible' ?></h6>
                             </div>
                         </div>
                     </div>
@@ -158,9 +175,9 @@
                                         <?php foreach ($historial as $h): ?>
                                         <tr>
                                             <td><?= date('d/m/Y H:i', strtotime($h['fecha'])) ?></td>
-                                            <td><?= esc($h['usuario_nombre']) ?></td>
-                                            <td><span class="badge badge-secondary"><?= esc($h['accion']) ?></span></td>
-                                            <td><?= esc($h['descripcion']) ?></td>
+                                            <td><?= esc($h['usuario_nombre'] ?? 'Sistema') ?></td>
+                                            <td><span class="badge badge-secondary"><?= esc($h['accion'] ?? 'Seguimiento') ?></span></td>
+                                            <td><?= esc($h['descripcion'] ?? $h['nota'] ?? 'Sin descripción') ?></td>
                                         </tr>
                                         <?php endforeach; ?>
                                     </tbody>

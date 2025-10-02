@@ -2,6 +2,16 @@
 
 <?= $this->section('content') ?>
 
+<?php
+// Inicializa variables para evitar error 500
+$pendientes = $pendientes ?? [];
+$hoy = $hoy ?? [];
+$vencidas = $vencidas ?? [];
+$completadas = $completadas ?? [];
+$leads = $leads ?? [];
+$error = $error ?? null;
+?>
+
 <?php if (isset($error)): ?>
     <div class="alert alert-danger">
         <?= esc($error) ?>
@@ -508,7 +518,7 @@
                                     <?php if (!empty($leads)): ?>
                                         <?php foreach ($leads as $lead): ?>
                                             <option value="<?= $lead['idlead'] ?>">
-                                                <?= esc($lead['nombres'] . ' ' . $lead['apellidos']) ?>
+                                                <?= esc($lead['cliente'] ?? 'Lead #' . $lead['idlead']) ?>
                                             </option>
                                         <?php endforeach; ?>
                                     <?php endif; ?>

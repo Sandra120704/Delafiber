@@ -23,9 +23,7 @@ class TareaModel extends Model
         'notas_resultado'
     ];
     
-    protected $useTimestamps = true;
-    protected $createdField = 'created_at';
-    protected $updatedField = 'updated_at';
+    protected $useTimestamps = false;
     
     /**
      * Obtener tareas con información completa

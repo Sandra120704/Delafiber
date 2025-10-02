@@ -19,7 +19,6 @@ class UsuarioController extends BaseController
         $this->usuarioModel = new UsuarioModel();
         $this->personaModel = new PersonaModel();
         $this->rolesModel = new RolesModel();
-        $this->db           = Database::connect();
     }
 
     public function index()
@@ -28,8 +27,7 @@ class UsuarioController extends BaseController
             $usuarios = $this->usuarioModel->getUsuariosConDetalle();
             
             $data = [
-                'header' => view('layouts/header'),
-                'footer' => view('layouts/footer'),
+                'title' => 'Gestión de Usuarios - Delafiber CRM',
                 'usuarios' => $usuarios,
                 'personas' => $this->personaModel->findAll(),
                 'roles' => $this->rolesModel->findAll()
@@ -39,7 +37,7 @@ class UsuarioController extends BaseController
             
         } catch (\Exception $e) {
             echo "Error: " . $e->getMessage();
-            echo "<br>Probando query básica:";
+            echo "<br>Probando query básica: ";
             
             $db = Database::connect();
             $query = $db->query("SELECT idusuario, usuario FROM usuarios LIMIT 3");
