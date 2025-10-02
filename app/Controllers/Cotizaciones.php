@@ -104,7 +104,7 @@ class Cotizaciones extends BaseController
         if ($this->cotizacionModel->insert($data)) {
             // Mover lead a etapa COTIZACION si no está ya ahí
             $lead = $this->leadModel->find($data['idlead']);
-            if ($lead && $lead->idetapa < 4) { 
+            if ($lead && isset($lead->idetapa) && $lead->idetapa < 4) { 
                 $this->leadModel->update($data['idlead'], ['idetapa' => 4]);
             }
 

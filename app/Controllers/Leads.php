@@ -153,7 +153,7 @@ public function store()
                 // Usar persona existente
                 $persona = $this->personaModel->find($personaId);
                 if (!$persona) throw new \Exception('Persona no encontrada');
-                $nombreCompleto = $persona['nombres'] . ' ' . $persona['apellidos'];
+                $nombreCompleto = $persona->nombres . ' ' . $persona->apellidos;
             } else {
                 // Crear nueva persona
                 $personaData = [
@@ -292,7 +292,7 @@ public function store()
         try {
             // Obtener etapa anterior
             $lead = $this->leadModel->find($idlead);
-            $etapaAnterior = $lead['idetapa'];
+            $etapaAnterior = $lead->idetapa;
             
             // Actualizar etapa
             $this->leadModel->update($idlead, ['idetapa' => $idetapa]);
