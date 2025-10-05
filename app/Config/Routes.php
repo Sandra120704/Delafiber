@@ -91,6 +91,48 @@ $routes->group('tareas', ['filter' => 'auth'], function($routes) {
     $routes->get('vencidas', 'Tareas::vencidas');
 });
 
+// === CRM CAMPAÑAS CON TURF.JS ===
+$routes->group('crm-campanas', ['filter' => 'auth'], function($routes) {
+    // Dashboard
+    $routes->get('dashboard', 'CrmCampanas::dashboard');
+    
+    // Mapa
+    $routes->get('mapa-campanas/(:num)', 'CrmCampanas::mapaCampanas/$1');
+    $routes->get('mapa-campanas', 'CrmCampanas::mapaCampanas');
+    
+    // Zonas
+    $routes->get('zonas-index', 'CrmCampanas::dashboard');
+    $routes->get('zonas-index/(:num)', 'CrmCampanas::zonasIndex/$1');
+    $routes->get('zona-detalle/(:num)', 'CrmCampanas::zonaDetalle/$1');
+    $routes->post('guardar-zona', 'CrmCampanas::guardarZona');
+    $routes->post('actualizar-zona/(:num)', 'CrmCampanas::actualizarZona/$1');
+    $routes->post('eliminar-zona/(:num)', 'CrmCampanas::eliminarZona/$1');
+    
+    // Prospectos
+    $routes->get('prospectos-sin-zona', 'CrmCampanas::prospectosSinZona');
+    $routes->post('asignar-prospecto-zona', 'CrmCampanas::asignarProspectoZona');
+    $routes->post('actualizar-coordenadas', 'CrmCampanas::actualizarCoordenadas');
+    
+    // Interacciones
+    $routes->post('registrar-interaccion', 'CrmCampanas::registrarInteraccion');
+    $routes->get('interacciones-prospecto/(:num)', 'CrmCampanas::interaccionesProspecto/$1');
+    
+    // Asignaciones
+    $routes->post('asignar-zona-agente', 'CrmCampanas::asignarZonaAgente');
+    $routes->post('desasignar-zona-agente/(:num)', 'CrmCampanas::desasignarZonaAgente/$1');
+    $routes->get('mis-zonas', 'CrmCampanas::misZonas');
+    
+    // API para JavaScript
+    $routes->get('api-zonas-mapa/(:num)', 'CrmCampanas::apiZonasMapa/$1');
+    $routes->get('api-zonas-mapa', 'CrmCampanas::apiZonasMapa');
+    $routes->get('api-prospectos-zona/(:num)', 'CrmCampanas::apiProspectosZona/$1');
+    $routes->post('api-validar-punto-zona', 'CrmCampanas::apiValidarPuntoEnZona');
+    
+    // Reportes
+    $routes->get('reporte-zonas/(:num)', 'CrmCampanas::reporteZonas/$1');
+    $routes->get('exportar-campana/(:num)/(:alpha)', 'CrmCampanas::exportarCampana/$1/$2');
+});
+
 // === COTIZACIONES ===
 $routes->group('cotizaciones', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'Cotizaciones::index');
@@ -121,13 +163,16 @@ $routes->group('reportes', ['filter' => 'auth'], function($routes) {
     $routes->get('exportar-excel', 'Reportes::exportarExcel');
 });
 
-// === MAPA ===
+// === MAPA (REDIRIGIDO A CRM CAMPAÑAS) ===
 $routes->group('mapa', ['filter' => 'auth'], function($routes) {
-    $routes->get('/', 'Mapa::index');
-    $routes->get('getLeadsParaMapa', 'Mapa::getLeadsParaMapa');
-    $routes->get('getEstadisticasPorZona', 'Mapa::getEstadisticasPorZona');
-    $routes->get('getCampaniasPorZona', 'Mapa::getCampaniasPorZona');
-    $routes->get('getZonasCobertura', 'Mapa::getZonasCobertura');
+    // Redirigir al nuevo sistema CRM con Turf.js
+    $routes->get('/', 'CrmCampanas::mapaCampanas');
+    
+    // Mantener compatibilidad con APIs antiguas (migradas a CRM)
+    $routes->get('getLeadsParaMapa', 'CrmCampanas::prospectosSinZona');
+    $routes->get('getEstadisticasPorZona', 'CrmCampanas::apiZonasMapa');
+    $routes->get('getCampaniasPorZona', 'CrmCampanas::apiZonasMapa');
+    $routes->get('getZonasCobertura', 'CrmCampanas::apiZonasMapa');
 });
 
 // === PERFIL ===

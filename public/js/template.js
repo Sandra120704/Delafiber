@@ -13,14 +13,21 @@
     var current = location.pathname.split("/").slice(-1)[0].replace(/^\/|\/$/g, '');
 
     function addActiveClass(element) {
-      // Verificar que element exista y tenga el método attr
-      if (!element || typeof element.attr !== 'function') {
+      // Verificar que element exista y sea un objeto jQuery válido
+      if (!element || !element.length || typeof element.attr !== 'function') {
         return;
       }
       
       // Obtener href de forma segura
       var href = element.attr('href');
-      if (!href || typeof href !== 'string') {
+      
+      // Validar que href exista, sea string y no esté vacío
+      if (!href || typeof href !== 'string' || href.trim() === '') {
+        return;
+      }
+      
+      // Validar que current sea string
+      if (typeof current !== 'string') {
         return;
       }
       

@@ -268,11 +268,11 @@
             </a>
           </li>
 
-          <!-- Mapa -->
-          <li class="nav-item <?= (strpos(uri_string(), 'mapa') !== false) ? 'active' : '' ?>">
+          <!-- Mapa CRM con Turf.js -->
+          <li class="nav-item <?= (strpos(uri_string(), 'mapa') !== false || strpos(uri_string(), 'crm-campanas') !== false) ? 'active' : '' ?>">
             <a class="nav-link" href="<?= base_url('mapa') ?>">
-              <i class="ti-location-pin menu-icon"></i>
-              <span class="menu-title">Mapa</span>
+              <i class="ti-map-alt menu-icon"></i>
+              <span class="menu-title">Mapa Territorial</span>
             </a>
           </li>
 

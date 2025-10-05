@@ -17,26 +17,6 @@ $error = $error ?? null;
         <?= esc($error) ?>
     </div>
 <?php endif; ?>
-<?php if (!isset($pendientes) || !is_array($pendientes)): ?>
-    <div class="alert alert-danger">
-        Error: La variable $pendientes no está definida o no es un array.
-    </div>
-<?php endif; ?>
-<?php if (!isset($hoy) || !is_array($hoy)): ?>
-    <div class="alert alert-danger">
-        Error: La variable $hoy no está definida o no es un array.
-    </div>
-<?php endif; ?>
-<?php if (!isset($vencidas) || !is_array($vencidas)): ?>
-    <div class="alert alert-danger">
-        Error: La variable $vencidas no está definida o no es un array.
-    </div>
-<?php endif; ?>
-<?php if (!isset($completadas) || !is_array($completadas)): ?>
-    <div class="alert alert-danger">
-        Error: La variable $completadas no está definida o no es un array.
-    </div>
-<?php endif; ?>
 
 <div class="row">
     <!-- Header con estadísticas -->

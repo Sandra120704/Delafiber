@@ -10,17 +10,19 @@ class CampaniaModel extends Model
     protected $allowedFields = [
         'nombre', 
         'descripcion', 
+        'tipo_campana',
         'fecha_inicio', 
         'fecha_fin', 
-        'presupuesto', 
-        'estado', 
-        'responsable',
-        'tipo',
-        'activo'
+        'presupuesto',
+        'objetivo_contactos',
+        'canal',
+        'estado',
+        'activo',
+        'responsable'
     ];
     protected $useTimestamps = true;
-    protected $createdField = 'created_at';
-    protected $updatedField = 'updated_at';
+    protected $createdField = 'fecha_creacion';
+    protected $updatedField = 'fecha_creacion'; // La tabla no tiene updated_at
     
     /**
      * Obtener campañas con información del responsable
