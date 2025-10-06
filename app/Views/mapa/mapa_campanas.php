@@ -14,6 +14,9 @@
                 <button type="button" class="btn btn-outline-primary" id="btnCargarProspectos">
                     <i class="icon-users"></i> Cargar Prospectos
                 </button>
+                <button type="button" class="btn btn-outline-warning" id="btnGeocodificar">
+                    <i class="icon-map-pin"></i> Geocodificar
+                </button>
                 <button type="button" class="btn btn-outline-success" id="btnAsignarAutomatico">
                     <i class="icon-zap"></i> Asignar Automático
                 </button>

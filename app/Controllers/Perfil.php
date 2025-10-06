@@ -68,9 +68,8 @@ class Perfil extends BaseController
         // Validación
         $validation = \Config\Services::validation();
         $validation->setRules([
-            'nombres' => 'required|min_length[2]|max_length[100]',
-            'apellidos' => 'required|min_length[2]|max_length[100]',
-            'correo' => 'required|valid_email',
+            'nombre' => 'required|min_length[2]|max_length[100]',
+            'email' => 'required|valid_email',
             'telefono' => 'permit_empty|max_length[20]'
         ]);
 
@@ -80,13 +79,13 @@ class Perfil extends BaseController
                 ->with('error', 'Por favor corrige los errores en el formulario');
         }
 
-        // Verificar si el correo ya existe en otro usuario
-        $correoExiste = $this->usuarioModel
-            ->where('correo', $this->request->getPost('correo'))
+        // Verificar si el email ya existe en otro usuario
+        $emailExiste = $this->usuarioModel
+            ->where('email', $this->request->getPost('email'))
             ->where('idusuario !=', $idusuario)
             ->first();
 
-        if ($correoExiste) {
+        if ($emailExiste) {
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'El correo electrónico ya está en uso');
@@ -94,9 +93,8 @@ class Perfil extends BaseController
 
         // Preparar datos
         $data = [
-            'nombres' => $this->request->getPost('nombres'),
-            'apellidos' => $this->request->getPost('apellidos'),
-            'correo' => $this->request->getPost('correo'),
+            'nombre' => $this->request->getPost('nombre'),
+            'email' => $this->request->getPost('email'),
             'telefono' => $this->request->getPost('telefono')
         ];
 
@@ -104,8 +102,8 @@ class Perfil extends BaseController
         if ($this->usuarioModel->update($idusuario, $data)) {
             // Actualizar sesión
             session()->set([
-                'nombres' => $data['nombres'],
-                'apellidos' => $data['apellidos']
+                'nombre' => $data['nombre'],
+                'email' => $data['email']
             ]);
 
             return redirect()->to('perfil')
@@ -222,38 +220,22 @@ class Perfil extends BaseController
         $tareasCompletadas = $this->tareaModel
             ->where('idusuario', $idusuario)
             ->where('estado', 'Completada')
-            ->where('fecha_completado >=', date('Y-m-d H:i:s', strtotime('-7 days')))
-            ->orderBy('fecha_completado', 'DESC')
+            ->where('fecha_completada >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+            ->orderBy('fecha_completada', 'DESC')
             ->limit(5)
             ->findAll();
 
         foreach ($tareasCompletadas as $tarea) {
             $actividades[] = [
                 'descripcion' => "Tarea completada: {$tarea['titulo']}",
-                'fecha' => $tarea['fecha_completado'],
+                'fecha' => $tarea['fecha_completada'],
                 'tipo_badge' => 'success',
                 'icono' => 'icon-check-circle'
             ];
         }
 
-        // Leads creados recientemente
-        $leadsCreados = $this->leadModel
-            ->select('leads.*, personas.nombres, personas.apellidos')
-            ->join('personas', 'personas.idpersona = leads.idpersona')
-            ->where('leads.idusuario', $idusuario)
-            ->where('leads.fecha_creacion >=', date('Y-m-d H:i:s', strtotime('-7 days')))
-            ->orderBy('leads.fecha_creacion', 'DESC')
-            ->limit(5)
-            ->findAll();
-
-        foreach ($leadsCreados as $lead) {
-            $actividades[] = [
-                'descripcion' => "Nuevo lead registrado: {$lead['nombres']} {$lead['apellidos']}",
-                'fecha' => $lead['fecha_creacion'],
-                'tipo_badge' => 'primary',
-                'icono' => 'icon-user-plus'
-            ];
-        }
+        // Leads creados recientemente (comentado - campo created_at no existe)
+        // $leadsCreados = [];
 
         // Ordenar por fecha descendente
         usort($actividades, function($a, $b) {

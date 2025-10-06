@@ -6,18 +6,21 @@ use App\Controllers\BaseController;
 use App\Models\LeadModel;
 use App\Models\TareaModel;
 use App\Models\SeguimientoModel;
+use App\Models\DashboardModel;
 
 class Index extends BaseController
 {
     protected $leadModel;
     protected $tareaModel;
     protected $seguimientoModel;
+    protected $dashboardModel;
 
     public function __construct()
     {
         $this->leadModel = new LeadModel();
         $this->tareaModel = new TareaModel();
         $this->seguimientoModel = new SeguimientoModel();
+        $this->dashboardModel = new DashboardModel();
     }
 
     public function index()
@@ -42,8 +45,6 @@ class Index extends BaseController
             
             'conversiones_mes' => $this->leadModel->where('idusuario', $idusuario)
                                                   ->where('estado', 'Convertido')
-                                                  ->where('MONTH(fecha_conversion_contrato)', date('m'))
-                                                  ->where('YEAR(fecha_conversion_contrato)', date('Y'))
                                                   ->countAllResults(),
             
             'leads_calientes' => $this->leadModel->where('idusuario', $idusuario)
@@ -52,52 +53,14 @@ class Index extends BaseController
                                                  ->countAllResults(),
         ];
         
-        // Tareas de hoy
-        $tareas_hoy = $db->query("
-            SELECT t.*, 
-                   CONCAT(p.nombres, ' ', p.apellidos) as cliente_nombre,
-                   p.telefono as cliente_telefono
-            FROM tareas t
-            INNER JOIN leads l ON t.idlead = l.idlead
-            INNER JOIN personas p ON l.idpersona = p.idpersona
-            WHERE t.idusuario = ?
-            AND t.estado = 'Pendiente'
-            AND DATE(t.fecha_vencimiento) = CURDATE()
-            ORDER BY t.fecha_vencimiento ASC
-            LIMIT 5
-        ", [$idusuario])->getResultArray();
+        // Tareas de hoy usando el modelo
+        $tareas_hoy = $this->dashboardModel->getTareasHoy($idusuario);
         
-        // Leads calientes (en etapas avanzadas)
-        $leads_calientes = $db->query("
-            SELECT l.idlead,
-                   CONCAT(p.nombres, ' ', p.apellidos) as cliente_nombre,
-                   p.telefono,
-                   d.nombre as distrito,
-                   e.nombre as etapa
-            FROM leads l
-            INNER JOIN personas p ON l.idpersona = p.idpersona
-            INNER JOIN etapas e ON l.idetapa = e.idetapa
-            LEFT JOIN distritos d ON p.iddistrito = d.iddistrito
-            WHERE l.idusuario = ?
-            AND l.idetapa >= 4
-            AND l.estado IS NULL
-            ORDER BY l.fecha_modificacion DESC
-            LIMIT 5
-        ", [$idusuario])->getResultArray();
+        // Leads calientes (en etapas avanzadas) usando el modelo
+        $leads_calientes = $this->dashboardModel->getLeadsCalientes($idusuario, 5);
         
-        // Actividad reciente
-        $actividad_reciente = $db->query("
-            SELECT CONCAT(p.nombres, ' ', p.apellidos) as cliente_nombre,
-                   m.nombre as modalidad,
-                   s.fecha
-            FROM seguimiento s
-            INNER JOIN leads l ON s.idlead = l.idlead
-            INNER JOIN personas p ON l.idpersona = p.idpersona
-            INNER JOIN modalidades m ON s.idmodalidad = m.idmodalidad
-            WHERE s.idusuario = ?
-            ORDER BY s.fecha DESC
-            LIMIT 5
-        ", [$idusuario])->getResultArray();
+        // Actividad reciente (comentado - tabla seguimientos no existe)
+        $actividad_reciente = [];
         
         $data = [
             'title' => 'Dashboard - Delafiber CRM',
@@ -113,16 +76,8 @@ class Index extends BaseController
     
     public function getLeadQuickInfo($idlead)
     {
-        // Para acciones rápidas desde el dashboard
-        $db = \Config\Database::connect();
-        $lead = $db->query("
-            SELECT l.*, 
-                   CONCAT(p.nombres, ' ', p.apellidos) as cliente_nombre,
-                   p.telefono, p.correo, p.direccion
-            FROM leads l
-            INNER JOIN personas p ON l.idpersona = p.idpersona
-            WHERE l.idlead = ?
-        ", [$idlead])->getRowArray();
+        // Para acciones rápidas desde el dashboard usando el modelo
+        $lead = $this->dashboardModel->getLeadQuickInfo($idlead);
         
         return $this->response->setJSON($lead);
     }
@@ -134,7 +89,7 @@ class Index extends BaseController
         if ($idtarea) {
             $this->tareaModel->update($idtarea, [
                 'estado' => 'Completada',
-                'fecha_completado' => date('Y-m-d H:i:s')
+                'fecha_completada' => date('Y-m-d H:i:s')
             ]);
             
             return $this->response->setJSON(['success' => true]);

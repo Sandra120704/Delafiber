@@ -114,11 +114,12 @@ class Leads extends BaseController
 // Guardar nuevo lead con validación y transacción
 public function store()
 {
+    
     $rules = [
             'nombres' => 'required|min_length[2]',
             'apellidos' => 'required|min_length[2]',
             'telefono' => 'required|min_length[9]|max_length[9]',
-            'origen' => 'required|numeric'
+            'idorigen' => 'required|numeric' 
         ];
         $messages = [
             'nombres' => [
@@ -134,7 +135,7 @@ public function store()
                 'min_length' => 'El teléfono debe tener 9 dígitos',
                 'max_length' => 'El teléfono debe tener 9 dígitos'
             ],
-            'origen' => [
+            'idorigen' => [
                 'required' => 'Debes seleccionar el origen del lead'
             ]
         ];
@@ -153,34 +154,66 @@ public function store()
                 // Usar persona existente
                 $persona = $this->personaModel->find($personaId);
                 if (!$persona) throw new \Exception('Persona no encontrada');
-                $nombreCompleto = $persona->nombres . ' ' . $persona->apellidos;
+                $nombreCompleto = $persona['nombres'] . ' ' . $persona['apellidos'];
             } else {
                 // Crear nueva persona
+                $iddistrito = $this->request->getPost('iddistrito');
+                
                 $personaData = [
                     'nombres' => $this->request->getPost('nombres'),
                     'apellidos' => $this->request->getPost('apellidos'),
-                    'dni' => $this->request->getPost('dni'),
-                    'correo' => $this->request->getPost('correo'),
+                    'dni' => $this->request->getPost('dni') ?: null,
+                    'correo' => $this->request->getPost('correo') ?: null,
                     'telefono' => $this->request->getPost('telefono'),
-                    'direccion' => $this->request->getPost('direccion'),
-                    'referencias' => $this->request->getPost('referencias'),
-                    'iddistrito' => $this->request->getPost('distrito')
+                    'direccion' => $this->request->getPost('direccion') ?: null,
+                    'referencias' => $this->request->getPost('referencias') ?: null,
+                    'iddistrito' => (!empty($iddistrito) && $iddistrito !== '') ? $iddistrito : null
                 ];
+                
+                // Geocodificar dirección si existe
+                if (!empty($personaData['direccion']) && !empty($iddistrito)) {
+                    try {
+                        $coordenadas = $this->geocodificarDireccion($personaData['direccion'], $iddistrito);
+                        if ($coordenadas) {
+                            $personaData['coordenadas'] = $coordenadas;
+                            
+                            // Asignar zona automáticamente si existe campaña activa
+                            $zonaAsignada = $this->asignarZonaAutomatica($coordenadas);
+                            if ($zonaAsignada) {
+                                $personaData['id_zona'] = $zonaAsignada;
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        // Si falla la geocodificación, continuar sin coordenadas
+                        log_message('warning', 'Geocodificación falló: ' . $e->getMessage());
+                    }
+                }
+                
                 $personaId = $this->personaModel->insert($personaData);
-                if (!$personaId) throw new \Exception('Error al crear la persona');
+                if (!$personaId) {
+                    $errors = $this->personaModel->errors();
+                    $errorMsg = !empty($errors) ? implode(', ', $errors) : 'Error desconocido';
+                    throw new \Exception('Error al crear la persona: ' . $errorMsg);
+                }
                 $nombreCompleto = $personaData['nombres'] . ' ' . $personaData['apellidos'];
             }
             
             $leadData = [
                 'idpersona' => $personaId,
-                'idetapa' => 1, // CAPTACION
+                'idetapa' => $this->request->getPost('idetapa') ?: 1, // CAPTACION por defecto
                 'idusuario' => session()->get('user_id'),
-                'idorigen' => $this->request->getPost('origen'),
-                'medio_comunicacion' => $this->request->getPost('medio_comunicacion'),
+                'idorigen' => $this->request->getPost('idorigen'),
+                'idcampania' => $this->request->getPost('idcampania') ?: null,
+                'idmodalidad' => $this->request->getPost('idmodalidad') ?: null,
+                'medio_comunicacion' => $this->request->getPost('medio_comunicacion') ?: null,
                 'idusuario_registro' => session()->get('user_id')
             ];
             $leadId = $this->leadModel->insert($leadData);
-            if (!$leadId) throw new \Exception('Error al crear el lead');
+            if (!$leadId) {
+                $errors = $this->leadModel->errors();
+                $errorMsg = !empty($errors) ? implode(', ', $errors) : 'Error desconocido';
+                throw new \Exception('Error al crear el lead: ' . $errorMsg);
+            }
             $db->transComplete();
             if ($db->transStatus() === false) throw new \Exception('Error en la transacción');
             return redirect()->to('/leads')
@@ -202,9 +235,31 @@ public function store()
             return redirect()->to('/leads')
                 ->with('error', 'Lead no encontrado');
         }
+        
+        // Obtener información de la zona si está asignada
+        $zonaInfo = null;
+        if (!empty($lead['id_zona'])) {
+            $db = \Config\Database::connect();
+            $zona = $db->table('tb_zonas_campana')
+                ->select('id_zona, nombre_zona, poligono, color, id_campana')
+                ->where('id_zona', $lead['id_zona'])
+                ->get()
+                ->getRowArray();
+            
+            if ($zona) {
+                $zonaInfo = [
+                    'id_zona' => $zona['id_zona'],
+                    'nombre_zona' => $zona['nombre_zona'],
+                    'poligono' => $zona['poligono'],
+                    'color' => $zona['color'] ?? '#3498db'
+                ];
+            }
+        }
+        
         $data = [
             'title' => 'Lead: ' . $lead['nombres'] . ' ' . $lead['apellidos'],
             'lead' => $lead,
+            'zona' => $zonaInfo,
             'historial' => $this->leadModel->getHistorialLead($leadId),
             'tareas' => $this->leadModel->getTareasLead($leadId),
             'etapas' => $this->etapaModel->getEtapasActivas(),
@@ -292,22 +347,28 @@ public function store()
         try {
             // Obtener etapa anterior
             $lead = $this->leadModel->find($idlead);
-            $etapaAnterior = $lead->idetapa;
+            $etapaAnterior = $lead['idetapa'] ?? null;
             
             // Actualizar etapa
             $this->leadModel->update($idlead, ['idetapa' => $idetapa]);
             
-            // Registrar en historial (opcional)
-            $db = \Config\Database::connect();
-            $db->table('leads_historial')->insert([
-                'idlead' => $idlead,
-                'idusuario' => session()->get('idusuario'),
-                'accion' => 'cambio_etapa',
-                'descripcion' => 'Lead movido de etapa',
-                'etapa_anterior' => $etapaAnterior,
-                'etapa_nueva' => $idetapa,
-                'fecha' => date('Y-m-d H:i:s')
-            ]);
+            // Registrar en historial (opcional - solo si la tabla existe)
+            try {
+                $db = \Config\Database::connect();
+                if ($db->tableExists('leads_historial')) {
+                    $db->table('leads_historial')->insert([
+                        'idlead' => $idlead,
+                        'idusuario' => session()->get('idusuario'),
+                        'accion' => 'cambio_etapa',
+                        'descripcion' => 'Lead movido de etapa',
+                        'etapa_anterior' => $etapaAnterior,
+                        'etapa_nueva' => $idetapa,
+                        'fecha' => date('Y-m-d H:i:s')
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Ignorar error si la tabla no existe
+            }
             
             return $this->response->setJSON([
                 'success' => true,
@@ -322,13 +383,36 @@ public function store()
         }
     }
 
+    public function edit($idlead)
+    {
+        $userId = session()->get('user_id');
+        $lead = $this->leadModel->getLeadCompleto($idlead, $userId);
+        
+        if (!$lead) {
+            return redirect()->to('/leads')
+                ->with('error', 'Lead no encontrado');
+        }
+
+        $data = [
+            'title' => 'Editar Lead - Delafiber CRM',
+            'lead' => $lead,
+            'etapas' => $this->etapaModel->getEtapasActivas(),
+            'origenes' => $this->origenModel->getOrigenesActivos(),
+            'modalidades' => $this->modalidadModel->getModalidadesActivas(),
+            'campanias' => $this->campaniaModel->getCampaniasActivas(),
+            'user_name' => session()->get('user_name')
+        ];
+
+        return view('leads/edit', $data);
+    }
+
     public function update($idlead)
     {
         $rules = [
             'nombres' => 'required|min_length[2]',
             'apellidos' => 'required|min_length[2]',
             'telefono' => 'required|min_length[9]|max_length[9]',
-            'origen' => 'required|numeric'
+            'idorigen' => 'required|numeric'
         ];
         $messages = [
             'nombres' => [
@@ -344,7 +428,7 @@ public function store()
                 'min_length' => 'El teléfono debe tener 9 dígitos',
                 'max_length' => 'El teléfono debe tener 9 dígitos'
             ],
-            'origen' => [
+            'idorigen' => [
                 'required' => 'Debes seleccionar el origen del lead'
             ]
         ];
@@ -363,17 +447,18 @@ public function store()
         $personaData = [
             'nombres' => $this->request->getPost('nombres'),
             'apellidos' => $this->request->getPost('apellidos'),
-            'dni' => $this->request->getPost('dni'),
-            'correo' => $this->request->getPost('correo'),
+            'dni' => $this->request->getPost('dni') ?: null,
+            'correo' => $this->request->getPost('correo') ?: null,
             'telefono' => $this->request->getPost('telefono'),
-            'direccion' => $this->request->getPost('direccion'),
-            'referencias' => $this->request->getPost('referencias'),
-            'iddistrito' => $this->request->getPost('distrito')
+            'direccion' => $this->request->getPost('direccion') ?: null,
+            'referencias' => $this->request->getPost('referencias') ?: null,
+            'iddistrito' => $this->request->getPost('iddistrito') ?: null
         ];
         $leadData = [
-            'idorigen' => $this->request->getPost('origen'),
-            'medio_comunicacion' => $this->request->getPost('medio_comunicacion'),
-            'observaciones' => $this->request->getPost('observaciones')
+            'idorigen' => $this->request->getPost('idorigen'),
+            'idcampania' => $this->request->getPost('idcampania') ?: null,
+            'idmodalidad' => $this->request->getPost('idmodalidad') ?: null,
+            'medio_comunicacion' => $this->request->getPost('medio_comunicacion')
         ];
 
         $db = \Config\Database::connect();
@@ -441,16 +526,16 @@ public function store()
 
         try {
             $db = \Config\Database::connect();
-            $db->table('seguimiento')->insert($data);
+            $db->table('seguimientos')->insert($data);
             
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Seguimiento agregado'
+                'message' => 'Seguimiento agregado correctamente'
             ]);
         } catch (\Exception $e) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Error al agregar seguimiento'
+                'message' => 'Error al agregar seguimiento: ' . $e->getMessage()
             ]);
         }
     }
@@ -504,7 +589,7 @@ public function store()
 
         try {
             $db = \Config\Database::connect();
-            $db->table('tareas')->update(['estado' => 'Completada', 'fecha_completado' => date('Y-m-d H:i:s')], ['idtarea' => $idtarea]);
+            $db->table('tareas')->update(['estado' => 'Completada', 'fecha_completada' => date('Y-m-d H:i:s')], ['idtarea' => $idtarea]);
             
             return $this->response->setJSON([
                 'success' => true,
@@ -516,6 +601,368 @@ public function store()
                 'message' => 'Error'
             ]);
         }
+    }
+
+    /**
+     * Geocodificar dirección usando Google Geocoding API
+     * Convierte una dirección de texto a coordenadas (lat, lng)
+     */
+    private function geocodificarDireccion($direccion, $iddistrito = null)
+    {
+        try {
+            // API Key de Google Maps (la misma que usas en el mapa)
+            $apiKey = 'AIzaSyAACo2qyElsl8RwIqW3x0peOA_20f7SEHA';
+            
+            // Obtener nombre del distrito para mejor precisión
+            $contextoGeografico = 'Chincha, Ica, Perú';
+            if ($iddistrito) {
+                $distrito = $this->distritoModel->find($iddistrito);
+                if ($distrito) {
+                    $contextoGeografico = $distrito['nombre'] . ', Ica, Perú';
+                }
+            }
+            
+            // Construir URL de la API
+            $direccionCompleta = $direccion . ', ' . $contextoGeografico;
+            $url = 'https://maps.googleapis.com/maps/api/geocode/json?' . http_build_query([
+                'address' => $direccionCompleta,
+                'key' => $apiKey,
+                'language' => 'es',
+                'region' => 'pe'
+            ]);
+            
+            // Hacer petición a la API usando cURL (más confiable que file_get_contents)
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            
+            if ($httpCode !== 200 || !$response) {
+                log_message('warning', "Error HTTP al geocodificar: {$httpCode}");
+                return null;
+            }
+            
+            $data = json_decode($response, true);
+            
+            // Verificar si se obtuvo resultado
+            if ($data['status'] === 'OK' && !empty($data['results'])) {
+                $location = $data['results'][0]['geometry']['location'];
+                $lat = $location['lat'];
+                $lng = $location['lng'];
+                
+                // Retornar en formato "lat,lng"
+                return $lat . ',' . $lng;
+            }
+            
+            // Si no se pudo geocodificar, retornar null
+            log_message('warning', "No se pudo geocodificar la dirección: {$direccion} - Status: {$data['status']}");
+            return null;
+            
+        } catch (\Exception $e) {
+            log_message('error', "Error al geocodificar dirección: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Asignar zona automáticamente según coordenadas
+     * Integración con sistema de mapas de campañas
+     */
+    private function asignarZonaAutomatica($coordenadas)
+    {
+        try {
+            if (empty($coordenadas)) return null;
+            
+            list($lat, $lng) = explode(',', $coordenadas);
+            $lat = floatval($lat);
+            $lng = floatval($lng);
+            
+            // Obtener zonas activas de campañas activas
+            $db = \Config\Database::connect();
+            $query = $db->query("
+                SELECT z.id_zona, z.nombre_zona, z.poligono
+                FROM tb_zonas_campana z
+                INNER JOIN campanias c ON z.id_campana = c.idcampania
+                WHERE z.estado = 'Activa' 
+                AND c.estado = 'Activa'
+            ");
+            
+            $zonas = $query->getResultArray();
+            
+            if (empty($zonas)) return null;
+            
+            // Verificar en qué zona cae el punto (algoritmo Point-in-Polygon)
+            foreach ($zonas as $zona) {
+                $poligono = json_decode($zona['poligono'], true);
+                if ($this->puntoEnPoligono($lat, $lng, $poligono)) {
+                    log_message('info', "Lead asignado automáticamente a zona: {$zona['nombre_zona']}");
+                    return $zona['id_zona'];
+                }
+            }
+            
+            return null;
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error al asignar zona automática: ' . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Algoritmo Ray Casting para verificar si un punto está dentro de un polígono
+     * @param float $lat Latitud del punto
+     * @param float $lng Longitud del punto
+     * @param array $poligono Array de coordenadas [{lat, lng}, ...]
+     * @return bool
+     */
+    private function puntoEnPoligono($lat, $lng, $poligono)
+    {
+        $vertices = count($poligono);
+        $dentro = false;
+        
+        for ($i = 0, $j = $vertices - 1; $i < $vertices; $j = $i++) {
+            $xi = $poligono[$i]['lat'];
+            $yi = $poligono[$i]['lng'];
+            $xj = $poligono[$j]['lat'];
+            $yj = $poligono[$j]['lng'];
+            
+            $intersect = (($yi > $lng) != ($yj > $lng))
+                && ($lat < ($xj - $xi) * ($lng - $yi) / ($yj - $yi) + $xi);
+            
+            if ($intersect) $dentro = !$dentro;
+        }
+        
+        return $dentro;
+    }
+
+    /**
+     * Verificar cobertura de zonas en un distrito
+     * Usado en formulario de creación de leads
+     */
+    public function verificarCobertura()
+    {
+        $iddistrito = $this->request->getGet('distrito');
+        
+        if (!$iddistrito) {
+            return $this->response->setJSON([
+                'tiene_cobertura' => false,
+                'mensaje' => 'Distrito no especificado'
+            ]);
+        }
+        
+        try {
+            $distrito = $this->distritoModel->find($iddistrito);
+            
+            if (!$distrito) {
+                return $this->response->setJSON([
+                    'tiene_cobertura' => false,
+                    'mensaje' => 'Distrito no encontrado'
+                ]);
+            }
+            
+            // Contar zonas activas que cubren este distrito
+            // Nota: Esto es una aproximación. Para mayor precisión,
+            // deberías verificar si el centroide del distrito está dentro de alguna zona
+            $db = \Config\Database::connect();
+            
+            // Contar zonas activas en campañas activas
+            $query = $db->query("
+                SELECT 
+                    z.id_zona,
+                    z.nombre_zona,
+                    c.nombre as campania_nombre
+                FROM tb_zonas_campana z
+                INNER JOIN campanias c ON z.id_campana = c.idcampania
+                WHERE z.estado = 'Activa' 
+                AND c.estado = 'Activa'
+            ");
+            
+            $zonasActivas = $query->getResultArray();
+            $totalZonas = count($zonasActivas);
+            
+            // Si hay zonas activas, asumir que hay cobertura
+            // (En una implementación más avanzada, verificarías geográficamente)
+            $tieneCoberturaReal = $totalZonas > 0;
+            
+            $mensaje = $tieneCoberturaReal 
+                ? "¡Excelente! Tenemos {$totalZonas} zona(s) activa(s) en campañas"
+                : "No hay zonas activas en campañas en este momento";
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'tiene_cobertura' => $tieneCoberturaReal,
+                'distrito_nombre' => $distrito['nombre'],
+                'zonas_activas' => $totalZonas,
+                'zonas' => array_slice($zonasActivas, 0, 3), // Primeras 3 zonas
+                'mensaje' => $mensaje
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error al verificar cobertura: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'tiene_cobertura' => false,
+                'mensaje' => 'Error al verificar cobertura'
+            ]);
+        }
+    }
+
+    /**
+     * MÉTODO DE DIAGNÓSTICO TEMPORAL
+     * Accede a: /leads/diagnostico
+     */
+    public function diagnostico()
+    {
+        $db = \Config\Database::connect();
+        
+        echo "<h1>🔍 Diagnóstico del Sistema</h1>";
+        echo "<hr>";
+        
+        // 1. Verificar estructura de tabla personas
+        echo "<h2>1. Estructura de tabla 'personas'</h2>";
+        $query = $db->query("DESCRIBE personas");
+        $columns = $query->getResultArray();
+        
+        echo "<table border='1' cellpadding='5'>";
+        echo "<tr><th>Campo</th><th>Tipo</th><th>Null</th><th>Key</th><th>Default</th></tr>";
+        foreach ($columns as $col) {
+            $highlight = ($col['Field'] === 'coordenadas' || $col['Field'] === 'id_zona') ? 'style="background: yellow;"' : '';
+            echo "<tr {$highlight}>";
+            echo "<td><strong>{$col['Field']}</strong></td>";
+            echo "<td>{$col['Type']}</td>";
+            echo "<td>{$col['Null']}</td>";
+            echo "<td>{$col['Key']}</td>";
+            echo "<td>{$col['Default']}</td>";
+            echo "</tr>";
+        }
+        echo "</table>";
+        
+        // Verificar si existen los campos
+        $tieneCoordenas = false;
+        $tieneIdZona = false;
+        foreach ($columns as $col) {
+            if ($col['Field'] === 'coordenadas') $tieneCoordenas = true;
+            if ($col['Field'] === 'id_zona') $tieneIdZona = true;
+        }
+        
+        echo "<br>";
+        echo "<strong>Campo 'coordenadas': </strong>" . ($tieneCoordenas ? "✅ EXISTE" : "❌ NO EXISTE") . "<br>";
+        echo "<strong>Campo 'id_zona': </strong>" . ($tieneIdZona ? "✅ EXISTE" : "❌ NO EXISTE") . "<br>";
+        
+        if (!$tieneCoordenas || !$tieneIdZona) {
+            echo "<br><div style='background: #ffcccc; padding: 10px; border: 2px solid red;'>";
+            echo "<h3>⚠️ ACCIÓN REQUERIDA</h3>";
+            echo "<p>Debes ejecutar este SQL en phpMyAdmin:</p>";
+            echo "<pre style='background: #f0f0f0; padding: 10px;'>";
+            if (!$tieneCoordenas) {
+                echo "ALTER TABLE personas ADD COLUMN coordenadas VARCHAR(50) NULL AFTER direccion;\n";
+            }
+            if (!$tieneIdZona) {
+                echo "ALTER TABLE personas ADD COLUMN id_zona INT NULL AFTER coordenadas;\n";
+            }
+            echo "</pre>";
+            echo "</div>";
+        }
+        
+        echo "<hr>";
+        
+        // 2. Verificar allowedFields del modelo
+        echo "<h2>2. Campos Permitidos en PersonaModel</h2>";
+        $allowedFields = $this->personaModel->allowedFields ?? [];
+        echo "<pre>";
+        print_r($allowedFields);
+        echo "</pre>";
+        
+        echo "<strong>Campo 'coordenadas' permitido: </strong>" . (in_array('coordenadas', $allowedFields) ? "✅ SÍ" : "❌ NO") . "<br>";
+        echo "<strong>Campo 'id_zona' permitido: </strong>" . (in_array('id_zona', $allowedFields) ? "✅ SÍ" : "❌ NO") . "<br>";
+        
+        echo "<hr>";
+        
+        // 3. Probar inserción simple
+        echo "<h2>3. Prueba de Inserción</h2>";
+        
+        try {
+            $testData = [
+                'nombres' => 'Test',
+                'apellidos' => 'Diagnóstico',
+                'telefono' => '987654321',
+                'direccion' => 'Av. Test 123'
+            ];
+            
+            echo "<p>Intentando insertar datos de prueba...</p>";
+            echo "<pre>";
+            print_r($testData);
+            echo "</pre>";
+            
+            $personaId = $this->personaModel->insert($testData);
+            
+            if ($personaId) {
+                echo "<div style='background: #ccffcc; padding: 10px; border: 2px solid green;'>";
+                echo "✅ <strong>ÉXITO!</strong> Persona creada con ID: {$personaId}";
+                echo "</div>";
+                
+                // Eliminar el registro de prueba
+                $this->personaModel->delete($personaId);
+                echo "<p><em>Registro de prueba eliminado.</em></p>";
+            } else {
+                echo "<div style='background: #ffcccc; padding: 10px; border: 2px solid red;'>";
+                echo "❌ <strong>ERROR al insertar</strong><br>";
+                echo "<strong>Errores del modelo:</strong><br>";
+                echo "<pre>";
+                print_r($this->personaModel->errors());
+                echo "</pre>";
+                echo "</div>";
+            }
+            
+        } catch (\Exception $e) {
+            echo "<div style='background: #ffcccc; padding: 10px; border: 2px solid red;'>";
+            echo "❌ <strong>EXCEPCIÓN:</strong> " . $e->getMessage();
+            echo "</div>";
+        }
+        
+        echo "<hr>";
+        
+        // 4. Verificar últimos leads
+        echo "<h2>4. Últimos 5 Leads Creados</h2>";
+        $query = $db->query("
+            SELECT 
+                p.idpersona,
+                p.nombres,
+                p.apellidos,
+                p.telefono,
+                p.created_at,
+                l.idlead
+            FROM personas p
+            LEFT JOIN leads l ON l.idpersona = p.idpersona
+            ORDER BY p.idpersona DESC
+            LIMIT 5
+        ");
+        $ultimos = $query->getResultArray();
+        
+        if (!empty($ultimos)) {
+            echo "<table border='1' cellpadding='5'>";
+            echo "<tr><th>ID Persona</th><th>Nombre</th><th>Teléfono</th><th>ID Lead</th><th>Fecha</th></tr>";
+            foreach ($ultimos as $u) {
+                echo "<tr>";
+                echo "<td>{$u['idpersona']}</td>";
+                echo "<td>{$u['nombres']} {$u['apellidos']}</td>";
+                echo "<td>{$u['telefono']}</td>";
+                echo "<td>" . ($u['idlead'] ?? 'Sin lead') . "</td>";
+                echo "<td>{$u['created_at']}</td>";
+                echo "</tr>";
+            }
+            echo "</table>";
+        } else {
+            echo "<p>No hay registros.</p>";
+        }
+        
+        echo "<hr>";
+        echo "<p><a href='/leads/create'>← Volver a Crear Lead</a></p>";
     }
 }
 

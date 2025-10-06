@@ -231,9 +231,9 @@ $error = $error ?? null;
                                                         title="Ver detalle">
                                                     <i class="ti-eye"></i>
                                                 </button>
-                                                <?php if ($tarea['tipo_tarea'] == 'whatsapp' || $tarea['tipo_tarea'] == 'llamada'): ?>
+                                                <?php if (isset($tarea['tipo_tarea']) && ($tarea['tipo_tarea'] == 'whatsapp' || $tarea['tipo_tarea'] == 'llamada')): ?>
                                                 <button class="btn btn-sm btn-primary" 
-                                                        onclick="contactarLead('<?= $tarea['lead_telefono'] ?>', '<?= $tarea['tipo_tarea'] ?>')"
+                                                        onclick="contactarLead('<?= $tarea['lead_telefono'] ?? '' ?>', '<?= $tarea['tipo_tarea'] ?>')"
                                                         title="Contactar">
                                                     <i class="<?= $tarea['tipo_tarea'] == 'whatsapp' ? 'fab fa-whatsapp' : 'ti-mobile' ?>"></i>
                                                 </button>
@@ -281,8 +281,8 @@ $error = $error ?? null;
                                             </span>
                                             <span class="badge bg-light text-dark">
                                                 <i class="<?= 
-                                                    $tarea['tipo_tarea'] == 'llamada' ? 'ti-mobile' : 
-                                                    ($tarea['tipo_tarea'] == 'whatsapp' ? 'fab fa-whatsapp' : 'ti-clipboard') 
+                                                    ($tarea['tipo_tarea'] ?? 'general') == 'llamada' ? 'ti-mobile' : 
+                                                    (($tarea['tipo_tarea'] ?? 'general') == 'whatsapp' ? 'fab fa-whatsapp' : 'ti-clipboard') 
                                                 ?>"></i>
                                             </span>
                                         </div>
@@ -412,7 +412,7 @@ $error = $error ?? null;
                                                 <?= esc($tarea['lead_nombre']) ?>
                                             </a>
                                         </td>
-                                        <td><?= date('d/m/Y H:i', strtotime($tarea['fecha_completado'])) ?></td>
+                                        <td><?= date('d/m/Y H:i', strtotime($tarea['fecha_completada'])) ?></td>
                                         <td>
                                             <small><?= esc($tarea['notas_resultado'] ?? 'Sin notas') ?></small>
                                         </td>

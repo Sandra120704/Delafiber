@@ -104,24 +104,24 @@
                             $colors = ['#8e44ad','#2980b9','#16a085','#e67e22','#c0392b'];
                             foreach ($usuarios as $usuario): 
                                 $color = $colors[$usuario['idusuario'] % count($colors)];
-                                $activo = $usuario['activo'] ?? true;
+                                $activo = ($usuario['activo'] ?? 1) == 1;
                             ?>
-                            <tr data-rol="<?= strtolower($usuario['nombre_rol'] ?? '') ?>" data-estado="<?= $activo ? 'activo' : 'inactivo' ?>">
+                            <tr data-rol="<?= strtolower($usuario['nombreRol'] ?? '') ?>" data-estado="<?= $activo ? 'activo' : 'inactivo' ?>">
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="me-3">
                                             <div class="user-avatar" style="background:<?= $color ?>; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold;">
-                                                <?= strtoupper(substr($usuario['username'] ?? 'U', 0, 2)) ?>
+                                                <?= strtoupper(substr($usuario['usuario'] ?? 'U', 0, 2)) ?>
                                             </div>
                                         </div>
                                         <div>
-                                            <div class="fw-bold"><?= esc($usuario['username'] ?? 'Sin usuario') ?></div>
+                                            <div class="fw-bold"><?= esc($usuario['usuario'] ?? 'Sin usuario') ?></div>
                                             <small class="text-muted">ID: <?= $usuario['idusuario'] ?></small>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="fw-bold"><?= esc($usuario['nombre_persona'] ?? 'Sin asignar') ?></div>
+                                    <div class="fw-bold"><?= esc($usuario['email'] ?? 'Sin email') ?></div>
                                     <small class="text-muted">
                                         <?php if (!empty($usuario['email'])): ?>
                                             <i class="bx bx-envelope"></i> <?= esc($usuario['email']) ?><br>
@@ -133,10 +133,10 @@
                                 </td>
                                 <td>
                                     <span class="badge bg-<?= 
-                                        ($usuario['nombre_rol'] ?? '') === 'admin' ? 'danger' : 
-                                        (($usuario['nombre_rol'] ?? '') === 'supervisor' ? 'warning' : 'primary') 
+                                        ($usuario['nombreRol'] ?? '') === 'Administrador' ? 'danger' : 
+                                        (($usuario['nombreRol'] ?? '') === 'Supervisor' ? 'warning' : 'primary') 
                                     ?>">
-                                        <?= esc($usuario['nombre_rol'] ?? 'Sin rol') ?>
+                                        <?= esc($usuario['nombreRol'] ?? 'Sin rol') ?>
                                     </span>
                                 </td>
                                 <td>

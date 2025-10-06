@@ -45,7 +45,7 @@
                                 <div class="input-group">
                                     <input type="text" class="form-control" id="dni" name="dni" 
                                            value="<?= !empty($persona) ? esc($persona['dni']) : '' ?>"
-                                           placeholder="Ingrese DNI de 8 dígitos" maxlength="8" required
+                                           placeholder="Ingrese DNI de 8 dígitos (opcional)" maxlength="8"
                                            <?= !empty($persona) ? 'readonly' : '' ?>>
                                     <div class="input-group-append">
                                         <button class="btn btn-primary" type="button" id="btnBuscarDni"
@@ -98,8 +98,8 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="iddistrito">Distrito *</label>
-                                <select class="form-control" id="iddistrito" name="iddistrito" required>
+                                <label for="iddistrito">Distrito</label>
+                                <select class="form-control" id="iddistrito" name="iddistrito">
                                     <option value="">Seleccione un distrito</option>
                                     <?php if (!empty($distritos) && is_array($distritos)): ?>
                                         <?php foreach ($distritos as $distrito): ?>
@@ -112,6 +112,10 @@
                                         <option value="">No hay distritos disponibles</option>
                                     <?php endif; ?>
                                 </select>
+                                <small class="text-muted">Opcional - Ayuda a ubicar al prospecto en el mapa</small>
+                                
+                                <!-- Alerta de cobertura -->
+                                <div id="alertCobertura" class="mt-2" style="display:none;"></div>
                             </div>
 
                             <div class="form-group">
@@ -242,6 +246,9 @@ class PersonaManager {
         const btnBuscarDni = document.getElementById('btnBuscarDni');
         const dniInput = document.getElementById('dni');
         const dniLoading = document.getElementById('dni-loading');
+        
+        // Verificar cobertura al seleccionar distrito
+        this.initVerificarCobertura();
 
         btnBuscarDni.addEventListener('click', () => {
             const dni = dniInput.value.trim();
@@ -374,6 +381,85 @@ class PersonaManager {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 btnBuscarDni.click();
+            }
+        });
+    }
+    
+    // Verificar cobertura de zonas en el distrito seleccionado
+    initVerificarCobertura() {
+        const distritoSelect = document.getElementById('iddistrito');
+        const alertCobertura = document.getElementById('alertCobertura');
+        
+        if (!distritoSelect || !alertCobertura) return;
+        
+        distritoSelect.addEventListener('change', async function() {
+            const distrito = this.value;
+            
+            if (!distrito) {
+                alertCobertura.style.display = 'none';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`<?= base_url('leads/verificar-cobertura') ?>?distrito=${distrito}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (result.tiene_cobertura) {
+                        // Hay cobertura - Mostrar alerta verde
+                        alertCobertura.className = 'alert alert-success mt-2';
+                        
+                        let zonasHtml = '';
+                        if (result.zonas && result.zonas.length > 0) {
+                            zonasHtml = '<div class="mt-2"><small><strong>Zonas activas:</strong></small><ul class="mb-0 mt-1">';
+                            result.zonas.forEach(zona => {
+                                zonasHtml += `<li><small>${zona.nombre_zona} (${zona.campania_nombre})</small></li>`;
+                            });
+                            zonasHtml += '</ul></div>';
+                        }
+                        
+                        alertCobertura.innerHTML = `
+                            <div class="d-flex align-items-start">
+                                <i class="icon-check-circle mr-2" style="font-size: 1.2rem;"></i>
+                                <div>
+                                    <strong>¡Excelente!</strong> ${result.mensaje}
+                                    <br><small class="text-muted">El lead será asignado automáticamente a una zona al guardar.</small>
+                                    ${zonasHtml}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        // No hay cobertura - Mostrar alerta amarilla
+                        alertCobertura.className = 'alert alert-warning mt-2';
+                        alertCobertura.innerHTML = `
+                            <div class="d-flex align-items-start">
+                                <i class="icon-alert-triangle mr-2" style="font-size: 1.2rem;"></i>
+                                <div>
+                                    <strong>Atención:</strong> ${result.mensaje}
+                                    <br><small class="text-muted">El lead se registrará pero no se asignará a ninguna campaña activa.</small>
+                                    <br><small class="text-muted">Puedes crear zonas en el <a href="<?= base_url('crm-campanas/mapa-campanas') ?>" target="_blank">mapa de campañas</a>.</small>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    alertCobertura.style.display = 'block';
+                    
+                    // Animación suave
+                    alertCobertura.style.opacity = '0';
+                    setTimeout(() => {
+                        alertCobertura.style.transition = 'opacity 0.3s';
+                        alertCobertura.style.opacity = '1';
+                    }, 10);
+                }
+            } catch (error) {
+                console.error('Error al verificar cobertura:', error);
+                alertCobertura.className = 'alert alert-danger mt-2';
+                alertCobertura.innerHTML = `
+                    <i class="icon-x-circle"></i> 
+                    Error al verificar cobertura. Por favor, intenta de nuevo.
+                `;
+                alertCobertura.style.display = 'block';
             }
         });
     }

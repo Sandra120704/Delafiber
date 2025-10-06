@@ -18,7 +18,7 @@ class TareaModel extends Model
         'fecha_inicio',
         'fecha_fin',
         'fecha_vencimiento',
-        'fecha_completado',
+        'fecha_completada',
         'estado',
         'notas_resultado'
     ];
@@ -33,12 +33,11 @@ class TareaModel extends Model
         $builder = $this->db->table($this->table . ' t');
         $builder->select('
             t.*,
-            CONCAT(p.nombres, " ", p.apellidos) as usuario_nombre,
+            u.usuario as usuario_nombre,
             CONCAT(pl.nombres, " ", pl.apellidos) as lead_nombre,
             l.idlead
         ');
         $builder->join('usuarios u', 't.idusuario = u.idusuario', 'left');
-        $builder->join('personas p', 'u.idpersona = p.idpersona', 'left');
         $builder->join('leads l', 't.idlead = l.idlead', 'left');
         $builder->join('personas pl', 'l.idpersona = pl.idpersona', 'left');
         
@@ -91,11 +90,10 @@ class TareaModel extends Model
         $builder = $this->db->table($this->table . ' t');
         $builder->select('
             t.*,
-            CONCAT(p.nombres, " ", p.apellidos) as usuario_nombre,
+            u.usuario as usuario_nombre,
             CONCAT(pl.nombres, " ", pl.apellidos) as lead_nombre
         ');
         $builder->join('usuarios u', 't.idusuario = u.idusuario', 'left');
-        $builder->join('personas p', 'u.idpersona = p.idpersona', 'left');
         $builder->join('leads l', 't.idlead = l.idlead', 'left');
         $builder->join('personas pl', 'l.idpersona = pl.idpersona', 'left');
         
@@ -118,7 +116,7 @@ class TareaModel extends Model
     {
         $data = [
             'estado' => 'Completada',
-            'fecha_completado' => date('Y-m-d H:i:s')
+            'fecha_completada' => date('Y-m-d H:i:s')
         ];
         
         if ($notas_resultado) {

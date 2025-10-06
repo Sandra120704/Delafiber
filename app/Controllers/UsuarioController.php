@@ -4,7 +4,7 @@ namespace App\Controllers;
 
 use App\Models\UsuarioModel;
 use App\Models\PersonaModel;
-use App\Models\RolesModel; 
+use App\Models\RolModel; 
 use Config\Database;
 
 class UsuarioController extends BaseController
@@ -18,7 +18,7 @@ class UsuarioController extends BaseController
     {
         $this->usuarioModel = new UsuarioModel();
         $this->personaModel = new PersonaModel();
-        $this->rolesModel = new RolesModel();
+        $this->rolesModel = new RolModel();
     }
 
     public function index()
@@ -36,18 +36,9 @@ class UsuarioController extends BaseController
             return view('usuarios/index', $data);
             
         } catch (\Exception $e) {
-            echo "Error: " . $e->getMessage();
-            echo "<br>Probando query básica: ";
+            log_message('error', 'Error en UsuarioController::index: ' . $e->getMessage());
             
-            $db = Database::connect();
-            $query = $db->query("SELECT idusuario, usuario FROM usuarios LIMIT 3");
-            $resultados = $query->getResultArray();
-            
-            echo "<pre>";
-            var_dump($resultados);
-            echo "</pre>";
-            
-            die();
+            return redirect()->back()->with('error', 'Error al cargar usuarios. Por favor, contacte al administrador.');
         }
     }
 
@@ -71,7 +62,7 @@ class UsuarioController extends BaseController
     {
         $rules = [
             'usuario' => 'required|min_length[4]|is_unique[usuarios.usuario]',
-            'clave' => 'required|min_length[6]', 
+            'password' => 'required|min_length[6]', 
             'idpersona' => 'permit_empty|integer'
         ];
 
@@ -86,8 +77,8 @@ class UsuarioController extends BaseController
         try {
             $data = [
                 'idpersona' => $this->request->getVar('idpersona') ?: null,
-                'usuario' => $this->request->getVar('usuario'), // Cambié username
-                'clave' => password_hash($this->request->getVar('clave'), PASSWORD_DEFAULT), // Cambié password
+                'usuario' => $this->request->getVar('usuario'),
+                'password' => password_hash($this->request->getVar('password'), PASSWORD_DEFAULT),
                 'idrol' => $this->request->getVar('idrol'),
                 'activo' => $this->request->getVar('activo') ? 1 : 0
             ];
@@ -147,8 +138,8 @@ class UsuarioController extends BaseController
             'idpersona' => 'permit_empty|integer'
         ];
 
-        if ($this->request->getVar('clave')) {
-            $rules['clave'] = 'min_length[6]';
+        if ($this->request->getVar('password')) {
+            $rules['password'] = 'min_length[6]';
         }
 
         if (!$this->validate($rules)) {
@@ -167,8 +158,8 @@ class UsuarioController extends BaseController
                 'activo' => $this->request->getVar('activo') ? 1 : 0
             ];
 
-            if ($this->request->getVar('clave')) {
-                $data['clave'] = password_hash($this->request->getVar('clave'), PASSWORD_DEFAULT);
+            if ($this->request->getVar('password')) {
+                $data['password'] = password_hash($this->request->getVar('password'), PASSWORD_DEFAULT);
             }
 
             $this->usuarioModel->update($idusuario, $data);
@@ -266,7 +257,7 @@ class UsuarioController extends BaseController
 
         try {
             $passwordHash = password_hash($nuevaPassword, PASSWORD_DEFAULT);
-            $this->usuarioModel->update($idusuario, ['clave' => $passwordHash]);
+            $this->usuarioModel->update($idusuario, ['password' => $passwordHash]);
             
             return $this->response->setJSON([
                 'success' => true,
@@ -297,17 +288,17 @@ class UsuarioController extends BaseController
         $estadisticas = [
             'leads_mes_actual' => $db->table('leads')
                 ->where('idusuario', $idusuario)
-                ->where('MONTH(fecha_registro)', date('m'))
-                ->where('YEAR(fecha_registro)', date('Y'))
+                ->where('MONTH(created_at)', date('m'))
+                ->where('YEAR(created_at)', date('Y'))
                 ->countAllResults(),
             'tareas_pendientes' => $db->table('tareas')
                 ->where('idusuario', $idusuario)
                 ->where('estado', 'Pendiente')
                 ->countAllResults(),
             'ultima_actividad' => $db->table('leads')
-                ->select('fecha_registro')
+                ->select('created_at')
                 ->where('idusuario', $idusuario)
-                ->orderBy('fecha_registro', 'DESC')
+                ->orderBy('created_at', 'DESC')
                 ->limit(1)
                 ->get()
                 ->getRowArray()

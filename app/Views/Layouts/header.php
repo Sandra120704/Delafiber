@@ -112,14 +112,28 @@
               <?php if(isset($notifications) && !empty($notifications)): ?>
                 <?php foreach($notifications as $notification): ?>
                   <li>
-                    <a class="dropdown-item" href="<?= base_url($notification['url']) ?>">
+                    <a class="dropdown-item" href="<?= base_url($notification['url'] ?? '/dashboard') ?>">
                       <div class="d-flex align-items-center">
                         <div class="flex-shrink-0">
-                          <i class="<?= $notification['icon'] ?> text-<?= $notification['type'] ?>"></i>
+                          <?php
+                          $iconClass = match($notification['tipo'] ?? 'Sistema') {
+                              'Tarea' => 'ti-clipboard',
+                              'Lead' => 'ti-user',
+                              'Comentario' => 'ti-comment',
+                              default => 'ti-bell'
+                          };
+                          $colorClass = match($notification['tipo'] ?? 'Sistema') {
+                              'Tarea' => 'warning',
+                              'Lead' => 'primary',
+                              'Comentario' => 'info',
+                              default => 'secondary'
+                          };
+                          ?>
+                          <i class="<?= $iconClass ?> text-<?= $colorClass ?>"></i>
                         </div>
                         <div class="flex-grow-1 ms-3">
-                          <h6 class="mb-0"><?= $notification['title'] ?></h6>
-                          <small class="text-muted"><?= $notification['time'] ?></small>
+                          <h6 class="mb-0"><?= esc($notification['titulo']) ?></h6>
+                          <small class="text-muted"><?= esc($notification['mensaje'] ?? '') ?></small>
                         </div>
                       </div>
                     </a>
@@ -138,15 +152,15 @@
             <a class="nav-link d-flex align-items-center" href="#" id="profileDropdown" 
                data-bs-toggle="dropdown" aria-expanded="false">
               <div class="user-avatar d-flex align-items-center justify-content-center bg-primary text-white">
-                <?= strtoupper(substr(session()->get('nombre_completo') ?? 'U', 0, 1)) ?>
+                <?= strtoupper(substr(session()->get('nombre_completo') ?? session()->get('usuario') ?? 'U', 0, 1)) ?>
               </div>
-              <span class="d-none d-md-inline ms-2"><?= session()->get('nombre_completo') ?? 'Usuario' ?></span>
+              <span class="d-none d-md-inline ms-2"><?= session()->get('nombre_completo') ?? session()->get('usuario') ?? 'Usuario' ?></span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
               <li>
                 <div class="dropdown-header">
-                  <h6 class="mb-0"><?= session()->get('nombre_completo') ?? 'Usuario' ?></h6>
-                  <small class="text-muted"><?= session()->get('correo') ?? '' ?></small>
+                  <h6 class="mb-0"><?= session()->get('nombre_completo') ?? session()->get('usuario') ?? 'Usuario' ?></h6>
+                  <small class="text-muted"><?= session()->get('correo') ?? session()->get('email') ?? '' ?></small>
                 </div>
               </li>
               <li><hr class="dropdown-divider"></li>
@@ -268,7 +282,7 @@
             </a>
           </li>
 
-          <!-- Mapa CRM con Turf.js -->
+          <!-- Mapa -->
           <li class="nav-item <?= (strpos(uri_string(), 'mapa') !== false || strpos(uri_string(), 'crm-campanas') !== false) ? 'active' : '' ?>">
             <a class="nav-link" href="<?= base_url('mapa') ?>">
               <i class="ti-map-alt menu-icon"></i>
@@ -298,7 +312,7 @@
           </li>
 
           <!-- Usuarios (solo admin) -->
-          <?php if(session()->get('rol') == 'admin'): ?>
+          <?php if(session()->get('nombreRol') == 'Administrador' || session()->get('idrol') == 1): ?>
           <li class="nav-item <?= (strpos(uri_string(), 'usuarios') !== false) ? 'active' : '' ?>">
             <a class="nav-link" href="<?= base_url('usuarios') ?>">
               <i class="ti-user menu-icon"></i>

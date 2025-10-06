@@ -5,13 +5,10 @@ namespace App\Models;
 use CodeIgniter\Model;
 
 /**
- * @deprecated Este archivo está deprecado. Usar DifusionModel.php en su lugar.
- * Este archivo será eliminado en futuras versiones.
- * 
  * MODELO: DifusionModel
  * Gestión de difusiones (medios asociados a campañas)
  */
-class DifunsionModels extends Model
+class DifusionModel extends Model
 {
     protected $table = 'difusiones';
     protected $primaryKey = 'iddifusion';
@@ -104,5 +101,28 @@ class DifunsionModels extends Model
         $builder->orderBy('efectividad', 'DESC');
         
         return $builder->get()->getResultArray();
+    }
+
+    /**
+     * Obtener estadísticas de una difusión
+     */
+    public function getEstadisticasDifusion($iddifusion)
+    {
+        $difusion = $this->find($iddifusion);
+        
+        if (!$difusion) {
+            return null;
+        }
+
+        $costo_por_lead = 0;
+        if ($difusion['leads_generados'] > 0) {
+            $costo_por_lead = $difusion['presupuesto'] / $difusion['leads_generados'];
+        }
+
+        return [
+            'difusion' => $difusion,
+            'costo_por_lead' => $costo_por_lead,
+            'roi' => 0
+        ];
     }
 }

@@ -14,8 +14,8 @@ class ReporteModel extends Model
     public function getLeadsPorFechas($fechaInicio, $fechaFin)
     {
         return $this->db->table('leads')
-            ->where('fecha_registro >=', $fechaInicio)
-            ->where('fecha_registro <=', $fechaFin . ' 23:59:59')
+            ->where('created_at >=', $fechaInicio)
+            ->where('created_at <=', $fechaFin . ' 23:59:59')
             ->get()
             ->getResultArray();
     }

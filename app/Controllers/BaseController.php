@@ -42,6 +42,11 @@ abstract class BaseController extends Controller
      * The creation of dynamic property is deprecated in PHP 8.2.
      */
     // protected $session;
+    
+    /**
+     * Data to pass to views
+     */
+    protected $data = [];
 
     /**
      * @return void
@@ -54,5 +59,41 @@ abstract class BaseController extends Controller
         // Preload any models, libraries, etc, here.
 
         // E.g.: $this->session = service('session');
+        
+        // Cargar notificaciones para el header
+        $this->cargarNotificaciones();
+    }
+    
+    /**
+     * Cargar notificaciones del usuario actual
+     */
+    protected function cargarNotificaciones()
+    {
+        $idusuario = session()->get('idusuario');
+        
+        if ($idusuario) {
+            try {
+                // Verificar si la tabla existe
+                $db = \Config\Database::connect();
+                if ($db->tableExists('notificaciones')) {
+                    $notificacionModel = new \App\Models\NotificacionModel();
+                    
+                    // Obtener notificaciones no leídas
+                    $notificaciones = $notificacionModel->getNoLeidas($idusuario);
+                    $notification_count = count($notificaciones);
+                    
+                    // Pasar a las vistas
+                    $this->data['notifications'] = $notificaciones;
+                    $this->data['notification_count'] = $notification_count;
+                    
+                    // También en sesión para acceso rápido
+                    session()->set('notification_count', $notification_count);
+                }
+            } catch (\Exception $e) {
+                // Si hay error (tabla no existe), simplemente no cargar notificaciones
+                $this->data['notifications'] = [];
+                $this->data['notification_count'] = 0;
+            }
+        }
     }
 }

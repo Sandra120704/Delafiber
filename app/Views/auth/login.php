@@ -126,24 +126,22 @@
                     </div>
                 <?php endif; ?>
                 
-                <!-- Formulario de login -->
                 <form method="post" action="<?= base_url('auth/login') ?>">
                     <?= csrf_field() ?>
                     
                     <div class="form-group">
-                        <label for="usuario">Usuario</label>
+                        <label for="usuario">Usuario o Email</label>
                         <input type="text" 
                                class="form-control" 
                                id="usuario" 
                                name="usuario" 
-                               placeholder="Ingresa tu usuario"
+                               placeholder="Ingresa tu nombre o email"
                                value="<?= old('usuario') ?>"
                                required
                                autofocus>
                     </div>
                     
                     <div class="form-group">
-                        <label for="password">Contraseña</label>
                         <input type="password" 
                                class="form-control" 
                                id="password" 
@@ -186,8 +184,14 @@
             </div>
             <div class="card-body py-2">
                 <small>
-                    <strong>Admin:</strong> jperez / 123456<br>
-                    <strong>Vendedor:</strong> mlopez / 123456
+                    <strong>Admin:</strong><br>
+                    admin@delafiber.com<br>
+                    o "Admin Sistema"<br>
+                    Password: password<br><br>
+                    <strong>Vendedor:</strong><br>
+                    vendedor1@delafiber.com<br>
+                    o "Juan Pérez"<br>
+                    Password: password
                 </small>
             </div>
         </div>

@@ -20,7 +20,9 @@ class PersonaModel extends Model
         'telefono',
         'direccion',
         'referencias',
-        'iddistrito'
+        'iddistrito',
+        'coordenadas',
+        'id_zona'
     ];
     
     protected $useTimestamps = true;
@@ -32,8 +34,10 @@ class PersonaModel extends Model
         'apellidos' => 'required|min_length[2]|max_length[100]',
         'dni' => 'permit_empty|exact_length[8]|numeric|is_unique[personas.dni,idpersona,{idpersona}]',
         'correo' => 'permit_empty|valid_email|max_length[150]',
-        'telefono' => 'permit_empty|exact_length[9]|regex_match[/^[0-9]{9}$/]',
-        'iddistrito' => 'permit_empty|numeric'
+        'telefono' => 'permit_empty|exact_length[9]|regex_match[/^9[0-9]{8}$/]',
+        'iddistrito' => 'permit_empty|numeric',
+        'coordenadas' => 'permit_empty|max_length[50]',
+        'id_zona' => 'permit_empty|numeric'
     ];
     
     protected $validationMessages = [
@@ -60,7 +64,7 @@ class PersonaModel extends Model
         'telefono' => [
             'required' => 'El teléfono es obligatorio',
             'exact_length' => 'El teléfono debe tener exactamente 9 dígitos',
-            'regex_match' => 'El teléfono solo debe contener números'
+            'regex_match' => 'El teléfono debe empezar con 9 y contener solo números'
         ],
         'iddistrito' => [
             'required' => 'Debe seleccionar un distrito',

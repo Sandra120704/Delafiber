@@ -599,6 +599,112 @@ class CrmCampanas extends BaseController
     }
 
     /**
+     * Geocodificar prospectos sin coordenadas (proceso masivo)
+     */
+    public function geocodificarProspectos()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Solicitud no válida']);
+        }
+
+        $db = \Config\Database::connect();
+        
+        // Obtener prospectos sin coordenadas pero con dirección
+        $query = $db->query("
+            SELECT idpersona, direccion, 
+                   d.nombre as distrito,
+                   prov.nombre as provincia,
+                   dept.nombre as departamento
+            FROM personas p
+            LEFT JOIN distritos d ON p.iddistrito = d.iddistrito
+            LEFT JOIN provincias prov ON d.idprovincia = prov.idprovincia
+            LEFT JOIN departamentos dept ON prov.iddepartamento = dept.iddepartamento
+            WHERE p.coordenadas IS NULL 
+            AND p.direccion IS NOT NULL 
+            AND p.direccion != ''
+            LIMIT 50
+        ");
+        
+        $prospectos = $query->getResultArray();
+        $geocodificados = 0;
+        $errores = 0;
+        
+        foreach ($prospectos as $prospecto) {
+            $direccionCompleta = implode(', ', array_filter([
+                $prospecto['direccion'],
+                $prospecto['distrito'],
+                $prospecto['provincia'],
+                $prospecto['departamento'] ?? 'Ica, Perú'
+            ]));
+            
+            $coordenadas = $this->geocodificarDireccion($direccionCompleta);
+            
+            if ($coordenadas) {
+                $this->personaModel->update($prospecto['idpersona'], ['coordenadas' => $coordenadas]);
+                $geocodificados++;
+            } else {
+                $errores++;
+            }
+            
+            // Pausa para no exceder límites de API
+            usleep(100000); // 0.1 segundos
+        }
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => "Geocodificación completada",
+            'geocodificados' => $geocodificados,
+            'errores' => $errores,
+            'total' => count($prospectos)
+        ]);
+    }
+
+    /**
+     * Geocodificar dirección usando Google Geocoding API
+     */
+    private function geocodificarDireccion($direccion)
+    {
+        try {
+            $apiKey = 'AIzaSyAACo2qyElsl8RwIqW3x0peOA_20f7SEHA';
+            
+            $url = 'https://maps.googleapis.com/maps/api/geocode/json?' . http_build_query([
+                'address' => $direccion,
+                'key' => $apiKey,
+                'language' => 'es',
+                'region' => 'pe'
+            ]);
+            
+            // Usar cURL en lugar de file_get_contents
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            
+            if ($httpCode !== 200 || !$response) {
+                return null;
+            }
+            
+            $data = json_decode($response, true);
+            
+            if ($data['status'] === 'OK' && !empty($data['results'])) {
+                $location = $data['results'][0]['geometry']['location'];
+                return $location['lat'] . ',' . $location['lng'];
+            }
+            
+            return null;
+            
+        } catch (\Exception $e) {
+            log_message('error', "Error al geocodificar: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Helper para exportar CSV
      */
     private function exportarCSV($datos, $nombreArchivo)

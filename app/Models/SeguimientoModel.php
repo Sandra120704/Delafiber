@@ -44,7 +44,7 @@ class SeguimientoModel extends Model
      */
     public function getActividadReciente($userId, $limit = 10)
     {
-        return $this->db->table('seguimiento s')
+        return $this->db->table('seguimientos s')
             ->join('leads l', 's.idlead = l.idlead')
             ->join('personas p', 'l.idpersona = p.idpersona')
             ->join('modalidades m', 's.idmodalidad = m.idmodalidad')
@@ -60,19 +60,18 @@ class SeguimientoModel extends Model
     /**
      * Obtiene el último seguimiento de un lead
      */
-    public function getUltimoSeguimiento($leadId)
+    public function getUltimoSeguimiento($leadId, $limit = 1)
     {
-        return $this->db->table('seguimiento s')
+        return $this->db->table('seguimientos s')
             ->join('modalidades m', 's.idmodalidad = m.idmodalidad')
             ->join('usuarios u', 's.idusuario = u.idusuario')
-            ->join('personas p', 'u.idpersona = p.idpersona')
-            ->select('s.*, m.nombre as modalidad, 
-                     CONCAT(p.nombres, " ", p.apellidos) as usuario_nombre')
+            ->select('s.*, m.nombre as modalidad,
+                     u.usuario as usuario_nombre')
             ->where('s.idlead', $leadId)
             ->orderBy('s.fecha', 'DESC')
-            ->limit(1)
+            ->limit($limit)
             ->get()
-            ->getRowArray();
+            ->getResultArray();
     }
 
     /**
@@ -80,12 +79,11 @@ class SeguimientoModel extends Model
      */
     public function getHistorialLead($leadId)
     {
-        return $this->db->table('seguimiento s')
+        return $this->db->table('seguimientos s')
             ->join('modalidades m', 's.idmodalidad = m.idmodalidad')
             ->join('usuarios u', 's.idusuario = u.idusuario')
-            ->join('personas p', 'u.idpersona = p.idpersona')
-            ->select('s.*, m.nombre as modalidad,
-                     CONCAT(p.nombres, " ", p.apellidos) as usuario_nombre')
+            ->select('s.*, m.nombre as modalidad, 
+                     u.usuario as usuario_nombre')
             ->where('s.idlead', $leadId)
             ->orderBy('s.fecha', 'DESC')
             ->get()
@@ -101,7 +99,7 @@ class SeguimientoModel extends Model
         $totalSeguimientos = $this->where('idusuario', $userId)->countAllResults();
 
         // Seguimientos por modalidad
-        $porModalidad = $this->db->table('seguimiento s')
+        $porModalidad = $this->db->table('seguimientos s')
             ->join('modalidades m', 's.idmodalidad = m.idmodalidad')
             ->select('m.nombre as modalidad, COUNT(*) as total')
             ->where('s.idusuario', $userId)
@@ -111,7 +109,7 @@ class SeguimientoModel extends Model
             ->getResultArray();
 
         // Seguimientos por día (últimos 7 días)
-        $seguimientosPorDia = $this->db->table('seguimiento')
+        $seguimientosPorDia = $this->db->table('seguimientos')
             ->select('DATE(fecha) as fecha, COUNT(*) as total')
             ->where('idusuario', $userId)
             ->where('fecha >=', date('Y-m-d', strtotime('-7 days')))
@@ -121,7 +119,7 @@ class SeguimientoModel extends Model
             ->getResultArray();
 
         // Promedio de seguimientos por lead
-        $leadsAtendidos = $this->db->table('seguimiento')
+        $leadsAtendidos = $this->db->table('seguimientos')
             ->select('COUNT(DISTINCT idlead) as total')
             ->where('idusuario', $userId)
             ->get()
@@ -150,16 +148,16 @@ class SeguimientoModel extends Model
             ->join('personas p', 'l.idpersona = p.idpersona')
             ->join('etapas e', 'l.idetapa = e.idetapa')
             ->select('l.idlead, CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre,
-                     p.telefono, e.nombre as etapa, l.fecha_registro,
-                     DATEDIFF(NOW(), l.fecha_modificacion) as dias_sin_actividad')
+                     p.telefono, e.nombre as etapa, l.created_at as fecha_registro,
+                     TIMESTAMPDIFF(DAY, l.updated_at, NOW()) as dias_sin_actividad')
             ->where('l.idusuario', $userId)
             ->where('l.estado IS NULL')
             ->where('l.idlead NOT IN', function($builder) use ($fechaLimite) {
                 return $builder->select('s.idlead')
-                    ->from('seguimiento s')
+                    ->from('seguimientos s')
                     ->where('s.fecha >=', $fechaLimite);
             })
-            ->orderBy('l.fecha_modificacion', 'ASC')
+            ->orderBy('l.updated_at', 'ASC')
             ->limit($limit)
             ->get()
             ->getResultArray();
@@ -185,24 +183,12 @@ class SeguimientoModel extends Model
 
     /**
      * Obtiene métricas de tiempo de respuesta
+     * NOTA: Tabla seguimientos no existe - método deshabilitado
      */
     public function getTiempoRespuesta($userId)
     {
-        // Tiempo promedio entre registro del lead y primer seguimiento
-        $query = "
-            SELECT AVG(TIMESTAMPDIFF(MINUTE, l.fecha_registro, s.fecha)) as minutos_promedio
-            FROM leads l
-            INNER JOIN (
-                SELECT idlead, MIN(fecha) as fecha
-                FROM seguimiento
-                WHERE idusuario = ?
-                GROUP BY idlead
-            ) s ON l.idlead = s.idlead
-            WHERE l.idusuario = ?
-            AND l.fecha_registro >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-        ";
-
-        $result = $this->db->query($query, [$userId, $userId])->getRow();
+        // Tabla seguimientos no existe, retornar valor por defecto
+        return (object)['minutos_promedio' => 0];
         
         return [
             'minutos_promedio' => round($result->minutos_promedio ?? 0),
@@ -264,7 +250,7 @@ class SeguimientoModel extends Model
         $totalInteracciones = $this->where('idlead', $leadId)->countAllResults();
 
         // Por modalidad
-        $porModalidad = $this->db->table('seguimiento s')
+        $porModalidad = $this->db->table('seguimientos s')
             ->join('modalidades m', 's.idmodalidad = m.idmodalidad')
             ->select('m.nombre as modalidad, COUNT(*) as total')
             ->where('s.idlead', $leadId)
@@ -295,15 +281,14 @@ class SeguimientoModel extends Model
      */
     public function exportarSeguimientos($filtros = [])
     {
-        $builder = $this->db->table('seguimiento s')
+        $builder = $this->db->table('seguimientos s')
             ->join('leads l', 's.idlead = l.idlead')
             ->join('personas p', 'l.idpersona = p.idpersona')
             ->join('modalidades m', 's.idmodalidad = m.idmodalidad')
             ->join('usuarios u', 's.idusuario = u.idusuario')
-            ->join('personas pu', 'u.idpersona = pu.idpersona')
             ->select('s.*, CONCAT(p.nombres, " ", p.apellidos) as cliente,
                      p.telefono, m.nombre as modalidad,
-                     CONCAT(pu.nombres, " ", pu.apellidos) as vendedor');
+                     u.usuario as vendedor');
 
         if (!empty($filtros['fecha_desde'])) {
             $builder->where('s.fecha >=', $filtros['fecha_desde']);

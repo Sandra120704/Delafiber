@@ -43,20 +43,8 @@ class Tareas extends BaseController
             $data['completadas'] = $this->getTareasCompletadas($idusuario);
             $data['tareas_pendientes_count'] = count($data['pendientes']);
             
-            // Obtener leads con datos de personas
-            $db = \Config\Database::connect();
-            $leads = $db->query("
-                SELECT 
-                    l.idlead,
-                    CONCAT(p.nombres, ' ', p.apellidos) as cliente,
-                    p.telefono,
-                    l.estado
-                FROM leads l
-                INNER JOIN personas p ON l.idpersona = p.idpersona
-                ORDER BY l.fecha_registro DESC
-                LIMIT 50
-            ")->getResultArray();
-            $data['leads'] = $leads;
+            // Obtener leads con datos de personas usando el modelo
+            $data['leads'] = $this->leadModel->getLeadsConCliente(50);
             
         } catch (\Exception $e) {
             log_message('error', 'Error en Tareas::index: ' . $e->getMessage());
@@ -132,7 +120,7 @@ class Tareas extends BaseController
             ->join('personas p', 'p.idpersona = l.idpersona', 'left')
             ->where('tareas.idusuario', $idusuario)
             ->where('tareas.estado', 'Completada')
-            ->orderBy('tareas.fecha_completado', 'DESC')
+            ->orderBy('tareas.fecha_completada', 'DESC')
             ->limit(50)
             ->findAll();
     }
@@ -197,7 +185,7 @@ class Tareas extends BaseController
 
         $data = [
             'estado' => 'Completada',
-            'fecha_completado' => date('Y-m-d H:i:s'),
+            'fecha_completada' => date('Y-m-d H:i:s'),
             'notas_resultado' => $this->request->getPost('notas_resultado')
         ];
 
@@ -262,7 +250,7 @@ class Tareas extends BaseController
             if ($tarea && $tarea['idusuario'] == session()->get('user_id')) {
                 $this->tareaModel->update($id, [
                     'estado' => 'Completada',
-                    'fecha_completado' => date('Y-m-d H:i:s')
+                    'fecha_completada' => date('Y-m-d H:i:s')
                 ]);
             }
         }
@@ -325,19 +313,8 @@ class Tareas extends BaseController
             return redirect()->to('/auth/login');
         }
 
-        // Obtener leads con datos de personas
-        $db = \Config\Database::connect();
-        $leads = $db->query("
-            SELECT 
-                l.idlead,
-                CONCAT(p.nombres, ' ', p.apellidos) as cliente,
-                p.telefono,
-                l.estado
-            FROM leads l
-            INNER JOIN personas p ON l.idpersona = p.idpersona
-            ORDER BY l.fecha_registro DESC
-            LIMIT 100
-        ")->getResultArray();
+        // Obtener leads con datos de personas usando el modelo
+        $leads = $this->leadModel->getLeadsConCliente(100);
 
         $data = [
             'title' => 'Calendario de Tareas - Delafiber CRM',

@@ -161,15 +161,12 @@
                     </div>
 
                     <!-- Información adicional -->
-                    <?php if (isset($campania['fecha_modificacion'])): ?>
+                    <?php if (isset($campania['updated_at'])): ?>
                     <div class="alert alert-light mt-4">
                         <small class="text-muted">
                             <i class="icon-clock"></i>
                             <strong>Última modificación:</strong> 
-                            <?= date('d/m/Y H:i', strtotime($campania['fecha_modificacion'])) ?>
-                            <?php if (isset($campania['usuario_modificacion'])): ?>
-                                por <?= esc($campania['usuario_modificacion']) ?>
-                            <?php endif; ?>
+                            <?= date('d/m/Y H:i', strtotime($campania['updated_at'])) ?>
                         </small>
                     </div>
                     <?php endif; ?>

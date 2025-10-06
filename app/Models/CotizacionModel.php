@@ -14,13 +14,15 @@ class CotizacionModel extends Model
     protected $protectFields = true;
     protected $allowedFields = [
         'idlead',
-        'idservicio',
-        'precio_cotizado',
-        'descuento_aplicado',
-        'precio_instalacion',
-        'vigencia_dias',
+        'idusuario',
+        'numero_cotizacion',
+        'subtotal',
+        'igv',
+        'total',
+        'observaciones',
         'estado',
-        'observaciones'
+        'fecha_envio',
+        'fecha_respuesta'
     ];
 
     // Dates
@@ -32,24 +34,49 @@ class CotizacionModel extends Model
     // Validation
     protected $validationRules = [
         'idlead' => 'required|integer',
-        'idservicio' => 'required|integer',
-        'precio_cotizado' => 'required|decimal',
-        'vigencia_dias' => 'integer'
+        'idusuario' => 'required|integer',
+        'subtotal' => 'required|decimal',
+        'total' => 'required|decimal'
     ];
     
     protected $validationMessages = [
         'idlead' => [
             'required' => 'El lead es obligatorio'
         ],
-        'idservicio' => [
-            'required' => 'El servicio es obligatorio'
+        'idusuario' => [
+            'required' => 'El usuario es obligatorio'
         ],
-        'precio_cotizado' => [
-            'required' => 'El precio es obligatorio'
+        'total' => [
+            'required' => 'El total es obligatorio'
         ]
     ];
     
     protected $skipValidation = false;
+
+    /**
+     * Verificar si una tabla existe en la base de datos
+     */
+    private function tableExists($tableName)
+    {
+        try {
+            return $this->db->tableExists($tableName);
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Verificar si una columna existe en una tabla
+     */
+    private function columnExists($tableName, $columnName)
+    {
+        try {
+            $fields = $this->db->getFieldNames($tableName);
+            return in_array($columnName, $fields);
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
 
     /**
      * Obtener cotizaciones completas con filtros
@@ -57,21 +84,49 @@ class CotizacionModel extends Model
     public function getCotizacionesCompletas($userId = null, $rol = null)
     {
         $builder = $this->db->table($this->table . ' c');
-        $builder->select('
-            c.*,
-            s.nombre as servicio_nombre,
-            s.velocidad,
-            CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre,
-            p.telefono as cliente_telefono,
-            l.idlead
-        ');
-        $builder->join('servicios_catalogo s', 'c.idservicio = s.idservicio', 'left');
-        $builder->join('leads l', 'c.idlead = l.idlead', 'left');
-        $builder->join('personas p', 'l.idpersona = p.idpersona', 'left');
         
-        // Si no es admin, solo mostrar cotizaciones de sus leads
-        if ($rol !== 'admin' && $userId) {
-            $builder->where('l.idusuario', $userId);
+        // Verificar si la columna idusuario existe
+        $hasUsuarioColumn = false;
+        try {
+            $fields = $this->db->getFieldNames($this->table);
+            $hasUsuarioColumn = in_array('idusuario', $fields);
+        } catch (\Exception $e) {
+            log_message('warning', 'No se pudo verificar columnas de cotizaciones');
+        }
+        
+        if ($hasUsuarioColumn) {
+            $builder->select('
+                c.*,
+                CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre,
+                p.telefono as cliente_telefono,
+                u.usuario as usuario_nombre,
+                l.idlead
+            ');
+            $builder->join('leads l', 'c.idlead = l.idlead', 'left');
+            $builder->join('personas p', 'l.idpersona = p.idpersona', 'left');
+            $builder->join('usuarios u', 'c.idusuario = u.idusuario', 'left');
+            
+            // Si no es admin, solo mostrar cotizaciones de sus leads
+            if ($rol !== 'admin' && $userId) {
+                $builder->where('c.idusuario', $userId);
+            }
+        } else {
+            // Sin columna idusuario, filtrar por leads del usuario
+            $builder->select('
+                c.*,
+                CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre,
+                p.telefono as cliente_telefono,
+                u.usuario as usuario_nombre,
+                l.idlead
+            ');
+            $builder->join('leads l', 'c.idlead = l.idlead', 'left');
+            $builder->join('personas p', 'l.idpersona = p.idpersona', 'left');
+            $builder->join('usuarios u', 'l.idusuario = u.idusuario', 'left');
+            
+            // Si no es admin, filtrar por leads del usuario
+            if ($rol !== 'admin' && $userId) {
+                $builder->where('l.idusuario', $userId);
+            }
         }
         
         $builder->orderBy('c.created_at', 'DESC');
@@ -84,9 +139,7 @@ class CotizacionModel extends Model
      */
     public function getCotizacionesPorLead($idlead)
     {
-        return $this->select('cotizaciones.*, servicios_catalogo.nombre as servicio_nombre, 
-                             servicios_catalogo.velocidad, servicios_catalogo.descripcion as servicio_descripcion')
-            ->join('servicios_catalogo', 'servicios_catalogo.idservicio = cotizaciones.idservicio')
+        return $this->select('cotizaciones.*')
             ->where('cotizaciones.idlead', $idlead)
             ->orderBy('cotizaciones.created_at', 'DESC')
             ->findAll();
@@ -97,33 +150,98 @@ class CotizacionModel extends Model
      */
     public function getCotizacionCompleta($idcotizacion)
     {
-        return $this->select('cotizaciones.*, 
-                             servicios_catalogo.nombre as servicio_nombre,
-                             servicios_catalogo.velocidad,
-                             servicios_catalogo.descripcion as servicio_descripcion,
-                             CONCAT(personas.nombres, " ", personas.apellidos) as cliente_nombre,
-                             personas.correo as cliente_correo,
-                             personas.telefono as cliente_telefono')
-            ->join('servicios_catalogo', 'servicios_catalogo.idservicio = cotizaciones.idservicio')
-            ->join('leads', 'leads.idlead = cotizaciones.idlead')
-            ->join('personas', 'personas.idpersona = leads.idpersona')
-            ->where('cotizaciones.idcotizacion', $idcotizacion)
-            ->first();
+        // Verificar si la columna idusuario existe
+        $hasUsuarioColumn = false;
+        try {
+            $fields = $this->db->getFieldNames($this->table);
+            $hasUsuarioColumn = in_array('idusuario', $fields);
+        } catch (\Exception $e) {
+            log_message('warning', 'No se pudo verificar columnas de cotizaciones');
+        }
+        
+        if ($hasUsuarioColumn) {
+            $cotizacion = $this->select('cotizaciones.*, 
+                                 CONCAT(personas.nombres, " ", personas.apellidos) as cliente_nombre,
+                                 personas.correo as cliente_correo,
+                                 personas.telefono as cliente_telefono,
+                                 personas.direccion as cliente_direccion,
+                                 u.usuario as usuario_nombre')
+                ->join('leads', 'leads.idlead = cotizaciones.idlead')
+                ->join('personas', 'personas.idpersona = leads.idpersona')
+                ->join('usuarios u', 'cotizaciones.idusuario = u.idusuario', 'left')
+                ->where('cotizaciones.idcotizacion', $idcotizacion)
+                ->first();
+        } else {
+            $cotizacion = $this->select('cotizaciones.*, 
+                                 CONCAT(personas.nombres, " ", personas.apellidos) as cliente_nombre,
+                                 personas.correo as cliente_correo,
+                                 personas.telefono as cliente_telefono,
+                                 personas.direccion as cliente_direccion,
+                                 u.usuario as usuario_nombre')
+                ->join('leads', 'leads.idlead = cotizaciones.idlead')
+                ->join('personas', 'personas.idpersona = leads.idpersona')
+                ->join('usuarios u', 'leads.idusuario = u.idusuario', 'left')
+                ->where('cotizaciones.idcotizacion', $idcotizacion)
+                ->first();
+        }
+        
+        // Obtener detalles de servicios (si las tablas existen)
+        if ($cotizacion) {
+            try {
+                if ($this->tableExists('cotizacion_detalle') && $this->tableExists('servicios')) {
+                    $db = \Config\Database::connect();
+                    $cotizacion['detalles'] = $db->table('cotizacion_detalle cd')
+                        ->select('cd.*, s.nombre as servicio_nombre, s.descripcion as servicio_descripcion')
+                        ->join('servicios s', 'cd.idservicio = s.idservicio')
+                        ->where('cd.idcotizacion', $idcotizacion)
+                        ->get()
+                        ->getResultArray();
+                } else {
+                    $cotizacion['detalles'] = [];
+                }
+            } catch (\Exception $e) {
+                log_message('warning', 'No se pudo obtener detalles de cotización: ' . $e->getMessage());
+                $cotizacion['detalles'] = [];
+            }
+        }
+        
+        return $cotizacion;
     }
 
     /**
      * Crear nueva cotización
      */
-    public function crearCotizacion($data)
+    public function crearCotizacion($data, $detalles = [])
     {
-        // Calcular precio final si hay descuento
-        if (isset($data['descuento_aplicado']) && $data['descuento_aplicado'] > 0) {
-            $precioBase = $data['precio_cotizado'];
-            $descuento = $data['descuento_aplicado'];
-            $data['precio_cotizado'] = $precioBase - ($precioBase * ($descuento / 100));
+        // Generar número de cotización
+        if (!isset($data['numero_cotizacion'])) {
+            $data['numero_cotizacion'] = 'COT-' . date('Y') . '-' . str_pad($this->countAll() + 1, 4, '0', STR_PAD_LEFT);
+        }
+        
+        // Calcular IGV y total si no están definidos
+        if (isset($data['subtotal']) && !isset($data['total'])) {
+            $data['igv'] = $data['subtotal'] * 0.18;
+            $data['total'] = $data['subtotal'] + $data['igv'];
         }
 
-        return $this->insert($data);
+        $idcotizacion = $this->insert($data);
+        
+        // Insertar detalles si existen y las tablas están disponibles
+        if ($idcotizacion && !empty($detalles)) {
+            try {
+                if ($this->tableExists('cotizacion_detalle') && $this->tableExists('servicios')) {
+                    $db = \Config\Database::connect();
+                    foreach ($detalles as $detalle) {
+                        $detalle['idcotizacion'] = $idcotizacion;
+                        $db->table('cotizacion_detalle')->insert($detalle);
+                    }
+                }
+            } catch (\Exception $e) {
+                log_message('warning', 'No se pudieron insertar detalles de cotización: ' . $e->getMessage());
+            }
+        }
+        
+        return $idcotizacion;
     }
 
     /**
@@ -131,40 +249,46 @@ class CotizacionModel extends Model
      */
     public function cambiarEstado($idcotizacion, $nuevoEstado)
     {
-        $estadosValidos = ['vigente', 'vencida', 'aceptada', 'rechazada'];
+        $estadosValidos = ['Borrador', 'Enviada', 'Aceptada', 'Rechazada'];
         
         if (!in_array($nuevoEstado, $estadosValidos)) {
             return false;
         }
+        
+        $updateData = ['estado' => $nuevoEstado];
+        
+        // Registrar fecha según el estado
+        if ($nuevoEstado === 'Enviada') {
+            $updateData['fecha_envio'] = date('Y-m-d H:i:s');
+        } elseif (in_array($nuevoEstado, ['Aceptada', 'Rechazada'])) {
+            $updateData['fecha_respuesta'] = date('Y-m-d H:i:s');
+        }
 
-        return $this->update($idcotizacion, ['estado' => $nuevoEstado]);
+        return $this->update($idcotizacion, $updateData);
     }
 
     /**
      * Verificar y actualizar cotizaciones vencidas
      */
-    public function actualizarCotizacionesVencidas()
+    public function getCotizacionesPendientes($userId = null)
     {
-        $hoy = date('Y-m-d H:i:s');
+        $builder = $this->where('estado', 'Borrador');
         
-        return $this->where('estado', 'vigente')
-            ->where("DATE_ADD(created_at, INTERVAL vigencia_dias DAY) <", $hoy)
-            ->set(['estado' => 'vencida'])
-            ->update();
+        if ($userId) {
+            $builder->where('idusuario', $userId);
+        }
+        
+        return $builder->orderBy('created_at', 'DESC')->findAll();
     }
 
     /**
      * Obtener cotizaciones vigentes de un lead
      */
-    public function getCotizacionesVigentes($idlead)
+    public function getCotizacionesEnviadas($idlead)
     {
-        $hoy = date('Y-m-d H:i:s');
-        
-        return $this->select('cotizaciones.*, servicios_catalogo.nombre as servicio_nombre')
-            ->join('servicios_catalogo', 'servicios_catalogo.idservicio = cotizaciones.idservicio')
-            ->where('cotizaciones.idlead', $idlead)
-            ->where('cotizaciones.estado', 'vigente')
-            ->where("DATE_ADD(cotizaciones.created_at, INTERVAL cotizaciones.vigencia_dias DAY) >=", $hoy)
+        return $this->where('idlead', $idlead)
+            ->where('estado', 'Enviada')
+            ->orderBy('created_at', 'DESC')
             ->findAll();
     }
 
@@ -182,12 +306,12 @@ class CotizacionModel extends Model
 
         return $builder->select('
             COUNT(*) as total_cotizaciones,
-            SUM(CASE WHEN estado = "vigente" THEN 1 ELSE 0 END) as vigentes,
-            SUM(CASE WHEN estado = "aceptada" THEN 1 ELSE 0 END) as aceptadas,
-            SUM(CASE WHEN estado = "rechazada" THEN 1 ELSE 0 END) as rechazadas,
-            SUM(CASE WHEN estado = "vencida" THEN 1 ELSE 0 END) as vencidas,
-            AVG(precio_cotizado) as precio_promedio,
-            SUM(CASE WHEN estado = "aceptada" THEN precio_cotizado ELSE 0 END) as valor_aceptado
+            SUM(CASE WHEN estado = "Borrador" THEN 1 ELSE 0 END) as borradores,
+            SUM(CASE WHEN estado = "Enviada" THEN 1 ELSE 0 END) as enviadas,
+            SUM(CASE WHEN estado = "Aceptada" THEN 1 ELSE 0 END) as aceptadas,
+            SUM(CASE WHEN estado = "Rechazada" THEN 1 ELSE 0 END) as rechazadas,
+            AVG(total) as precio_promedio,
+            SUM(CASE WHEN estado = "Aceptada" THEN total ELSE 0 END) as valor_aceptado
         ')
         ->get()
         ->getRowArray();
@@ -202,12 +326,26 @@ class CotizacionModel extends Model
         
         $resultado = $this->select('
             COUNT(*) as total,
-            SUM(CASE WHEN estado = "aceptada" THEN 1 ELSE 0 END) as aceptadas,
-            ROUND((SUM(CASE WHEN estado = "aceptada" THEN 1 ELSE 0 END) / COUNT(*)) * 100, 2) as tasa_conversion
+            SUM(CASE WHEN estado = "Aceptada" THEN 1 ELSE 0 END) as aceptadas,
+            ROUND((SUM(CASE WHEN estado = "Aceptada" THEN 1 ELSE 0 END) / COUNT(*)) * 100, 2) as tasa_conversion
         ')
         ->where('created_at >=', $fechaInicio)
         ->first();
 
         return $resultado;
+    }
+    
+    /**
+     * Obtener detalles de una cotización
+     */
+    public function getDetallesCotizacion($idcotizacion)
+    {
+        $db = \Config\Database::connect();
+        return $db->table('cotizacion_detalle cd')
+            ->select('cd.*, s.nombre as servicio_nombre, s.descripcion, s.categoria')
+            ->join('servicios s', 'cd.idservicio = s.idservicio')
+            ->where('cd.idcotizacion', $idcotizacion)
+            ->get()
+            ->getResultArray();
     }
 }

@@ -112,14 +112,14 @@ class Reportes extends BaseController
 
         // Total de leads en el período
         $totalLeads = $db->table('leads')
-            ->where('fecha_registro >=', $fechaInicio)
-            ->where('fecha_registro <=', $fechaFin . ' 23:59:59')
+            ->where('created_at >=', $fechaInicio)
+            ->where('created_at <=', $fechaFin . ' 23:59:59')
             ->countAllResults();
 
         // Conversiones
         $conversiones = $db->table('leads')
-            ->where('fecha_registro >=', $fechaInicio)
-            ->where('fecha_registro <=', $fechaFin . ' 23:59:59')
+            ->where('created_at >=', $fechaInicio)
+            ->where('created_at <=', $fechaFin . ' 23:59:59')
             ->where('estado', 'Convertido')
             ->countAllResults();
 
@@ -156,8 +156,8 @@ class Reportes extends BaseController
 
         $db = \Config\Database::connect();
         $valorAnterior = $db->table('leads')
-            ->where('fecha_registro >=', $fechaInicioAnterior)
-            ->where('fecha_registro <=', $fechaFinAnterior . ' 23:59:59')
+            ->where('created_at >=', $fechaInicioAnterior)
+            ->where('created_at <=', $fechaFinAnterior . ' 23:59:59')
             ->countAllResults();
 
         if ($valorAnterior == 0) return 0;
@@ -175,8 +175,8 @@ class Reportes extends BaseController
         $resultado = $db->table('leads l')
             ->select('e.nombre as etapa, COUNT(l.idlead) as total')
             ->join('etapas e', 'e.idetapa = l.idetapa')
-            ->where('l.fecha_registro >=', $fechaInicio)
-            ->where('l.fecha_registro <=', $fechaFin . ' 23:59:59')
+            ->where('l.created_at >=', $fechaInicio)
+            ->where('l.created_at <=', $fechaFin . ' 23:59:59')
             ->groupBy('l.idetapa')
             ->orderBy('total', 'DESC')
             ->get()
@@ -195,8 +195,8 @@ class Reportes extends BaseController
         $resultado = $db->table('leads l')
             ->select('o.nombre as origen, COUNT(l.idlead) as total')
             ->join('origenes o', 'o.idorigen = l.idorigen')
-            ->where('l.fecha_registro >=', $fechaInicio)
-            ->where('l.fecha_registro <=', $fechaFin . ' 23:59:59')
+            ->where('l.created_at >=', $fechaInicio)
+            ->where('l.created_at <=', $fechaFin . ' 23:59:59')
             ->groupBy('l.idorigen')
             ->orderBy('total', 'DESC')
             ->get()
@@ -218,12 +218,12 @@ class Reportes extends BaseController
         
         $resultado = $db->query("
             SELECT 
-                DATE_FORMAT(fecha_registro, '{$formatoFecha}') as fecha,
+                DATE_FORMAT(created_at, '{$formatoFecha}') as fecha,
                 COUNT(*) as leads,
                 SUM(CASE WHEN estado = 'Convertido' THEN 1 ELSE 0 END) as conversiones
             FROM leads
-            WHERE fecha_registro >= ? AND fecha_registro <= ?
-            GROUP BY DATE_FORMAT(fecha_registro, '{$formatoFecha}')
+            WHERE created_at >= ? AND created_at <= ?
+            GROUP BY DATE_FORMAT(created_at, '{$formatoFecha}')
             ORDER BY fecha
         ", [$fechaInicio, $fechaFin . ' 23:59:59'])
         ->getResultArray();
@@ -240,19 +240,18 @@ class Reportes extends BaseController
         
         $resultado = $db->query("
             SELECT 
-                CONCAT(p.nombres, ' ', p.apellidos) as nombre,
+                u.usuario as nombre,
                 COUNT(l.idlead) as total_leads,
                 SUM(CASE WHEN l.estado = 'Convertido' THEN 1 ELSE 0 END) as conversiones,
                 ROUND(SUM(CASE WHEN l.estado = 'Convertido' THEN 1 ELSE 0 END) * 100.0 / COUNT(l.idlead), 1) as tasa_conversion,
                 0 as ingresos,
                 0 as ticket_promedio
             FROM usuarios u
-            LEFT JOIN personas p ON u.idpersona = p.idpersona
             LEFT JOIN leads l ON l.idusuario = u.idusuario 
-                AND l.fecha_registro >= ? 
-                AND l.fecha_registro <= ?
+                AND l.created_at >= ? 
+                AND l.created_at <= ?
             WHERE u.activo = 1
-            GROUP BY u.idusuario
+            GROUP BY u.idusuario, u.usuario
             HAVING total_leads > 0
             ORDER BY conversiones DESC
         ", [$fechaInicio, $fechaFin . ' 23:59:59'])
@@ -280,8 +279,8 @@ class Reportes extends BaseController
                 0 as roi
             FROM campanias c
             LEFT JOIN leads l ON l.idcampania = c.idcampania 
-                AND l.fecha_registro >= ? 
-                AND l.fecha_registro <= ?
+                AND l.created_at >= ? 
+                AND l.created_at <= ?
             WHERE c.estado = 'Activa'
             GROUP BY c.idcampania
             HAVING total_leads > 0
@@ -341,7 +340,7 @@ class Reportes extends BaseController
             $sheet->setCellValue('E' . $row, $lead['etapa_actual']);
             $sheet->setCellValue('F' . $row, $lead['origen']);
             $sheet->setCellValue('G' . $row, $lead['vendedor_asignado']);
-            $sheet->setCellValue('H' . $row, date('d/m/Y', strtotime($lead['fecha_registro'])));
+            $sheet->setCellValue('H' . $row, date('d/m/Y', strtotime($lead['created_at'])));
             $row++;
         }
 

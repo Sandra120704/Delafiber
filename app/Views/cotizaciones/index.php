@@ -33,10 +33,10 @@
                         <div class="col-md-3">
                             <select class="form-select" id="filtro-estado">
                                 <option value="">Todos los estados</option>
-                                <option value="vigente">Vigente</option>
-                                <option value="aceptada">Aceptada</option>
-                                <option value="rechazada">Rechazada</option>
-                                <option value="vencida">Vencida</option>
+                                <option value="Borrador">Borrador</option>
+                                <option value="Enviada">Enviada</option>
+                                <option value="Aceptada">Aceptada</option>
+                                <option value="Rechazada">Rechazada</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -92,18 +92,18 @@
                                             </td>
                                             <td>
                                                 <div>
-                                                    <strong><?= esc($cotizacion['servicio_nombre']) ?></strong>
+                                                    <strong><?= esc($cotizacion['servicios'] ?? 'Sin servicios') ?></strong>
                                                     <br>
-                                                    <small class="text-muted"><?= esc($cotizacion['velocidad']) ?></small>
+                                                    <small class="text-muted"><?= esc($cotizacion['numero_cotizacion'] ?? '') ?></small>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div>
-                                                    <strong>S/ <?= number_format($cotizacion['precio_cotizado'], 2) ?></strong>
-                                                    <?php if ($cotizacion['descuento_aplicado'] > 0): ?>
+                                                    <strong>S/ <?= number_format($cotizacion['total'] ?? 0, 2) ?></strong>
+                                                    <?php if (isset($cotizacion['subtotal']) && $cotizacion['subtotal'] > 0): ?>
                                                         <br>
-                                                        <small class="text-success">
-                                                            -<?= $cotizacion['descuento_aplicado'] ?>% desc.
+                                                        <small class="text-muted">
+                                                            Subtotal: S/ <?= number_format($cotizacion['subtotal'], 2) ?>
                                                         </small>
                                                     <?php endif; ?>
                                                 </div>
@@ -111,34 +111,24 @@
                                             <td>
                                                 <?php
                                                 $badgeClass = [
-                                                    'vigente' => 'bg-success',
-                                                    'aceptada' => 'bg-primary',
-                                                    'rechazada' => 'bg-danger',
-                                                    'vencida' => 'bg-secondary'
+                                                    'Borrador' => 'bg-secondary',
+                                                    'Enviada' => 'bg-info',
+                                                    'Aceptada' => 'bg-success',
+                                                    'Rechazada' => 'bg-danger'
                                                 ];
                                                 ?>
                                                 <span class="badge <?= $badgeClass[$cotizacion['estado']] ?? 'bg-secondary' ?>">
-                                                    <?= ucfirst($cotizacion['estado']) ?>
+                                                    <?= esc($cotizacion['estado']) ?>
                                                 </span>
                                             </td>
                                             <td>
-                                                <?php
-                                                $fechaVencimiento = date('Y-m-d', strtotime($cotizacion['created_at'] . ' + ' . $cotizacion['vigencia_dias'] . ' days'));
-                                                $diasRestantes = (strtotime($fechaVencimiento) - time()) / (60 * 60 * 24);
-                                                ?>
-                                                <div>
-                                                    <small><?= date('d/m/Y', strtotime($fechaVencimiento)) ?></small>
-                                                    <?php if ($cotizacion['estado'] === 'vigente'): ?>
-                                                        <br>
-                                                        <?php if ($diasRestantes > 0): ?>
-                                                            <small class="text-warning">
-                                                                <?= ceil($diasRestantes) ?> días
-                                                            </small>
-                                                        <?php else: ?>
-                                                            <small class="text-danger">Vencida</small>
-                                                        <?php endif; ?>
-                                                    <?php endif; ?>
-                                                </div>
+                                                <?php if (isset($cotizacion['fecha_envio']) && $cotizacion['fecha_envio']): ?>
+                                                    <small>Enviada: <?= date('d/m/Y', strtotime($cotizacion['fecha_envio'])) ?></small>
+                                                <?php elseif (isset($cotizacion['fecha_respuesta']) && $cotizacion['fecha_respuesta']): ?>
+                                                    <small>Respuesta: <?= date('d/m/Y', strtotime($cotizacion['fecha_respuesta'])) ?></small>
+                                                <?php else: ?>
+                                                    <small class="text-muted">-</small>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <small><?= date('d/m/Y H:i', strtotime($cotizacion['created_at'])) ?></small>
@@ -150,7 +140,7 @@
                                                         <i class="ti-eye"></i>
                                                     </a>
                                                     
-                                                    <?php if ($cotizacion['estado'] === 'vigente'): ?>
+                                                    <?php if ($cotizacion['estado'] === 'Borrador' || $cotizacion['estado'] === 'Enviada'): ?>
                                                         <a href="<?= base_url('cotizaciones/edit/' . $cotizacion['idcotizacion']) ?>" 
                                                            class="btn btn-sm btn-outline-primary" title="Editar">
                                                             <i class="ti-pencil"></i>
@@ -162,18 +152,28 @@
                                                                 <i class="ti-settings"></i>
                                                             </button>
                                                             <ul class="dropdown-menu">
+                                                                <?php if ($cotizacion['estado'] === 'Borrador'): ?>
                                                                 <li>
                                                                     <a class="dropdown-item" href="#" 
-                                                                       onclick="cambiarEstado(<?= $cotizacion['idcotizacion'] ?>, 'aceptada')">
+                                                                       onclick="cambiarEstado(<?= $cotizacion['idcotizacion'] ?>, 'Enviada')">
+                                                                        <i class="ti-email text-info me-2"></i>Enviar
+                                                                    </a>
+                                                                </li>
+                                                                <?php endif; ?>
+                                                                <?php if ($cotizacion['estado'] === 'Enviada'): ?>
+                                                                <li>
+                                                                    <a class="dropdown-item" href="#" 
+                                                                       onclick="cambiarEstado(<?= $cotizacion['idcotizacion'] ?>, 'Aceptada')">
                                                                         <i class="ti-check text-success me-2"></i>Aceptar
                                                                     </a>
                                                                 </li>
                                                                 <li>
                                                                     <a class="dropdown-item" href="#" 
-                                                                       onclick="cambiarEstado(<?= $cotizacion['idcotizacion'] ?>, 'rechazada')">
+                                                                       onclick="cambiarEstado(<?= $cotizacion['idcotizacion'] ?>, 'Rechazada')">
                                                                         <i class="ti-close text-danger me-2"></i>Rechazar
                                                                     </a>
                                                                 </li>
+                                                                <?php endif; ?>
                                                             </ul>
                                                         </div>
                                                     <?php endif; ?>
@@ -232,7 +232,13 @@ function limpiarFiltros() {
 
 // Cambiar estado de cotización
 function cambiarEstado(idcotizacion, nuevoEstado) {
-    if (!confirm(`¿Está seguro de ${nuevoEstado === 'aceptada' ? 'aceptar' : 'rechazar'} esta cotización?`)) {
+    const mensajes = {
+        'Enviada': 'enviar',
+        'Aceptada': 'aceptar',
+        'Rechazada': 'rechazar'
+    };
+    
+    if (!confirm(`¿Está seguro de ${mensajes[nuevoEstado] || 'cambiar'} esta cotización?`)) {
         return;
     }
 

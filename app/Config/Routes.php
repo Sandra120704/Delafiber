@@ -26,6 +26,7 @@ $routes->group('dashboard', ['filter' => 'auth'], function($routes) {
 // === LEADS ===
 $routes->group('leads', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'Leads::index');
+    $routes->get('diagnostico', 'Leads::diagnostico'); // DIAGNÓSTICO TEMPORAL
     $routes->get('create', 'Leads::create');
     $routes->post('store', 'Leads::store');
     $routes->get('view/(:num)', 'Leads::view/$1');
@@ -38,6 +39,7 @@ $routes->group('leads', ['filter' => 'auth'], function($routes) {
     $routes->post('agregarSeguimiento', 'Leads::agregarSeguimiento');
     $routes->post('crearTarea', 'Leads::crearTarea');
     $routes->post('completarTarea', 'Leads::completarTarea');
+    $routes->get('verificar-cobertura', 'Leads::verificarCobertura');
     $routes->get('exportar', 'Leads::exportar');
 });
 
@@ -112,6 +114,7 @@ $routes->group('crm-campanas', ['filter' => 'auth'], function($routes) {
     $routes->get('prospectos-sin-zona', 'CrmCampanas::prospectosSinZona');
     $routes->post('asignar-prospecto-zona', 'CrmCampanas::asignarProspectoZona');
     $routes->post('actualizar-coordenadas', 'CrmCampanas::actualizarCoordenadas');
+    $routes->post('geocodificar-prospectos', 'CrmCampanas::geocodificarProspectos');
     
     // Interacciones
     $routes->post('registrar-interaccion', 'CrmCampanas::registrarInteraccion');
@@ -190,13 +193,15 @@ $routes->group('configuracion', ['filter' => 'auth'], function($routes) {
     $routes->post('actualizar-preferencias', 'Configuracion::actualizarPreferencias');
 });
 // -------------------- USUARIOS --------------------
-$routes->group('usuarios', function($routes) {
+$routes->group('usuarios', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'UsuarioController::index');
     $routes->get('crear', 'UsuarioController::crear');
     $routes->post('crear', 'UsuarioController::crear');
     $routes->post('editar/(:num)', 'UsuarioController::editar/$1');
     $routes->delete('eliminar/(:num)', 'UsuarioController::eliminar/$1');
     $routes->post('cambiarEstado/(:num)', 'UsuarioController::cambiarEstado/$1');
+    $routes->post('resetearPassword/(:num)', 'UsuarioController::resetearPassword/$1');
+    $routes->get('verPerfil/(:num)', 'UsuarioController::verPerfil/$1');
 });
 
 // === NOTIFICACIONES ===

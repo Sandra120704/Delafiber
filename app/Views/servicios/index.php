@@ -66,11 +66,13 @@
                                 </div>
                             </div>
                         <?php else: ?>
-                            <?php foreach ($servicios as $servicio): ?>
+                            <?php foreach ($servicios as $servicio): 
+                                $activo = ($servicio['estado'] ?? 'Activo') === 'Activo';
+                            ?>
                                 <div class="col-lg-4 col-md-6 mb-4 servicio-card" 
-                                     data-estado="<?= $servicio['activo'] ? 'activo' : 'inactivo' ?>"
+                                     data-estado="<?= $activo ? 'activo' : 'inactivo' ?>"
                                      data-nombre="<?= strtolower(esc($servicio['nombre'])) ?>">
-                                    <div class="card h-100 <?= $servicio['activo'] ? '' : 'opacity-75' ?>">
+                                    <div class="card h-100 <?= $activo ? '' : 'opacity-75' ?>">
                                         <div class="card-header d-flex justify-content-between align-items-center">
                                             <h6 class="card-title mb-0 fw-bold">
                                                 <?= esc($servicio['nombre']) ?>
@@ -88,19 +90,25 @@
                                                     </li>
                                                     <li>
                                                         <a class="dropdown-item" href="#" 
-                                                           onclick="toggleEstado(<?= $servicio['idservicio'] ?>, <?= $servicio['activo'] ? 'false' : 'true' ?>)">
+                                                           onclick="toggleEstado(<?= $servicio['idservicio'] ?>, <?= $activo ? 'false' : 'true' ?>)">
                                                             <i class="ti-power-off me-2"></i>
-                                                            <?= $servicio['activo'] ? 'Desactivar' : 'Activar' ?>
+                                                            <?= $activo ? 'Desactivar' : 'Activar' ?>
                                                         </a>
                                                     </li>
                                                 </ul>
                                             </div>
                                         </div>
                                         <div class="card-body">
-                                            <!-- Velocidad -->
+                                            <!-- Categoría -->
                                             <div class="d-flex align-items-center mb-2">
-                                                <i class="ti-dashboard text-primary me-2"></i>
-                                                <span class="fw-bold"><?= esc($servicio['velocidad']) ?></span>
+                                                <i class="ti-tag text-primary me-2"></i>
+                                                <span class="fw-bold"><?= esc($servicio['categoria'] ?? 'Sin categoría') ?></span>
+                                            </div>
+
+                                            <!-- Precio -->
+                                            <div class="d-flex align-items-center mb-3">
+                                                <i class="ti-money text-success me-2"></i>
+                                                <span class="fw-bold text-success">S/ <?= number_format($servicio['precio'], 2) ?></span>
                                             </div>
 
                                             <!-- Descripción -->
@@ -111,26 +119,8 @@
                                                 </p>
                                             <?php endif; ?>
 
-                                            <!-- Precios -->
-                                            <div class="row text-center mb-3">
-                                                <div class="col-6">
-                                                    <div class="border-end">
-                                                        <h5 class="text-primary mb-0">
-                                                            S/ <?= number_format($servicio['precio_referencial'], 2) ?>
-                                                        </h5>
-                                                        <small class="text-muted">Mensual</small>
-                                                    </div>
-                                                </div>
-                                                <div class="col-6">
-                                                    <h6 class="text-secondary mb-0">
-                                                        S/ <?= number_format($servicio['precio_instalacion'], 2) ?>
-                                                    </h6>
-                                                    <small class="text-muted">Instalación</small>
-                                                </div>
-                                            </div>
-
                                             <!-- Estadísticas -->
-                                            <div class="row text-center">
+                                            <div class="row text-center mt-3">
                                                 <div class="col-4">
                                                     <div class="text-center">
                                                         <h6 class="text-info mb-0"><?= $servicio['total_cotizaciones'] ?? 0 ?></h6>
@@ -159,11 +149,11 @@
                                         </div>
                                         <div class="card-footer">
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <span class="badge <?= $servicio['activo'] ? 'bg-success' : 'bg-secondary' ?>">
-                                                    <?= $servicio['activo'] ? 'Activo' : 'Inactivo' ?>
+                                                <span class="badge <?= $activo ? 'bg-success' : 'bg-secondary' ?>">
+                                                    <?= $activo ? 'Activo' : 'Inactivo' ?>
                                                 </span>
                                                 <small class="text-muted">
-                                                    Precio promedio: S/ <?= number_format($servicio['precio_promedio_cotizado'] ?? $servicio['precio_referencial'], 2) ?>
+                                                    Precio: S/ <?= number_format($servicio['precio'], 2) ?>
                                                 </small>
                                             </div>
                                         </div>

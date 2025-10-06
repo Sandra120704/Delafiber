@@ -133,7 +133,7 @@
                                     </td>
                                     <td><small><?= esc($lead['origen']) ?></small></td>
                                     <td>
-                                        <small><?= date('d/m/Y', strtotime($lead['fecha_registro'])) ?></small>
+                                        <small><?= date('d/m/Y', strtotime($lead['created_at'])) ?></small>
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">
@@ -145,6 +145,12 @@
                                                class="btn btn-sm btn-warning" title="Editar">
                                                 <i class="ti-pencil"></i>
                                             </a>
+                                            <?php if (!empty($lead['coordenadas'])): ?>
+                                                <a href="<?= base_url('crm-campanas/mapa-campanas?lead=' . $lead['idlead']) ?>" 
+                                                   class="btn btn-sm btn-secondary" title="Ver en Mapa">
+                                                    <i class="ti-map-alt"></i>
+                                                </a>
+                                            <?php endif; ?>
                                             <?php if (in_array($lead['etapa'], ['INTERES', 'COTIZACION', 'NEGOCIACION'])): ?>
                                                 <a href="<?= base_url('cotizaciones/create?lead=' . $lead['idlead']) ?>" 
                                                    class="btn btn-sm btn-primary" title="Crear Cotización">

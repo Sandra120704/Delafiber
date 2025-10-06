@@ -57,8 +57,8 @@ class Auth extends BaseController
 
         $messages = [
             'usuario' => [
-                'required' => 'El usuario es obligatorio',
-                'min_length' => 'El usuario debe tener al menos 3 caracteres'
+                'required' => 'El usuario/email es obligatorio',
+                'min_length' => 'Debe tener al menos 3 caracteres'
             ],
             'password' => [
                 'required' => 'La contraseña es obligatoria',
@@ -67,23 +67,33 @@ class Auth extends BaseController
         ];
 
         if (!$this->validate($rules, $messages)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            return redirect()->back()->withInput()->with('error', 'Error al validar credenciales');
         }
 
         $usuario = $this->request->getPost('usuario');
         $password = $this->request->getPost('password');
 
-        // Validar credenciales
+        // Validar credenciales (acepta email o nombre)
         $user = $this->usuarioModel->validarCredenciales($usuario, $password);
-
+        
         if ($user) {
+            // Obtener información del rol
+            $db = \Config\Database::connect();
+            $rol = $db->table('roles')
+                ->select('idrol, nombre, nivel, permisos')
+                ->where('idrol', $user['idrol'] ?? 3)
+                ->get()
+                ->getRowArray();
+            
             // Crear sesión
             $sessionData = [
+                'idusuario' => $user['idusuario'],
                 'user_id' => $user['idusuario'],
-                'user_name' => $user['nombre_completo'],
-                'user_email' => $user['correo'],
-                'user_role' => $user['rol'],
-                'user_avatar' => $user['avatar'] ?? null,
+                'nombre' => $user['nombre_completo'],
+                'email' => $user['correo'],
+                'nombreRol' => $rol['nombre'] ?? 'Vendedor',
+                'idrol' => $rol['idrol'] ?? 3,
+                'nivel' => $rol['nivel'] ?? 3,
                 'logged_in' => true
             ];
 
@@ -91,8 +101,6 @@ class Auth extends BaseController
 
             // Registrar último login
             $this->usuarioModel->actualizarUltimoLogin($user['idusuario']);
-
-            // Mensaje de bienvenida
             session()->setFlashdata('success', 'Bienvenido, ' . $user['nombre_completo']);
 
             // Redirigir al dashboard (página principal)

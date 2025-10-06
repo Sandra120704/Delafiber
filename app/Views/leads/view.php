@@ -123,6 +123,62 @@ $historial = $historial ?? [];
                     </div>
                 </div>
 
+                <!-- Ubicación en Mapa -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">📍 Ubicación en Mapa</h5>
+                    </div>
+                    <div class="card-body">
+                        <?php if (!empty($lead['coordenadas'])): ?>
+                            <div id="miniMapLead" style="height: 350px; width: 100%; border-radius: 8px;"></div>
+                            
+                            <?php if (!empty($zona)): ?>
+                            <div class="alert alert-info mt-3 mb-0">
+                                <div class="d-flex align-items-center">
+                                    <i class="icon-map-pin mr-2" style="font-size: 1.5rem;"></i>
+                                    <div>
+                                        <strong>Zona asignada:</strong> <?= esc($zona['nombre_zona']) ?>
+                                        <br>
+                                        <small class="text-muted">Este lead está dentro de una zona de campaña activa</small>
+                                        <br>
+                                        <a href="<?= base_url('crm-campanas/zona-detalle/' . $zona['id_zona']) ?>" class="btn btn-sm btn-primary mt-2">
+                                            <i class="icon-eye"></i> Ver Zona Completa
+                                        </a>
+                                        <a href="<?= base_url('crm-campanas/mapa-campanas') ?>?lead=<?= $lead['idlead'] ?>" class="btn btn-sm btn-outline-primary mt-2">
+                                            <i class="icon-map"></i> Ver en Mapa General
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php else: ?>
+                            <div class="alert alert-warning mt-3 mb-0">
+                                <i class="icon-alert-triangle"></i> 
+                                <strong>Sin zona asignada</strong>
+                                <br>
+                                <small>Este lead no está asignado a ninguna zona de campaña.</small>
+                            </div>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <div class="alert alert-warning mb-0">
+                                <div class="d-flex align-items-start">
+                                    <i class="icon-alert-triangle mr-2" style="font-size: 1.5rem;"></i>
+                                    <div>
+                                        <strong>Este lead no tiene coordenadas</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            Para ver la ubicación en el mapa, necesitas agregar una dirección y geocodificarla.
+                                        </small>
+                                        <br>
+                                        <button class="btn btn-sm btn-primary mt-2" onclick="geocodificarLeadAhora()">
+                                            <i class="icon-map-pin"></i> Geocodificar Ahora
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
                 <!-- Seguimientos -->
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
@@ -434,7 +490,113 @@ $historial = $historial ?? [];
 }
 </style>
 
+<!-- Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAACo2qyElsl8RwIqW3x0peOA_20f7SEHA&libraries=geometry"></script>
+
 <script>
+// Inicializar mapa si hay coordenadas
+<?php if (!empty($lead['coordenadas'])): ?>
+document.addEventListener('DOMContentLoaded', function() {
+    initMiniMap();
+});
+
+function initMiniMap() {
+    const coords = '<?= $lead['coordenadas'] ?>'.split(',');
+    const lat = parseFloat(coords[0]);
+    const lng = parseFloat(coords[1]);
+    
+    // Crear mapa
+    const map = new google.maps.Map(document.getElementById('miniMapLead'), {
+        zoom: 16,
+        center: { lat, lng },
+        mapTypeControl: true,
+        streetViewControl: false,
+        fullscreenControl: true,
+        zoomControl: true
+    });
+    
+    // Marker del lead
+    const marker = new google.maps.Marker({
+        position: { lat, lng },
+        map: map,
+        title: '<?= esc($lead['nombres'] . ' ' . $lead['apellidos']) ?>',
+        icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: '#e74c3c',
+            fillOpacity: 1,
+            strokeColor: '#c0392b',
+            strokeWeight: 2
+        },
+        animation: google.maps.Animation.DROP
+    });
+    
+    // InfoWindow del marker
+    const infoWindow = new google.maps.InfoWindow({
+        content: `
+            <div style="padding: 10px;">
+                <h6 style="margin: 0 0 8px 0;"><?= esc($lead['nombres'] . ' ' . $lead['apellidos']) ?></h6>
+                <p style="margin: 0; font-size: 13px;">
+                    <i class="icon-phone"></i> <?= esc($lead['telefono']) ?><br>
+                    <i class="icon-map-pin"></i> <?= esc($lead['direccion'] ?? 'Sin dirección') ?>
+                </p>
+            </div>
+        `
+    });
+    
+    marker.addListener('click', () => {
+        infoWindow.open(map, marker);
+    });
+    
+    // Dibujar zona si está asignada
+    <?php if (!empty($zona) && !empty($zona['poligono'])): ?>
+    try {
+        const zonaCoords = <?= $zona['poligono'] ?>;
+        const zonaPolygon = new google.maps.Polygon({
+            paths: zonaCoords,
+            strokeColor: '<?= $zona['color'] ?>',
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: '<?= $zona['color'] ?>',
+            fillOpacity: 0.2,
+            map: map
+        });
+        
+        // Ajustar zoom para mostrar zona completa
+        const bounds = new google.maps.LatLngBounds();
+        zonaCoords.forEach(coord => {
+            bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
+        });
+        map.fitBounds(bounds);
+        
+        // Agregar label de zona
+        const zonaCentro = bounds.getCenter();
+        new google.maps.Marker({
+            position: zonaCentro,
+            map: map,
+            label: {
+                text: '<?= esc($zona['nombre_zona']) ?>',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 'bold'
+            },
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 0
+            }
+        });
+    } catch (error) {
+        console.error('Error al dibujar zona:', error);
+    }
+    <?php endif; ?>
+}
+<?php endif; ?>
+
+// Función para geocodificar lead sin coordenadas
+function geocodificarLeadAhora() {
+    alert('Funcionalidad de geocodificación manual próximamente. Por ahora, edita el lead y agrega una dirección.');
+}
+
 // Cambiar etapa
 document.getElementById('formCambiarEtapa').addEventListener('submit', function(e) {
     e.preventDefault();

@@ -24,14 +24,14 @@ class DashboardModel extends Model
         // Total leads asignados al usuario
         $totalLeads = $builder
             ->where('l.idusuario', $userId)
-            ->where('l.estado IS NULL') // Solo leads activos
+            ->where('l.estado', 'Activo') // Solo leads activos
             ->countAllResults();
 
         // Leads nuevos hoy
         $builder = $this->db->table('leads l');
         $leadsHoy = $builder
             ->where('l.idusuario', $userId)
-            ->where('DATE(l.fecha_registro)', date('Y-m-d'))
+            ->where('DATE(l.created_at)', date('Y-m-d'))
             ->countAllResults();
 
         // Tareas pendientes
@@ -54,8 +54,8 @@ class DashboardModel extends Model
         $conversiones = $builder
             ->where('l.idusuario', $userId)
             ->where('l.estado', 'Convertido')
-            ->where('MONTH(l.fecha_conversion_contrato)', date('m'))
-            ->where('YEAR(l.fecha_conversion_contrato)', date('Y'))
+            ->where('MONTH(l.fecha_conversion)', date('m'))
+            ->where('YEAR(l.fecha_conversion)', date('Y'))
             ->countAllResults();
 
         // Leads calientes (en etapas avanzadas)
@@ -63,7 +63,7 @@ class DashboardModel extends Model
             ->join('etapas e', 'l.idetapa = e.idetapa');
         $leadsCalientes = $builder
             ->where('l.idusuario', $userId)
-            ->where('l.estado IS NULL')
+            ->where('l.estado', 'Activo')
             ->whereIn('e.nombre', ['COTIZACION', 'NEGOCIACION', 'CIERRE'])
             ->countAllResults();
 
@@ -85,27 +85,27 @@ class DashboardModel extends Model
         // Tiempo promedio de respuesta (en horas)
         $builder = $this->db->table('leads l')
             ->join('seguimiento s', 'l.idlead = s.idlead', 'LEFT')
-            ->select('AVG(TIMESTAMPDIFF(HOUR, l.fecha_registro, s.fecha)) as tiempo_respuesta');
+            ->select('AVG(TIMESTAMPDIFF(HOUR, l.created_at, s.fecha)) as tiempo_respuesta');
         
         $tiempoRespuesta = $builder
             ->where('l.idusuario', $userId)
-            ->where('DATE(l.fecha_registro) >=', date('Y-m-d', strtotime('-30 days')))
+            ->where('DATE(l.created_at) >=', date('Y-m-d', strtotime('-30 days')))
             ->get()->getRow();
 
         // Tasa de conversión del mes
         $builder = $this->db->table('leads l');
         $totalLeadsMes = $builder
             ->where('l.idusuario', $userId)
-            ->where('MONTH(l.fecha_registro)', date('m'))
-            ->where('YEAR(l.fecha_registro)', date('Y'))
+            ->where('MONTH(l.created_at)', date('m'))
+            ->where('YEAR(l.created_at)', date('Y'))
             ->countAllResults();
 
         $builder = $this->db->table('leads l');
         $conversionesMes = $builder
             ->where('l.idusuario', $userId)
             ->where('l.estado', 'Convertido')
-            ->where('MONTH(l.fecha_conversion_contrato)', date('m'))
-            ->where('YEAR(l.fecha_conversion_contrato)', date('Y'))
+            ->where('MONTH(l.fecha_conversion)', date('m'))
+            ->where('YEAR(l.fecha_conversion)', date('Y'))
             ->countAllResults();
 
         $tasaConversion = $totalLeadsMes > 0 ? round(($conversionesMes / $totalLeadsMes) * 100, 1) : 0;
@@ -126,11 +126,11 @@ class DashboardModel extends Model
         $builder = $this->db->table('leads l')
             ->join('personas p', 'l.idpersona = p.idpersona')
             ->join('etapas e', 'l.idetapa = e.idetapa')
-            ->select('l.idlead, p.nombres, p.apellidos, p.telefono, e.nombre as etapa, l.fecha_registro')
+            ->select('l.idlead, p.nombres, p.apellidos, p.telefono, e.nombre as etapa, l.created_at as fecha_registro')
             ->where('l.idusuario', $userId)
-            ->where('l.estado IS NULL')
-            ->where('l.fecha_registro <=', date('Y-m-d H:i:s', strtotime('-2 days'))) // Sin contacto por 2 días
-            ->orderBy('l.fecha_registro', 'ASC')
+            ->where('l.estado', 'Activo')
+            ->where('l.created_at <=', date('Y-m-d H:i:s', strtotime('-2 days'))) // Sin contacto por 2 días
+            ->orderBy('l.created_at', 'ASC')
             ->limit($limit);
 
         return $builder->get()->getResultArray();
@@ -141,14 +141,13 @@ class DashboardModel extends Model
      */
     public function getActividadEquipo($limit = 10)
     {
-        $builder = $this->db->table('seguimiento s')
+        $builder = $this->db->table('seguimientos s')
             ->join('leads l', 's.idlead = l.idlead')
             ->join('personas p', 'l.idpersona = p.idpersona')
             ->join('usuarios u', 's.idusuario = u.idusuario')
-            ->join('personas pu', 'u.idpersona = pu.idpersona')
             ->join('modalidades m', 's.idmodalidad = m.idmodalidad')
             ->select('p.nombres as cliente_nombres, p.apellidos as cliente_apellidos, 
-                     pu.nombres as usuario_nombres, pu.apellidos as usuario_apellidos,
+                     u.usuario as usuario_nombre,
                      m.nombre as modalidad, s.nota, s.fecha')
             ->orderBy('s.fecha', 'DESC')
             ->limit($limit);
@@ -164,7 +163,7 @@ class DashboardModel extends Model
         $builder = $this->db->table('etapas e')
             ->join('leads l', 'e.idetapa = l.idetapa', 'LEFT')
             ->select('e.nombre as etapa, COUNT(l.idlead) as total')
-            ->where('l.estado IS NULL OR l.estado IS NOT NULL') // Todos los leads activos
+            ->where('l.estado', 'Activo') // Solo leads activos
             ->groupBy('e.idetapa, e.nombre')
             ->orderBy('e.orden');
 
@@ -185,11 +184,11 @@ class DashboardModel extends Model
             $builder = $this->db->table('leads l');
             $leadsCreados = $builder
                 ->where('l.idusuario', $userId)
-                ->where('DATE(l.fecha_registro)', $fecha)
+                ->where('DATE(l.created_at)', $fecha)
                 ->countAllResults();
 
             // Seguimientos realizados
-            $builder = $this->db->table('seguimiento s');
+            $builder = $this->db->table('seguimientos s');
             $seguimientos = $builder
                 ->where('s.idusuario', $userId)
                 ->where('DATE(s.fecha)', $fecha)
@@ -204,5 +203,66 @@ class DashboardModel extends Model
         }
 
         return $dias;
+    }
+
+    /**
+     * Obtener tareas de hoy con información del cliente
+     */
+    public function getTareasHoy($idusuario)
+    {
+        return $this->db->table('tareas t')
+            ->select('t.*, 
+                     CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre,
+                     p.telefono as cliente_telefono,
+                     l.idlead')
+            ->join('leads l', 't.idlead = l.idlead', 'left')
+            ->join('personas p', 'l.idpersona = p.idpersona', 'left')
+            ->where('t.idusuario', $idusuario)
+            ->where('t.estado', 'Pendiente')
+            ->where('DATE(t.fecha_vencimiento)', date('Y-m-d'))
+            ->orderBy('t.fecha_vencimiento', 'ASC')
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * Obtener leads calientes (en etapas avanzadas)
+     */
+    public function getLeadsCalientes($idusuario, $limit = 5)
+    {
+        return $this->db->table('leads l')
+            ->select('l.idlead,
+                     CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre,
+                     p.telefono,
+                     e.nombre as etapa_nombre,
+                     l.created_at')
+            ->join('personas p', 'l.idpersona = p.idpersona')
+            ->join('etapas e', 'l.idetapa = e.idetapa')
+            ->where('l.idusuario', $idusuario)
+            ->where('l.estado', 'Activo')
+            ->whereIn('e.nombre', ['COTIZACION', 'NEGOCIACION', 'CIERRE'])
+            ->orderBy('l.created_at', 'DESC')
+            ->limit($limit)
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * Obtener información rápida de un lead para el dashboard
+     */
+    public function getLeadQuickInfo($idlead)
+    {
+        return $this->db->table('leads l')
+            ->select('l.*, 
+                     CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre,
+                     p.telefono, p.correo, p.direccion,
+                     e.nombre as etapa_nombre,
+                     o.nombre as origen_nombre')
+            ->join('personas p', 'l.idpersona = p.idpersona')
+            ->join('etapas e', 'l.idetapa = e.idetapa', 'left')
+            ->join('origenes o', 'l.idorigen = o.idorigen', 'left')
+            ->where('l.idlead', $idlead)
+            ->get()
+            ->getRowArray();
     }
 }

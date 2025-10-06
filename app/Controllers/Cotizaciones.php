@@ -51,8 +51,16 @@ class Cotizaciones extends BaseController
         // Obtener leads activos del usuario
         $leads = $this->leadModel->getLeadsBasicos(['idusuario' => $userId, 'activos' => true]);
         
-        // Obtener servicios activos
-        $servicios = $this->servicioModel->getServiciosActivos();
+        // Obtener servicios activos (si la tabla existe)
+        $servicios = [];
+        try {
+            $db = \Config\Database::connect();
+            if ($db->tableExists('servicios')) {
+                $servicios = $this->servicioModel->getServiciosActivos();
+            }
+        } catch (\Exception $e) {
+            log_message('warning', 'No se pudo cargar servicios: ' . $e->getMessage());
+        }
 
         // Si viene un lead preseleccionado desde la URL
         $leadPreseleccionado = $this->request->getGet('lead');
@@ -67,7 +75,8 @@ class Cotizaciones extends BaseController
             'leads' => $leads,
             'servicios' => $servicios,
             'lead_preseleccionado' => $leadPreseleccionado,
-            'lead_seleccionado' => $leadSeleccionado
+            'lead_seleccionado' => $leadSeleccionado,
+            'tabla_servicios_existe' => !empty($servicios)
         ];
 
         return view('cotizaciones/create', $data);
@@ -146,13 +155,24 @@ class Cotizaciones extends BaseController
 
         $userId = session()->get('idusuario');
         $leads = $this->leadModel->getLeadsBasicos(['idusuario' => $userId, 'activos' => true]);
-        $servicios = $this->servicioModel->getServiciosActivos();
+        
+        // Obtener servicios activos (si la tabla existe)
+        $servicios = [];
+        try {
+            $db = \Config\Database::connect();
+            if ($db->tableExists('servicios')) {
+                $servicios = $this->servicioModel->getServiciosActivos();
+            }
+        } catch (\Exception $e) {
+            log_message('warning', 'No se pudo cargar servicios: ' . $e->getMessage());
+        }
 
         $data = [
             'title' => 'Editar Cotización',
             'cotizacion' => $cotizacion,
             'leads' => $leads,
-            'servicios' => $servicios
+            'servicios' => $servicios,
+            'tabla_servicios_existe' => !empty($servicios)
         ];
 
         return view('cotizaciones/edit', $data);
@@ -195,10 +215,9 @@ class Cotizaciones extends BaseController
     public function cambiarEstado($id)
     {
         $estado = $this->request->getPost('estado');
-        $estadosValidos = ['vigente', 'vencida', 'aceptada', 'rechazada'];
-
-        if (!in_array($estado, $estadosValidos)) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Estado no válido']);
+        
+        if (!$this->cotizacionModel->cambiarEstado($id, $estado)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Estado no válido o error al actualizar']);
         }
 
         $cotizacion = $this->cotizacionModel->find($id);
@@ -206,16 +225,12 @@ class Cotizaciones extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Cotización no encontrada']);
         }
 
-        if ($this->cotizacionModel->update($id, ['estado' => $estado])) {
-            // Si la cotización fue aceptada, mover lead a etapa CIERRE
-            if ($estado === 'aceptada') {
-                $this->leadModel->update($cotizacion['idlead'], ['idetapa' => 6]); // Etapa CIERRE
-            }
-
-            return $this->response->setJSON(['success' => true, 'message' => 'Estado actualizado']);
+        // Si la cotización fue aceptada, mover lead a etapa CIERRE
+        if ($estado === 'Aceptada') {
+            $this->leadModel->update($cotizacion['idlead'], ['idetapa' => 5]); // Etapa CIERRE
         }
 
-        return $this->response->setJSON(['success' => false, 'message' => 'Error al actualizar']);
+        return $this->response->setJSON(['success' => true, 'message' => 'Estado actualizado']);
     }
 
     /**

@@ -21,11 +21,29 @@ class Servicios extends BaseController
      */
     public function index()
     {
-        $servicios = $this->servicioModel->getServiciosConEstadisticas();
+        // Verificar si la tabla servicios existe
+        $db = \Config\Database::connect();
+        if (!$db->tableExists('servicios')) {
+            $data = [
+                'title' => 'Catálogo de Servicios',
+                'servicios' => [],
+                'tabla_no_existe' => true,
+                'mensaje' => 'La tabla de servicios no existe en la base de datos. Por favor, ejecuta las migraciones necesarias.'
+            ];
+            return view('servicios/index', $data);
+        }
+
+        try {
+            $servicios = $this->servicioModel->getServiciosConEstadisticas();
+        } catch (\Exception $e) {
+            log_message('error', 'Error al obtener servicios: ' . $e->getMessage());
+            $servicios = [];
+        }
 
         $data = [
             'title' => 'Catálogo de Servicios',
-            'servicios' => $servicios
+            'servicios' => $servicios,
+            'tabla_no_existe' => false
         ];
 
         return view('servicios/index', $data);
@@ -170,8 +188,18 @@ class Servicios extends BaseController
      */
     public function getServiciosActivos()
     {
-        $servicios = $this->servicioModel->getServiciosActivos();
-        return $this->response->setJSON($servicios);
+        $db = \Config\Database::connect();
+        if (!$db->tableExists('servicios')) {
+            return $this->response->setJSON([]);
+        }
+        
+        try {
+            $servicios = $this->servicioModel->getServiciosActivos();
+            return $this->response->setJSON($servicios);
+        } catch (\Exception $e) {
+            log_message('error', 'Error al obtener servicios activos: ' . $e->getMessage());
+            return $this->response->setJSON([]);
+        }
     }
 
     /**
@@ -179,12 +207,22 @@ class Servicios extends BaseController
      */
     public function getServicio($id)
     {
-        $servicio = $this->servicioModel->find($id);
-        
-        if (!$servicio) {
-            return $this->response->setJSON(['error' => 'Servicio no encontrado'], 404);
+        $db = \Config\Database::connect();
+        if (!$db->tableExists('servicios')) {
+            return $this->response->setJSON(['error' => 'Tabla servicios no existe'], 404);
         }
+        
+        try {
+            $servicio = $this->servicioModel->find($id);
+            
+            if (!$servicio) {
+                return $this->response->setJSON(['error' => 'Servicio no encontrado'], 404);
+            }
 
-        return $this->response->setJSON($servicio);
+            return $this->response->setJSON($servicio);
+        } catch (\Exception $e) {
+            log_message('error', 'Error al obtener servicio: ' . $e->getMessage());
+            return $this->response->setJSON(['error' => 'Error al obtener servicio'], 500);
+        }
     }
 }

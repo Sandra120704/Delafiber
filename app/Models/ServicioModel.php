@@ -4,27 +4,26 @@ use CodeIgniter\Model;
 
 class ServicioModel extends Model
 {
-    protected $table = 'servicios_catalogo';
+    protected $table = 'servicios';
     protected $primaryKey = 'idservicio';
     protected $allowedFields = [
         'nombre',
         'descripcion',
-        'velocidad',
-        'precio_referencial',
-        'precio_instalacion',
-        'activo'
+        'categoria',
+        'precio',
+        'estado'
     ];
     protected $useTimestamps = true;
     protected $createdField = 'created_at';
-    protected $updatedField = null;
+    protected $updatedField = 'updated_at';
 
     /**
      * Obtener servicios activos ordenados por precio
      */
     public function getServiciosActivos()
     {
-        return $this->where('activo', 1)
-            ->orderBy('precio_referencial', 'ASC')
+        return $this->where('estado', 'Activo')
+            ->orderBy('precio', 'ASC')
             ->findAll();
     }
 
@@ -38,13 +37,14 @@ class ServicioModel extends Model
         $builder->select('
             s.*,
             COUNT(c.idcotizacion) as total_cotizaciones,
-            SUM(CASE WHEN c.estado = "aceptada" THEN 1 ELSE 0 END) as cotizaciones_aceptadas,
-            AVG(c.precio_cotizado) as precio_promedio_cotizado
+            SUM(CASE WHEN c.estado = "Aceptada" THEN 1 ELSE 0 END) as cotizaciones_aceptadas,
+            AVG(cd.precio_unitario) as precio_promedio_cotizado
         ');
-        $builder->join('cotizaciones c', 's.idservicio = c.idservicio', 'left');
-        $builder->where('s.activo', 1);
+        $builder->join('cotizacion_detalle cd', 's.idservicio = cd.idservicio', 'left');
+        $builder->join('cotizaciones c', 'cd.idcotizacion = c.idcotizacion', 'left');
+        $builder->where('s.estado', 'Activo');
         $builder->groupBy('s.idservicio');
-        $builder->orderBy('s.precio_referencial', 'ASC');
+        $builder->orderBy('s.precio', 'ASC');
         
         return $builder->get()->getResultArray();
     }
@@ -56,9 +56,10 @@ class ServicioModel extends Model
     {
         $db = \Config\Database::connect();
         $builder = $db->table($this->table . ' s');
-        $builder->select('s.*, COUNT(c.idcotizacion) as total_cotizaciones')
-            ->join('cotizaciones c', 's.idservicio = c.idservicio', 'left')
-            ->where('s.activo', 1)
+        $builder->select('s.*, COUNT(DISTINCT c.idcotizacion) as total_cotizaciones')
+            ->join('cotizacion_detalle cd', 's.idservicio = cd.idservicio', 'left')
+            ->join('cotizaciones c', 'cd.idcotizacion = c.idcotizacion', 'left')
+            ->where('s.estado', 'Activo')
             ->groupBy('s.idservicio')
             ->orderBy('total_cotizaciones', 'DESC')
             ->limit($limit);
@@ -75,12 +76,13 @@ class ServicioModel extends Model
         $builder = $db->table($this->table . ' s');
         $builder->select('
             s.*,
-            COUNT(c.idcotizacion) as total_cotizaciones,
-            SUM(CASE WHEN c.estado = "aceptada" THEN 1 ELSE 0 END) as aceptadas,
-            ROUND((SUM(CASE WHEN c.estado = "aceptada" THEN 1 ELSE 0 END) / COUNT(c.idcotizacion)) * 100, 2) as tasa_conversion
+            COUNT(DISTINCT c.idcotizacion) as total_cotizaciones,
+            SUM(CASE WHEN c.estado = "Aceptada" THEN 1 ELSE 0 END) as aceptadas,
+            ROUND((SUM(CASE WHEN c.estado = "Aceptada" THEN 1 ELSE 0 END) / COUNT(DISTINCT c.idcotizacion)) * 100, 2) as tasa_conversion
         ');
-        $builder->join('cotizaciones c', 's.idservicio = c.idservicio', 'left');
-        $builder->where('s.activo', 1);
+        $builder->join('cotizacion_detalle cd', 's.idservicio = cd.idservicio', 'left');
+        $builder->join('cotizaciones c', 'cd.idcotizacion = c.idcotizacion', 'left');
+        $builder->where('s.estado', 'Activo');
         $builder->groupBy('s.idservicio');
         $builder->having('total_cotizaciones >', 0);
         $builder->orderBy('tasa_conversion', 'DESC');
@@ -91,10 +93,10 @@ class ServicioModel extends Model
     /**
      * Buscar servicio por velocidad
      */
-    public function buscarPorVelocidad($velocidad)
+    public function buscarPorCategoria($categoria)
     {
-        return $this->where('activo', 1)
-            ->like('velocidad', $velocidad)
+        return $this->where('estado', 'Activo')
+            ->where('categoria', $categoria)
             ->findAll();
     }
 
@@ -107,11 +109,12 @@ class ServicioModel extends Model
         $builder = $db->table($this->table . ' s');
         $builder->select('
             s.*,
-            COUNT(c.idcotizacion) as total_cotizaciones,
-            SUM(CASE WHEN c.estado = "aceptada" THEN 1 ELSE 0 END) as cotizaciones_aceptadas
+            COUNT(DISTINCT c.idcotizacion) as total_cotizaciones,
+            SUM(CASE WHEN c.estado = "Aceptada" THEN 1 ELSE 0 END) as cotizaciones_aceptadas
         ');
-        $builder->join('cotizaciones c', 's.idservicio = c.idservicio', 'left');
-        $builder->where('s.activo', 1);
+        $builder->join('cotizacion_detalle cd', 's.idservicio = cd.idservicio', 'left');
+        $builder->join('cotizaciones c', 'cd.idcotizacion = c.idcotizacion', 'left');
+        $builder->where('s.estado', 'Activo');
         $builder->groupBy('s.idservicio');
         $builder->orderBy('cotizaciones_aceptadas', 'DESC');
         $builder->limit($limit);

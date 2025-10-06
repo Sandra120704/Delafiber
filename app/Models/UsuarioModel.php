@@ -8,23 +8,27 @@ class UsuarioModel extends Model
 {
     protected $table = 'usuarios';
     protected $primaryKey = 'idusuario';
-    protected $allowedFields = ['usuario', 'clave', 'idrol', 'idpersona', 'activo', 'ultimo_login'];
-    protected $useTimestamps = false;
+    protected $allowedFields = ['usuario', 'email', 'password', 'idrol', 'turno', 'zona_asignada', 'telefono', 'avatar', 'estado', 'ultimo_login', 'activo', 'nombre'];
+    protected $useTimestamps = true;
+    protected $createdField = 'created_at';
+    protected $updatedField = 'updated_at';
     
     /**
-     * Validar credenciales de usuario
+     * Validar credenciales de usuario (acepta email o nombre)
      */
     public function validarCredenciales($usuario, $password)
     {
         $builder = $this->db->table('usuarios u')
-            ->join('personas p', 'u.idpersona = p.idpersona', 'left')
             ->join('roles r', 'u.idrol = r.idrol', 'left')
-            ->select('u.idusuario, u.usuario, u.clave, u.activo,
-                     COALESCE(CONCAT(p.nombres, " ", p.apellidos), u.usuario) as nombre_completo,
-                     p.correo, 
+            ->select('u.idusuario, u.usuario, u.email, u.password, u.estado, u.idrol, u.clave,
+                     u.usuario as nombre_completo,
+                     u.email as correo, 
                      COALESCE(r.nombre, "Usuario") as rol')
-            ->where('u.usuario', $usuario)
-            ->where('u.activo', 1);
+            ->where('u.activo', 1)
+            ->groupStart()
+                ->where('u.email', $usuario)
+                ->orWhere('u.usuario', $usuario)
+            ->groupEnd();
         
         $user = $builder->get()->getRowArray();
         
@@ -33,10 +37,10 @@ class UsuarioModel extends Model
             return false;
         }
         
-        // Verificar contraseña (comparación directa - en producción usar password_verify)
-        if ($user['clave'] === $password || password_verify($password, $user['clave'])) {
+        // Verificar contraseña con password_verify (seguro)
+        if (password_verify($password, $user['password'])) {
             // No devolver la contraseña en el resultado
-            unset($user['clave']);
+            unset($user['password']);
             log_message('info', 'Login exitoso para usuario: ' . $usuario);
             return $user;
         }
@@ -50,8 +54,10 @@ class UsuarioModel extends Model
      */
     public function getUsuarioCompleto($userId)
     {
-        return $this->db->table('vista_usuarios_completa')
-            ->where('idusuario', $userId)
+        return $this->db->table('usuarios u')
+            ->join('roles r', 'u.idrol = r.idrol', 'left')
+            ->select('u.*, r.nombre as nombreRol, r.nivel')
+            ->where('u.idusuario', $userId)
             ->get()
             ->getRowArray();
     }
@@ -71,9 +77,8 @@ class UsuarioModel extends Model
      */
     public function cambiarPassword($userId, $nuevaPassword)
     {
-        // En producción, usar password_hash()
         return $this->update($userId, [
-            'clave' => $nuevaPassword
+            'password' => password_hash($nuevaPassword, PASSWORD_DEFAULT)
         ]);
     }
     
@@ -82,9 +87,11 @@ class UsuarioModel extends Model
      */
     public function getUsuariosActivos()
     {
-        return $this->db->table('vista_usuarios_completa')
-            ->where('activo', 1)
-            ->orderBy('nombre_completo')
+        return $this->db->table('usuarios u')
+            ->join('roles r', 'u.idrol = r.idrol', 'left')
+            ->select('u.*, r.nombre as nombreRol')
+            ->where('u.activo', 1)
+            ->orderBy('u.usuario')
             ->get()
             ->getResultArray();
     }
@@ -115,21 +122,18 @@ class UsuarioModel extends Model
             // Usar Query Builder del modelo para la consulta completa
             return $this->select('
                 usuarios.idusuario,
-                usuarios.usuario as nombreUsuario,
-                usuarios.clave,
-                COALESCE(usuarios.activo, 1) as estadoActivo,
+                usuarios.nombre as nombreUsuario,
+                usuarios.email,
+                usuarios.estado as estadoActivo,
                 usuarios.idrol,
-                usuarios.idpersona,
-                COALESCE(CONCAT(personas.nombres, " ", personas.apellidos), "Sin asignar") as nombrePersona,
-                personas.correo as emailPersona,
-                personas.telefono,
+                usuarios.telefono,
+                usuarios.turno,
                 roles.nombre as nombreRol,
                 roles.descripcion as descripcionRol,
                 0 as totalLeads,
                 0 as totalTareas,
                 0 as tasaConversion
             ')
-            ->join('personas', 'usuarios.idpersona = personas.idpersona', 'left')
             ->join('roles', 'usuarios.idrol = roles.idrol', 'left')
             ->orderBy('usuarios.idusuario')
             ->findAll();
@@ -146,12 +150,9 @@ class UsuarioModel extends Model
         
         // Agregar campos faltantes con valores por defecto
         foreach ($listaUsuarios as &$datosUsuario) {
-            $datosUsuario['nombreUsuario'] = $datosUsuario['usuario'] ?? '';
-            $datosUsuario['nombrePersona'] = 'Usuario ID: ' . $datosUsuario['idusuario'];
+            $datosUsuario['nombreUsuario'] = $datosUsuario['nombre'] ?? '';
             $datosUsuario['nombreRol'] = 'Sin rol asignado';
-            $datosUsuario['estadoActivo'] = $datosUsuario['activo'] ?? 1;
-            $datosUsuario['emailPersona'] = '';
-            $datosUsuario['telefono'] = '';
+            $datosUsuario['estadoActivo'] = $datosUsuario['estado'] ?? 'Activo';
             $datosUsuario['totalLeads'] = 0;
             $datosUsuario['totalTareas'] = 0;
             $datosUsuario['tasaConversion'] = 0;
@@ -162,8 +163,7 @@ class UsuarioModel extends Model
     public function obtenerUsuariosConNombres()
     {
         // Usar el Query Builder del modelo directamente
-        return $this->select('usuarios.*, CONCAT(personas.nombres, " ", personas.apellidos) as nombreCompleto')
-                    ->join('personas', 'usuarios.idpersona = personas.idpersona', 'left')
+        return $this->select('usuarios.*, usuarios.nombre as nombreCompleto')
                     ->findAll();
     }
     
@@ -175,13 +175,10 @@ class UsuarioModel extends Model
         // Usar Query Builder del modelo directamente
         return $this->select('
             usuarios.*,
-            personas.nombres,
-            personas.apellidos,
-            CONCAT(personas.nombres, " ", personas.apellidos) as nombrePersona,  
-            personas.correo, personas.telefono, personas.direccion,                
+            usuarios.nombre as nombrePersona,  
+            usuarios.email as correo,
             roles.nombre as nombreRol                             
         ')
-        ->join('personas', 'usuarios.idpersona = personas.idpersona', 'left')    
         ->join('roles', 'usuarios.idrol = roles.idrol', 'left')               
         ->find($idUsuario);                                          
     }

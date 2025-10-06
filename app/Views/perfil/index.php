@@ -108,18 +108,11 @@
                             <?= csrf_field() ?>
                             
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <div class="form-group">
-                                        <label>Nombres <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" name="nombres" 
-                                               value="<?= esc($usuario['nombres']) ?>" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Apellidos <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" name="apellidos" 
-                                               value="<?= esc($usuario['apellidos']) ?>" required>
+                                        <label>Nombre Completo <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="nombre" 
+                                               value="<?= esc($usuario['nombre']) ?>" required>
                                     </div>
                                 </div>
                             </div>
@@ -128,24 +121,24 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Correo Electrónico <span class="text-danger">*</span></label>
-                                        <input type="email" class="form-control" name="correo" 
-                                               value="<?= esc($usuario['correo']) ?>" required>
+                                        <input type="email" class="form-control" name="email" 
+                                               value="<?= esc($usuario['email']) ?>" required>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Teléfono</label>
                                         <input type="tel" class="form-control" name="telefono" 
-                                               value="<?= esc($usuario['telefono']) ?>">
+                                               value="<?= esc($usuario['telefono'] ?? '') ?>">
                                     </div>
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label>Usuario</label>
+                                <label>Rol</label>
                                 <input type="text" class="form-control" 
-                                       value="<?= esc($usuario['usuario']) ?>" disabled>
-                                <small class="text-muted">El nombre de usuario no se puede modificar</small>
+                                       value="<?= esc($usuario['nombreRol'] ?? 'Usuario') ?>" disabled>
+                                <small class="text-muted">El rol es asignado por el administrador</small>
                             </div>
 
                             <div class="text-right">

@@ -2,7 +2,6 @@
  * ============================================
  * MAPA CRM - INICIALIZACIÓN DEL SISTEMA
  * ============================================
- * Coordina la inicialización de todos los módulos
  */
 
 import { inicializarMapaCampanas } from './MapaCampanas.js';
@@ -34,26 +33,26 @@ export async function inicializarSistema(idCampana = null, zonas = null) {
     try {
         // Esperar a que Google Maps esté listo
         await esperarGoogleMaps();
-        console.log('✅ Google Maps API cargada');
+        console.log('Google Maps API cargada');
         
         // Inicializar el mapa
         const mapaInstancia = await inicializarMapaCampanas('mapCampanas', idCampana);
-        console.log('✅ Mapa inicializado');
+        console.log('Mapa inicializado');
         
         // Inicializar event listeners
         inicializarEventos();
-        console.log('✅ Event listeners configurados');
+        console.log('Event listeners configurados');
         
         // Calcular estadísticas si hay zonas
         if (zonas && Array.isArray(zonas) && zonas.length > 0) {
             calcularEstadisticas(zonas);
-            console.log('✅ Estadísticas calculadas');
+            console.log(' Estadísticas calculadas');
         }
         
         return mapaInstancia;
         
     } catch (error) {
-        console.error('❌ Error al inicializar sistema:', error);
+        console.error(' Error al inicializar sistema:', error);
         throw error;
     }
 }

@@ -15,7 +15,7 @@ class DistritoModel extends Model
     {
         return $this->db->table('distritos d')
             ->join('provincias p', 'd.idprovincia = p.idprovincia')
-            ->select('d.iddistrito, d.nombre as distrito_nombre, p.nombre as provincia_nombre') // Cambié aquí
+            ->select('d.iddistrito, d.nombre, p.nombre as provincia_nombre')
             ->where('p.nombre', 'Chincha')
             ->orderBy('d.nombre', 'ASC')
             ->get()
