@@ -135,7 +135,7 @@ class LeadModel extends Model
      */
     public function getHistorialLead($leadId)
     {
-        return $this->db->table('seguimiento s')
+        return $this->db->table('seguimientos s')
             ->join('modalidades m', 's.idmodalidad = m.idmodalidad')
             ->join('usuarios u', 's.idusuario = u.idusuario')
             ->select('s.*, m.nombre as modalidad_nombre, u.nombre as usuario_nombre')

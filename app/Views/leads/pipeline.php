@@ -36,6 +36,7 @@
                                         <strong><?= esc($lead['nombres']) ?> <?= esc($lead['apellidos']) ?></strong>
                                     </div>
                                     <div class="lead-card-body">
+                                        <!-- Teléfono -->
                                         <div class="lead-info">
                                             <i class="ti-mobile text-success"></i>
                                             <span><?= esc($lead['telefono']) ?></span>
@@ -290,13 +291,42 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (draggedElement) {
                 const targetEtapa = this.closest('.pipeline-column').dataset.etapaId;
+                const targetNombre = this.closest('.pipeline-column').querySelector('h5').textContent.trim();
                 const leadId = draggedElement.dataset.leadId;
+                const leadNombre = draggedElement.querySelector('strong').textContent;
+                const bodyElement = this;
                 
-                // Mover visualmente
-                this.appendChild(draggedElement);
-                
-                // Actualizar en servidor
-                actualizarEtapa(leadId, targetEtapa, sourceEtapa);
+                // Si mueve a DESCARTADO, pedir confirmación
+                if (targetNombre.toUpperCase().includes('DESCART') || targetNombre.toUpperCase().includes('PERDID')) {
+                    Swal.fire({
+                        title: '¿Descartar este lead?',
+                        html: `¿Estás seguro de mover a <strong>${leadNombre}</strong> a <span class="text-danger">DESCARTADO</span>?`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: '<i class="ti-trash"></i> Sí, descartar',
+                        cancelButtonText: '<i class="ti-close"></i> Cancelar',
+                        input: 'textarea',
+                        inputPlaceholder: 'Motivo del descarte (opcional)',
+                        inputAttributes: {
+                            maxlength: 200
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Usuario confirmó, mover el lead
+                            bodyElement.appendChild(draggedElement);
+                            actualizarEtapa(leadId, targetEtapa, sourceEtapa, result.value);
+                        } else {
+                            // Usuario canceló, no hacer nada
+                            showToast('info', 'Movimiento cancelado');
+                        }
+                    });
+                } else {
+                    // Mover normalmente a otras etapas
+                    this.appendChild(draggedElement);
+                    actualizarEtapa(leadId, targetEtapa, sourceEtapa);
+                }
             }
         });
     });
@@ -354,23 +384,13 @@ function actualizarContadores() {
     });
 }
 
-// Notificación simple
+// Notificación bonita con SweetAlert2
 function mostrarNotificacion(mensaje, tipo) {
-    const alertClass = tipo === 'success' ? 'alert-success' : 'alert-danger';
-    const alert = document.createElement('div');
-    alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
-    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    alert.innerHTML = `
-        ${mensaje}
-        <button type="button" class="close" data-dismiss="alert">
-            <span>&times;</span>
-        </button>
-    `;
-    document.body.appendChild(alert);
-    
-    setTimeout(() => {
-        alert.remove();
-    }, 3000);
+    if (tipo === 'success') {
+        showToast('success', mensaje);
+    } else {
+        showToast('error', mensaje);
+    }
 }
 </script>
 

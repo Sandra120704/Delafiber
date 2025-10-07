@@ -116,10 +116,13 @@ public function store()
 {
     
     $rules = [
-            'nombres' => 'required|min_length[2]',
-            'apellidos' => 'required|min_length[2]',
-            'telefono' => 'required|min_length[9]|max_length[9]',
-            'idorigen' => 'required|numeric' 
+            'nombres' => 'required|min_length[2]|max_length[100]',
+            'apellidos' => 'required|min_length[2]|max_length[100]',
+            'dni' => 'permit_empty|exact_length[8]|numeric',
+            'telefono' => 'required|exact_length[9]|regex_match[/^9[0-9]{8}$/]',
+            'correo' => 'permit_empty|valid_email|max_length[150]',
+            'idorigen' => 'required|numeric',
+            'iddistrito' => 'permit_empty|numeric'
         ];
         $messages = [
             'nombres' => [
@@ -217,12 +220,14 @@ public function store()
             $db->transComplete();
             if ($db->transStatus() === false) throw new \Exception('Error en la transacción');
             return redirect()->to('/leads')
-                ->with('success', "Lead '$nombreCompleto' creado exitosamente");
+                ->with('success', "Lead '$nombreCompleto' creado exitosamente")
+                ->with('swal_success', true);
         } catch (\Exception $e) {
             $db->transRollback();
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Error al crear el lead: ' . $e->getMessage());
+                ->with('error', 'Error al crear el lead: ' . $e->getMessage())
+                ->with('swal_error', true);
         }
     }
 

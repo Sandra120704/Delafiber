@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class SeguimientoModel extends Model
 {
-    protected $table = 'seguimiento';
+    protected $table = 'seguimientos';  // ✅ Corregido: plural
     protected $primaryKey = 'idseguimiento';
     protected $allowedFields = [
         'idlead',

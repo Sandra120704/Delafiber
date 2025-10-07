@@ -84,13 +84,15 @@ class DashboardModel extends Model
     {
         // Tiempo promedio de respuesta (en horas)
         $builder = $this->db->table('leads l')
-            ->join('seguimiento s', 'l.idlead = s.idlead', 'LEFT')
+            ->join('seguimientos s', 'l.idlead = s.idlead', 'LEFT')
             ->select('AVG(TIMESTAMPDIFF(HOUR, l.created_at, s.fecha)) as tiempo_respuesta');
         
         $tiempoRespuesta = $builder
             ->where('l.idusuario', $userId)
             ->where('DATE(l.created_at) >=', date('Y-m-d', strtotime('-30 days')))
-            ->get()->getRow();
+            ->where('s.fecha IS NOT NULL') // Solo leads con seguimiento
+            ->get()
+            ->getRow();
 
         // Tasa de conversión del mes
         $builder = $this->db->table('leads l');
