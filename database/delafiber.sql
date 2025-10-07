@@ -1,11 +1,5 @@
--- =====================================================
--- DELAFIBER CRM - BASE DE DATOS COMPLETA
--- Fecha: 2025-10-05
--- Versión: 1.0
--- Autor: Sistema CRM Delafiber
--- =====================================================
 
--- Crear base de datos
+-- Eliminar y crear base de datos
 DROP DATABASE IF EXISTS `delafiber`;
 CREATE DATABASE `delafiber` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `delafiber`;
@@ -77,13 +71,13 @@ CREATE TABLE `distritos` (
 
 -- =====================================================
 -- TABLA 5: usuarios
--- Usuarios del sistema
+-- Usuarios del sistema - CORREGIDA
 -- =====================================================
 CREATE TABLE `usuarios` (
   `idusuario` int(11) NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(100) NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `password` varchar(255) NOT NULL,
+  `nombre` varchar(100) NOT NULL COMMENT 'Nombre completo del usuario',
+  `email` varchar(100) NOT NULL COMMENT 'Email para login',
+  `password` varchar(255) NOT NULL COMMENT 'Password hasheado',
   `idrol` int(11) DEFAULT 3,
   `turno` enum('mañana','tarde','completo') DEFAULT 'completo',
   `zona_asignada` int(11) DEFAULT NULL,
@@ -97,8 +91,15 @@ CREATE TABLE `usuarios` (
   UNIQUE KEY `email` (`email`),
   KEY `fk_usuario_rol` (`idrol`),
   KEY `idx_usuario_turno` (`turno`),
+  KEY `idx_usuario_estado` (`estado`),
   CONSTRAINT `fk_usuario_rol` FOREIGN KEY (`idrol`) REFERENCES `roles` (`idrol`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Insertar usuario administrador por defecto
+-- Email: admin@delafiber.com
+-- Password: password123
+INSERT INTO `usuarios` (`nombre`, `email`, `password`, `idrol`, `estado`) VALUES
+('Administrador', 'admin@delafiber.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1, 'Activo');
 
 -- =====================================================
 -- TABLA 6: personas
@@ -122,6 +123,8 @@ CREATE TABLE `personas` (
   UNIQUE KEY `dni` (`dni`),
   KEY `fk_persona_distrito` (`iddistrito`),
   KEY `idx_persona_telefono` (`telefono`),
+  KEY `idx_personas_coordenadas` (`coordenadas`),
+  KEY `idx_personas_zona` (`id_zona`),
   CONSTRAINT `fk_persona_distrito` FOREIGN KEY (`iddistrito`) REFERENCES `distritos` (`iddistrito`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -228,6 +231,7 @@ CREATE TABLE `leads` (
   KEY `fk_lead_etapa` (`idetapa`),
   KEY `fk_lead_campania` (`idcampania`),
   KEY `idx_lead_estado` (`estado`),
+  KEY `idx_leads_fecha` (`created_at`),
   CONSTRAINT `fk_lead_persona` FOREIGN KEY (`idpersona`) REFERENCES `personas` (`idpersona`) ON DELETE CASCADE,
   CONSTRAINT `fk_lead_usuario` FOREIGN KEY (`idusuario`) REFERENCES `usuarios` (`idusuario`) ON DELETE SET NULL,
   CONSTRAINT `fk_lead_origen` FOREIGN KEY (`idorigen`) REFERENCES `origenes` (`idorigen`),
@@ -250,6 +254,7 @@ CREATE TABLE `seguimientos` (
   KEY `fk_seguimiento_lead` (`idlead`),
   KEY `fk_seguimiento_usuario` (`idusuario`),
   KEY `fk_seguimiento_modalidad` (`idmodalidad`),
+  KEY `idx_seguimientos_fecha` (`fecha`),
   CONSTRAINT `fk_seguimiento_lead` FOREIGN KEY (`idlead`) REFERENCES `leads` (`idlead`) ON DELETE CASCADE,
   CONSTRAINT `fk_seguimiento_usuario` FOREIGN KEY (`idusuario`) REFERENCES `usuarios` (`idusuario`),
   CONSTRAINT `fk_seguimiento_modalidad` FOREIGN KEY (`idmodalidad`) REFERENCES `modalidades` (`idmodalidad`)
@@ -435,6 +440,7 @@ SELECT
     u.nombre,
     u.email,
     u.turno,
+    u.estado,
     r.idrol,
     r.nombre as rol_nombre,
     r.nivel as rol_nivel,
@@ -475,17 +481,147 @@ LEFT JOIN campanias c ON l.idcampania = c.idcampania
 LEFT JOIN tb_zonas_campana z ON p.id_zona = z.id_zona;
 
 -- =====================================================
--- ÍNDICES ADICIONALES PARA PERFORMANCE
--- =====================================================
-CREATE INDEX idx_personas_coordenadas ON personas(coordenadas);
-CREATE INDEX idx_personas_zona ON personas(id_zona);
-CREATE INDEX idx_leads_fecha ON leads(created_at);
-CREATE INDEX idx_seguimientos_fecha ON seguimientos(fecha);
-
--- =====================================================
 -- CONFIGURACIÓN FINAL
 -- =====================================================
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- =====================================================
+-- DATOS DE PRUEBA
+-- =====================================================
+
+-- Insertar departamentos, provincias y distritos de Ica
+INSERT INTO `departamentos` (`iddepartamento`, `nombre`, `codigo`) VALUES
+(1, 'Ica', '11');
+
+INSERT INTO `provincias` (`idprovincia`, `iddepartamento`, `nombre`, `codigo`) VALUES
+(1, 1, 'Chincha', '1101'),
+(2, 1, 'Ica', '1102'),
+(3, 1, 'Pisco', '1103');
+
+INSERT INTO `distritos` (`iddistrito`, `idprovincia`, `nombre`, `codigo`) VALUES
+-- Chincha
+(1, 1, 'Chincha Alta', '110101'),
+(2, 1, 'Chincha Baja', '110102'),
+(3, 1, 'El Carmen', '110103'),
+(4, 1, 'Grocio Prado', '110104'),
+(5, 1, 'Pueblo Nuevo', '110105'),
+(6, 1, 'San Pedro de Huacarpana', '110106'),
+(7, 1, 'Sunampe', '110107'),
+(8, 1, 'Tambo de Mora', '110108'),
+-- Ica
+(9, 2, 'Ica', '110201'),
+(10, 2, 'La Tinguiña', '110202'),
+(11, 2, 'Los Aquijes', '110203'),
+(12, 2, 'Parcona', '110204'),
+(13, 2, 'Pueblo Nuevo', '110205'),
+-- Pisco
+(14, 3, 'Pisco', '110301'),
+(15, 3, 'San Andrés', '110302'),
+(16, 3, 'Paracas', '110303');
+
+-- Insertar usuarios de prueba
+-- Password para todos: password123
+INSERT INTO `usuarios` (`idusuario`, `nombre`, `email`, `password`, `idrol`, `turno`, `telefono`, `estado`) VALUES
+(2, 'Carlos Mendoza', 'carlos@delafiber.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, 'completo', '987654321', 'Activo'),
+(3, 'María García', 'maria@delafiber.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'mañana', '987654322', 'Activo'),
+(4, 'Juan Pérez', 'juan@delafiber.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'tarde', '987654323', 'Activo'),
+(5, 'Ana Torres', 'ana@delafiber.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'completo', '987654324', 'Activo');
+
+-- Insertar campañas de prueba
+INSERT INTO `campanias` (`idcampania`, `nombre`, `descripcion`, `fecha_inicio`, `fecha_fin`, `presupuesto`, `estado`) VALUES
+(1, 'Campaña Verano 2025', 'Promoción de internet para temporada de verano', '2025-01-01', '2025-03-31', 15000.00, 'Activa'),
+(2, 'Campaña Fiestas Patrias', 'Ofertas especiales por fiestas patrias', '2025-07-01', '2025-07-31', 10000.00, 'Activa'),
+(3, 'Campaña Navidad 2024', 'Promociones navideñas', '2024-12-01', '2024-12-31', 20000.00, 'Finalizada');
+
+-- Insertar zonas de campaña (ejemplo con polígonos en Chincha)
+INSERT INTO `tb_zonas_campana` (`id_zona`, `id_campana`, `nombre_zona`, `descripcion`, `poligono`, `color`, `prioridad`, `estado`) VALUES
+(1, 1, 'Zona Centro Chincha', 'Centro de Chincha Alta', '[{"lat":-13.4099,"lng":-76.1317},{"lat":-13.4099,"lng":-76.1217},{"lat":-13.4199,"lng":-76.1217},{"lat":-13.4199,"lng":-76.1317}]', '#3498db', 'Alta', 'Activa'),
+(2, 1, 'Zona Pueblo Nuevo', 'Distrito de Pueblo Nuevo', '[{"lat":-13.4299,"lng":-76.1417},{"lat":-13.4299,"lng":-76.1317},{"lat":-13.4399,"lng":-76.1317},{"lat":-13.4399,"lng":-76.1417}]', '#27ae60', 'Media', 'Activa'),
+(3, 2, 'Zona Sunampe', 'Distrito de Sunampe', '[{"lat":-13.4199,"lng":-76.1517},{"lat":-13.4199,"lng":-76.1417},{"lat":-13.4299,"lng":-76.1417},{"lat":-13.4299,"lng":-76.1517}]', '#e74c3c', 'Baja', 'Activa');
+
+-- Asignar zonas a usuarios
+INSERT INTO `tb_asignaciones_zona` (`id_zona`, `idusuario`, `meta_contactos`, `estado`) VALUES
+(1, 3, 50, 'Activa'),
+(2, 4, 40, 'Activa'),
+(3, 5, 30, 'Activa');
+
+-- Insertar personas de prueba
+INSERT INTO `personas` (`idpersona`, `dni`, `nombres`, `apellidos`, `telefono`, `correo`, `direccion`, `referencias`, `iddistrito`, `coordenadas`, `id_zona`) VALUES
+(1, '12345678', 'Roberto', 'Sánchez López', '987123456', 'roberto.sanchez@gmail.com', 'Av. Benavides 123', 'Cerca al parque principal', 1, '-13.4099,-76.1317', 1),
+(2, '23456789', 'Lucía', 'Ramírez Flores', '987123457', 'lucia.ramirez@gmail.com', 'Jr. Lima 456', 'Frente a la iglesia', 1, '-13.4109,-76.1327', 1),
+(3, '34567890', 'Pedro', 'Gonzales Vega', '987123458', 'pedro.gonzales@hotmail.com', 'Calle Los Pinos 789', 'Casa de dos pisos', 5, '-13.4299,-76.1417', 2),
+(4, '45678901', 'Carmen', 'Díaz Morales', '987123459', 'carmen.diaz@yahoo.com', 'Av. Grau 321', 'Al lado del mercado', 7, '-13.4199,-76.1517', 3),
+(5, '56789012', 'Miguel', 'Torres Ruiz', '987123460', NULL, 'Jr. Bolognesi 654', NULL, 1, '-13.4119,-76.1337', 1),
+(6, '67890123', 'Rosa', 'Mendoza Castro', '987123461', 'rosa.mendoza@gmail.com', 'Calle San Martín 987', 'Esquina con Jr. Ayacucho', 2, NULL, NULL),
+(7, '78901234', 'Jorge', 'Vargas Pinto', '987123462', 'jorge.vargas@outlook.com', 'Av. Progreso 147', 'Cerca al colegio', 5, '-13.4309,-76.1427', 2),
+(8, '89012345', 'Elena', 'Quispe Rojas', '987123463', NULL, 'Jr. Tacna 258', NULL, 7, '-13.4209,-76.1527', 3),
+(9, '90123456', 'Fernando', 'Huamán Silva', '987123464', 'fernando.huaman@gmail.com', 'Calle Comercio 369', 'Casa amarilla', 1, '-13.4129,-76.1347', 1),
+(10, '01234567', 'Patricia', 'Rojas Fernández', '987123465', 'patricia.rojas@hotmail.com', 'Av. Industrial 741', 'Al frente de la fábrica', 5, '-13.4319,-76.1437', 2);
+
+-- Insertar leads de prueba
+INSERT INTO `leads` (`idlead`, `idpersona`, `idusuario`, `idorigen`, `idetapa`, `idcampania`, `nota_inicial`, `estado`, `created_at`) VALUES
+(1, 1, 3, 1, 2, 1, 'Cliente interesado en plan de 100 Mbps', 'Activo', '2025-01-15 10:30:00'),
+(2, 2, 3, 2, 3, 1, 'Solicitó cotización por WhatsApp', 'Activo', '2025-01-16 14:20:00'),
+(3, 3, 4, 3, 1, 1, 'Referido por cliente actual', 'Activo', '2025-01-17 09:15:00'),
+(4, 4, 5, 1, 4, 2, 'En negociación de precio', 'Activo', '2025-01-18 11:45:00'),
+(5, 5, 3, 4, 2, 1, 'Vio publicidad en la calle', 'Activo', '2025-01-19 16:00:00'),
+(6, 6, 4, 5, 1, 1, 'Llenó formulario web', 'Activo', '2025-01-20 08:30:00'),
+(7, 7, 5, 2, 3, 2, 'Interesado en combo internet + cable', 'Activo', '2025-01-21 13:10:00'),
+(8, 8, 3, 6, 5, 1, 'Venta cerrada - Plan 50 Mbps', 'Convertido', '2025-01-22 10:00:00'),
+(9, 9, 4, 1, 2, 1, 'Preguntó por cobertura en su zona', 'Activo', '2025-01-23 15:30:00'),
+(10, 10, 5, 3, 6, 2, 'No le interesó el servicio', 'Descartado', '2025-01-24 12:00:00');
+
+-- Insertar seguimientos
+INSERT INTO `seguimientos` (`idlead`, `idusuario`, `idmodalidad`, `nota`, `fecha`) VALUES
+(1, 3, 1, 'Primera llamada - Cliente muy interesado', '2025-01-15 10:35:00'),
+(1, 3, 2, 'Envié información por WhatsApp', '2025-01-15 11:00:00'),
+(2, 3, 2, 'Cliente solicitó cotización formal', '2025-01-16 14:25:00'),
+(3, 4, 1, 'Llamada de seguimiento - Aún evaluando', '2025-01-17 10:00:00'),
+(4, 5, 4, 'Visita domiciliaria realizada', '2025-01-18 15:00:00'),
+(5, 3, 1, 'Cliente preguntó por promociones', '2025-01-19 16:15:00'),
+(8, 3, 1, 'Confirmación de instalación', '2025-01-22 10:30:00'),
+(9, 4, 2, 'Envié mapa de cobertura', '2025-01-23 16:00:00');
+
+-- Insertar tareas
+INSERT INTO `tareas` (`idlead`, `idusuario`, `titulo`, `descripcion`, `fecha_vencimiento`, `prioridad`, `estado`) VALUES
+(1, 3, 'Enviar cotización formal', 'Preparar cotización detallada para plan 100 Mbps', '2025-01-25 17:00:00', 'alta', 'pendiente'),
+(2, 3, 'Llamar para confirmar interés', 'Hacer seguimiento de cotización enviada', '2025-01-26 10:00:00', 'media', 'pendiente'),
+(3, 4, 'Agendar visita técnica', 'Coordinar visita para verificar factibilidad', '2025-01-27 14:00:00', 'alta', 'pendiente'),
+(4, 5, 'Negociar descuento', 'Cliente solicita descuento especial', '2025-01-28 11:00:00', 'urgente', 'pendiente'),
+(5, 3, 'Enviar información de planes', 'Compartir catálogo completo de servicios', '2025-01-29 09:00:00', 'baja', 'completada'),
+(7, 5, 'Preparar combo personalizado', 'Armar paquete internet + cable TV', '2025-01-30 16:00:00', 'media', 'pendiente'),
+(9, 4, 'Verificar cobertura en zona', 'Consultar con técnicos disponibilidad', '2025-01-31 10:00:00', 'alta', 'pendiente');
+
+-- Insertar cotizaciones
+INSERT INTO `cotizaciones` (`idcotizacion`, `idlead`, `idusuario`, `numero_cotizacion`, `subtotal`, `igv`, `total`, `observaciones`, `estado`, `fecha_envio`) VALUES
+(1, 2, 3, 'COT-2025-0001', 80.00, 14.40, 94.40, 'Plan Internet 100 Mbps', 'Enviada', '2025-01-16 15:00:00'),
+(2, 7, 5, 'COT-2025-0002', 120.00, 21.60, 141.60, 'Combo: Internet 100 Mbps + Cable TV HD', 'Enviada', '2025-01-21 14:00:00'),
+(3, 8, 3, 'COT-2025-0003', 60.00, 10.80, 70.80, 'Plan Internet 50 Mbps', 'Aceptada', '2025-01-22 09:00:00');
+
+-- Insertar detalles de cotizaciones
+INSERT INTO `cotizacion_detalle` (`idcotizacion`, `idservicio`, `cantidad`, `precio_unitario`, `subtotal`) VALUES
+-- Cotización 1
+(1, 2, 1, 80.00, 80.00),
+-- Cotización 2
+(2, 2, 1, 80.00, 80.00),
+(2, 5, 1, 40.00, 40.00),
+-- Cotización 4
+(3, 1, 1, 60.00, 60.00);
+
+-- Insertar historial de leads
+INSERT INTO `historial_leads` (`idlead`, `idusuario`, `etapa_anterior`, `etapa_nueva`, `motivo`, `fecha`) VALUES
+(1, 3, 1, 2, 'Cliente mostró interés después de la llamada', '2025-01-15 11:00:00'),
+(2, 3, 2, 3, 'Se envió cotización formal', '2025-01-16 15:00:00'),
+(4, 5, 3, 4, 'Cliente solicitó negociar precio', '2025-01-18 12:00:00'),
+(8, 3, 4, 5, 'Cliente aceptó cotización y firmó contrato', '2025-01-22 10:00:00'),
+(10, 5, 2, 6, 'Cliente no tiene interés en el servicio', '2025-01-24 12:00:00');
+
+-- Insertar auditoría de ejemplo
+INSERT INTO `auditoria` (`idusuario`, `accion`, `tabla_afectada`, `registro_id`, `datos_nuevos`, `ip_address`) VALUES
+(1, 'LOGIN', NULL, NULL, '{"usuario":"admin@delafiber.com"}', '127.0.0.1'),
+(3, 'CREATE_LEAD', 'leads', 1, '{"idpersona":1,"idetapa":1}', '192.168.1.100'),
+(3, 'UPDATE_LEAD', 'leads', 1, '{"idetapa":2}', '192.168.1.100'),
+(3, 'CREATE_COTIZACION', 'cotizaciones', 1, '{"idlead":2,"total":94.40}', '192.168.1.100');
 
 -- =====================================================
 -- RESUMEN
@@ -496,10 +632,26 @@ SELECT '========================================' as '';
 SELECT 'Tablas creadas: 20' as info;
 SELECT 'Vistas creadas: 2' as info;
 SELECT 'Roles insertados: 3' as info;
+SELECT 'Usuarios insertados: 5' as info;
 SELECT 'Orígenes insertados: 6' as info;
 SELECT 'Etapas insertadas: 6' as info;
 SELECT 'Modalidades insertadas: 6' as info;
 SELECT 'Servicios insertados: 7' as info;
+SELECT 'Campañas insertadas: 3' as info;
+SELECT 'Zonas insertadas: 3' as info;
+SELECT 'Personas insertadas: 10' as info;
+SELECT 'Leads insertados: 10' as info;
+SELECT 'Seguimientos insertados: 8' as info;
+SELECT 'Tareas insertadas: 7' as info;
+SELECT 'Cotizaciones insertadas: 3' as info;
 SELECT '' as '';
-SELECT '📊 Próximo paso: Ejecutar datos_prueba.sql' as '';
+SELECT '👥 USUARIOS DE PRUEBA:' as '';
+SELECT '========================================' as '';
+SELECT '📧 admin@delafiber.com | 🔑 password123 | 👤 Administrador' as '';
+SELECT '📧 carlos@delafiber.com | 🔑 password123 | 👤 Supervisor' as '';
+SELECT '📧 maria@delafiber.com | 🔑 password123 | 👤 Vendedor' as '';
+SELECT '📧 juan@delafiber.com | 🔑 password123 | 👤 Vendedor' as '';
+SELECT '📧 ana@delafiber.com | 🔑 password123 | 👤 Vendedor' as '';
+SELECT '' as '';
+SELECT '✅ Base de datos lista con datos de prueba' as '';
 SELECT '========================================' as '';

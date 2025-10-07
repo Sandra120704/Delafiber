@@ -186,11 +186,9 @@
                 <small>
                     <strong>Admin:</strong><br>
                     admin@delafiber.com<br>
-                    o "Admin Sistema"<br>
                     Password: password<br><br>
                     <strong>Vendedor:</strong><br>
-                    vendedor1@delafiber.com<br>
-                    o "Juan Pérez"<br>
+                    carlos@delafiber.com<br>
                     Password: password
                 </small>
             </div>

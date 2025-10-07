@@ -8,11 +8,10 @@ class UsuarioModel extends Model
 {
     protected $table = 'usuarios';
     protected $primaryKey = 'idusuario';
-    protected $allowedFields = ['usuario', 'email', 'password', 'idrol', 'turno', 'zona_asignada', 'telefono', 'avatar', 'estado', 'ultimo_login', 'activo', 'nombre'];
+    protected $allowedFields = ['nombre', 'email', 'password', 'idrol', 'turno', 'zona_asignada', 'telefono', 'avatar', 'estado', 'ultimo_login'];
     protected $useTimestamps = true;
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
-    
     /**
      * Validar credenciales de usuario (acepta email o nombre)
      */
@@ -20,14 +19,14 @@ class UsuarioModel extends Model
     {
         $builder = $this->db->table('usuarios u')
             ->join('roles r', 'u.idrol = r.idrol', 'left')
-            ->select('u.idusuario, u.usuario, u.email, u.password, u.estado, u.idrol, u.clave,
-                     u.usuario as nombre_completo,
+            ->select('u.idusuario, u.nombre, u.email, u.password, u.estado, u.idrol,
+                     u.nombre as nombre_completo,
                      u.email as correo, 
                      COALESCE(r.nombre, "Usuario") as rol')
-            ->where('u.activo', 1)
+            ->where('u.estado', 'Activo')
             ->groupStart()
                 ->where('u.email', $usuario)
-                ->orWhere('u.usuario', $usuario)
+                ->orWhere('u.nombre', $usuario)
             ->groupEnd();
         
         $user = $builder->get()->getRowArray();
@@ -90,8 +89,8 @@ class UsuarioModel extends Model
         return $this->db->table('usuarios u')
             ->join('roles r', 'u.idrol = r.idrol', 'left')
             ->select('u.*, r.nombre as nombreRol')
-            ->where('u.activo', 1)
-            ->orderBy('u.usuario')
+            ->where('u.estado', 'Activo')
+            ->orderBy('u.nombre')
             ->get()
             ->getResultArray();
     }
