@@ -9,7 +9,7 @@ class NotificacionModel extends Model
     protected $table = 'notificaciones';
     protected $primaryKey = 'idnotificacion';
     protected $allowedFields = ['idusuario', 'tipo', 'titulo', 'mensaje', 'url', 'leida'];
-    protected $useTimestamps = true;
+    protected $useTimestamps = false;
     protected $createdField = 'created_at';
     protected $updatedField = '';
     

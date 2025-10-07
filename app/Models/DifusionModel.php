@@ -18,7 +18,7 @@ class DifusionModel extends Model
         'presupuesto',
         'leads_generados'
     ];
-    protected $useTimestamps = true;
+    protected $useTimestamps = false;
     protected $createdField = 'fecha_creacion';
     protected $updatedField = null;
 

@@ -12,17 +12,18 @@ class SeguimientoModel extends Model
         'idlead',
         'idusuario',
         'idmodalidad',
-        'nota'
+        'nota',
+        'fecha'
     ];
-    protected $useTimestamps = true;
+    protected $useTimestamps = false;
     protected $createdField = 'fecha';
     protected $updatedField = null;
 
-    /**
-     * Registra un nuevo seguimiento
-     */
-    public function registrarSeguimiento($datos)
-    {
+/**
+ * Registra un nuevo seguimiento
+ */
+public function registrarSeguimiento($datos)
+{
         // Validar datos requeridos
         if (empty($datos['idlead']) || empty($datos['idusuario']) || empty($datos['idmodalidad'])) {
             return false;

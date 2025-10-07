@@ -32,7 +32,7 @@
         <div class="col-md-3">
             <div class="card bg-success text-white">
                 <div class="card-body text-center">
-                    <h4><?= count(array_filter($usuarios ?? [], fn($u) => $u['activo'] ?? true)) ?></h4>
+                    <h4><?= count(array_filter($usuarios ?? [], fn($u) => ($u['estado'] ?? 'Activo') === 'Activo')) ?></h4>
                     <small>Activos</small>
                 </div>
             </div>
@@ -104,18 +104,18 @@
                             $colors = ['#8e44ad','#2980b9','#16a085','#e67e22','#c0392b'];
                             foreach ($usuarios as $usuario): 
                                 $color = $colors[$usuario['idusuario'] % count($colors)];
-                                $activo = ($usuario['activo'] ?? 1) == 1;
+                                $activo = ($usuario['estado'] ?? 'Activo') === 'Activo';
                             ?>
                             <tr data-rol="<?= strtolower($usuario['nombreRol'] ?? '') ?>" data-estado="<?= $activo ? 'activo' : 'inactivo' ?>">
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="me-3">
                                             <div class="user-avatar" style="background:<?= $color ?>; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold;">
-                                                <?= strtoupper(substr($usuario['usuario'] ?? 'U', 0, 2)) ?>
+                                                <?= strtoupper(substr($usuario['nombre'] ?? 'U', 0, 2)) ?>
                                             </div>
                                         </div>
                                         <div>
-                                            <div class="fw-bold"><?= esc($usuario['usuario'] ?? 'Sin usuario') ?></div>
+                                            <div class="fw-bold"><?= esc($usuario['nombre'] ?? 'Sin nombre') ?></div>
                                             <small class="text-muted">ID: <?= $usuario['idusuario'] ?></small>
                                         </div>
                                     </div>
@@ -204,18 +204,16 @@
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="idusuario" name="idusuario">
-                    <input type="hidden" id="idpersona" name="idpersona">
                     
                     <!-- Tabs para organizar el formulario -->
                     <ul class="nav nav-tabs mb-3" role="tablist">
                         <li class="nav-item">
                             <a class="nav-link active" data-bs-toggle="tab" href="#tabDatosPersona">
-                                📋 Datos de Persona
-                            </a>
+                                Datos de Persona                            </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" data-bs-toggle="tab" href="#tabDatosUsuario">
-                                🔐 Datos de Usuario
+                                 Datos de Usuario
                             </a>
                         </li>
                     </ul>

@@ -10,34 +10,26 @@ class CampaniaModel extends Model
     protected $allowedFields = [
         'nombre', 
         'descripcion', 
-        'tipo_campana',
         'fecha_inicio', 
         'fecha_fin', 
         'presupuesto',
-        'objetivo_contactos',
-        'canal',
-        'estado',
-        'activo',
-        'responsable'
+        'estado'
     ];
-    protected $useTimestamps = true;
-    protected $createdField = 'fecha_creacion';
-    protected $updatedField = 'fecha_creacion'; // La tabla no tiene updated_at
+    protected $useTimestamps = false;
+    protected $createdField = 'created_at';
+    protected $updatedField = '';
     
     /**
-     * Obtener campañas con información del responsable
+     * Obtener campañas con información de leads
      */
     public function getCampaniasCompletas($filtros = [])
     {
         $builder = $this->db->table($this->table . ' c');
         $builder->select('
             c.*,
-            CONCAT(p.nombres, " ", p.apellidos) as responsable_nombre,
             COUNT(DISTINCT l.idlead) as total_leads,
             COUNT(DISTINCT CASE WHEN l.estado = "Convertido" THEN l.idlead END) as leads_convertidos
         ');
-        $builder->join('usuarios u', 'c.responsable = u.idusuario', 'left');
-        $builder->join('personas p', 'u.idpersona = p.idpersona', 'left');
         $builder->join('leads l', 'c.idcampania = l.idcampania', 'left');
         
         if (!empty($filtros['estado'])) {
@@ -60,7 +52,7 @@ class CampaniaModel extends Model
             COUNT(*) as total_leads,
             COUNT(CASE WHEN l.estado = "Convertido" THEN 1 END) as convertidos,
             COUNT(CASE WHEN l.estado = "Descartado" THEN 1 END) as descartados,
-            COUNT(CASE WHEN l.estado IS NULL THEN 1 END) as activos
+            COUNT(CASE WHEN l.estado = "Activo" THEN 1 END) as activos
         ');
         $builder->where('l.idcampania', $idcampania);
         
@@ -75,5 +67,33 @@ class CampaniaModel extends Model
         return $this->where('estado', 'Activa')
             ->orderBy('nombre', 'ASC')
             ->findAll();
+    }
+
+    /**
+     * Actualizar estados de campañas según fechas
+     * Se ejecuta automáticamente para mantener estados sincronizados
+     */
+    public function actualizarEstadosPorFecha()
+    {
+        $hoy = date('Y-m-d');
+        
+        // Activar campañas que ya iniciaron y no han finalizado
+        $this->where('fecha_inicio <=', $hoy)
+             ->where('fecha_fin >=', $hoy)
+             ->where('estado !=', 'Activa')
+             ->set(['estado' => 'Activa'])
+             ->update();
+        
+        // Finalizar campañas cuya fecha de fin ya pasó
+        $this->where('fecha_fin <', $hoy)
+             ->where('estado !=', 'Finalizada')
+             ->set(['estado' => 'Finalizada'])
+             ->update();
+        
+        // Inactivar campañas que aún no han iniciado
+        $this->where('fecha_inicio >', $hoy)
+             ->where('estado !=', 'Inactiva')
+             ->set(['estado' => 'Inactiva'])
+             ->update();
     }
 }

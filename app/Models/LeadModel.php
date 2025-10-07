@@ -125,7 +125,6 @@ class LeadModel extends Model
             ->select('l.idlead, p.nombres, p.apellidos, p.telefono,
                      e.nombre as etapa_nombre, l.created_at')
             ->where('p.telefono', $telefono)
-            ->where('l.estado', 'Activo')
             ->orderBy('l.created_at', 'DESC')
             ->get()
             ->getRowArray();
@@ -136,10 +135,10 @@ class LeadModel extends Model
      */
     public function getHistorialLead($leadId)
     {
-        return $this->db->table('seguimientos s')
+        return $this->db->table('seguimiento s')
             ->join('modalidades m', 's.idmodalidad = m.idmodalidad')
             ->join('usuarios u', 's.idusuario = u.idusuario')
-            ->select('s.*, m.nombre as modalidad_nombre, u.usuario as usuario_nombre')
+            ->select('s.*, m.nombre as modalidad_nombre, u.nombre as usuario_nombre')
             ->where('s.idlead', $leadId)
             ->orderBy('s.fecha', 'DESC')
             ->get()
@@ -424,30 +423,26 @@ class LeadModel extends Model
     }
 
     /**
-     * Obtener leads con detalles completos para exportación
+     * Obtener leads con detalles para reportes/exportación
      */
     public function getLeadsConDetalles($filtros = [])
     {
         $builder = $this->db->table('leads l')
-            ->select('
-                p.dni,
-                CONCAT(p.nombres, " ", p.apellidos) as cliente,
-                p.telefono,
-                p.correo,
-                e.nombre as etapa_actual,
-                o.nombre as origen,
-                u.usuario as vendedor_asignado,
-                l.created_at,
-                l.estado,
-                c.nombre as campania
-            ')
             ->join('personas p', 'l.idpersona = p.idpersona')
-            ->join('etapas e', 'l.idetapa = e.idetapa', 'left')
-            ->join('origenes o', 'l.idorigen = o.idorigen', 'left')
-            ->join('usuarios u', 'l.idusuario = u.idusuario', 'left')
-            ->join('campanias c', 'l.idcampania = c.idcampania', 'left');
-
-        // Filtros opcionales
+            ->join('etapas e', 'l.idetapa = e.idetapa')
+            ->join('origenes o', 'l.idorigen = o.idorigen')
+            ->join('usuarios u', 'l.idusuario = u.idusuario', 'LEFT')
+            ->join('campanias c', 'l.idcampania = c.idcampania', 'LEFT')
+            ->select('l.*, 
+                     p.dni, 
+                     CONCAT(p.nombres, " ", p.apellidos) as cliente,
+                     p.telefono, 
+                     p.correo,
+                     e.nombre as etapa_actual,
+                     o.nombre as origen,
+                     u.nombre as vendedor_asignado,
+                     c.nombre as campania');
+        
         if (!empty($filtros['fecha_inicio'])) {
             $builder->where('l.created_at >=', $filtros['fecha_inicio']);
         }
@@ -456,16 +451,15 @@ class LeadModel extends Model
             $builder->where('l.created_at <=', $filtros['fecha_fin'] . ' 23:59:59');
         }
         
-        if (!empty($filtros['idusuario'])) {
-            $builder->where('l.idusuario', $filtros['idusuario']);
+        if (!empty($filtros['usuario']) || !empty($filtros['idusuario'])) {
+            $userId = !empty($filtros['usuario']) ? $filtros['usuario'] : $filtros['idusuario'];
+            $builder->where('l.idusuario', $userId);
         }
         
         if (!empty($filtros['estado'])) {
             $builder->where('l.estado', $filtros['estado']);
         }
-
-        $builder->orderBy('l.created_at', 'DESC');
         
-        return $builder->get()->getResultArray();
+        return $builder->orderBy('l.created_at', 'DESC')->get()->getResultArray();
     }
 }

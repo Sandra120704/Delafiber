@@ -21,6 +21,9 @@ class Campanias extends BaseController
      */
     public function index()
     {
+        // Actualizar estados automáticamente según fechas
+        $this->campaniaModel->actualizarEstadosPorFecha();
+        
         // Obtener todas las campañas con conteo de leads
         $campanias = $this->campaniaModel
             ->select('campanias.*, COUNT(leads.idlead) as total_leads')
@@ -73,13 +76,11 @@ class Campanias extends BaseController
         // Preparar datos
         $data = [
             'nombre' => $this->request->getPost('nombre'),
-            'tipo' => $this->request->getPost('tipo'),
             'descripcion' => $this->request->getPost('descripcion'),
             'fecha_inicio' => $this->request->getPost('fecha_inicio'),
             'fecha_fin' => $this->request->getPost('fecha_fin'),
             'presupuesto' => $this->request->getPost('presupuesto') ?: 0,
             'estado' => 'Activa',
-            'activo' => 1,
             'canal' => $this->request->getPost('canal')
         ];
 
@@ -92,7 +93,7 @@ class Campanias extends BaseController
                 ->withInput()
                 ->with('error', 'Error al crear la campaña');
         }
-    }
+            }
 
     /**
      * Formulario de editar campaña
@@ -202,6 +203,9 @@ class Campanias extends BaseController
      */
     public function view($id)
     {
+        // Actualizar estados automáticamente según fechas
+        $this->campaniaModel->actualizarEstadosPorFecha();
+        
         // Validar que el ID sea numérico
         if (!is_numeric($id)) {
             return redirect()->to('/campanias')->with('error', 'ID de campaña inválido');
@@ -287,6 +291,20 @@ class Campanias extends BaseController
         if (!$campania) {
             return redirect()->to('campanias')
                 ->with('error', 'Campaña no encontrada');
+        }
+
+        $hoy = date('Y-m-d');
+        
+        // Verificar si la campaña ya finalizó
+        if (!empty($campania['fecha_fin']) && $campania['fecha_fin'] < $hoy) {
+            return redirect()->back()
+                ->with('error', 'No se puede cambiar el estado de una campaña finalizada');
+        }
+        
+        // Verificar si la campaña aún no ha iniciado
+        if (!empty($campania['fecha_inicio']) && $campania['fecha_inicio'] > $hoy) {
+            return redirect()->back()
+                ->with('error', 'No se puede activar una campaña que aún no ha iniciado');
         }
 
         $nuevoEstado = $campania['estado'] === 'Activa' ? 'Inactiva' : 'Activa';

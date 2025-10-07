@@ -9,7 +9,7 @@ class ComentarioModel extends Model
     protected $table = 'comentarios_lead';
     protected $primaryKey = 'idcomentario';
     protected $allowedFields = ['idlead', 'idusuario', 'comentario', 'tipo'];
-    protected $useTimestamps = true;
+    protected $useTimestamps = false;
     protected $createdField = 'created_at';
     protected $updatedField = '';
     

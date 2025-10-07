@@ -240,7 +240,7 @@ class Reportes extends BaseController
         
         $resultado = $db->query("
             SELECT 
-                u.usuario as nombre,
+                u.nombre as nombre,
                 COUNT(l.idlead) as total_leads,
                 SUM(CASE WHEN l.estado = 'Convertido' THEN 1 ELSE 0 END) as conversiones,
                 ROUND(SUM(CASE WHEN l.estado = 'Convertido' THEN 1 ELSE 0 END) * 100.0 / COUNT(l.idlead), 1) as tasa_conversion,
@@ -250,8 +250,8 @@ class Reportes extends BaseController
             LEFT JOIN leads l ON l.idusuario = u.idusuario 
                 AND l.created_at >= ? 
                 AND l.created_at <= ?
-            WHERE u.activo = 1
-            GROUP BY u.idusuario, u.usuario
+            WHERE u.estado = 'Activo'
+            GROUP BY u.idusuario, u.nombre
             HAVING total_leads > 0
             ORDER BY conversiones DESC
         ", [$fechaInicio, $fechaFin . ' 23:59:59'])
