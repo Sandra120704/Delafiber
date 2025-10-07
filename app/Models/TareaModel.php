@@ -33,7 +33,7 @@ class TareaModel extends Model
         $builder = $this->db->table($this->table . ' t');
         $builder->select('
             t.*,
-            u.usuario as usuario_nombre,
+            u.nombre as usuario_nombre,
             CONCAT(pl.nombres, " ", pl.apellidos) as lead_nombre,
             l.idlead
         ');
@@ -90,7 +90,7 @@ class TareaModel extends Model
         $builder = $this->db->table($this->table . ' t');
         $builder->select('
             t.*,
-            u.usuario as usuario_nombre,
+            u.nombre as usuario_nombre,
             CONCAT(pl.nombres, " ", pl.apellidos) as lead_nombre
         ');
         $builder->join('usuarios u', 't.idusuario = u.idusuario', 'left');

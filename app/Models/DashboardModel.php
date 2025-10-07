@@ -149,7 +149,7 @@ class DashboardModel extends Model
             ->join('usuarios u', 's.idusuario = u.idusuario')
             ->join('modalidades m', 's.idmodalidad = m.idmodalidad')
             ->select('p.nombres as cliente_nombres, p.apellidos as cliente_apellidos, 
-                     u.usuario as usuario_nombre,
+                     u.nombre as usuario_nombre,
                      m.nombre as modalidad, s.nota, s.fecha')
             ->orderBy('s.fecha', 'DESC')
             ->limit($limit);

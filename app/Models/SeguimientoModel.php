@@ -67,7 +67,7 @@ public function registrarSeguimiento($datos)
             ->join('modalidades m', 's.idmodalidad = m.idmodalidad')
             ->join('usuarios u', 's.idusuario = u.idusuario')
             ->select('s.*, m.nombre as modalidad,
-                     u.usuario as usuario_nombre')
+                     u.nombre as usuario_nombre')
             ->where('s.idlead', $leadId)
             ->orderBy('s.fecha', 'DESC')
             ->limit($limit)
@@ -84,7 +84,7 @@ public function registrarSeguimiento($datos)
             ->join('modalidades m', 's.idmodalidad = m.idmodalidad')
             ->join('usuarios u', 's.idusuario = u.idusuario')
             ->select('s.*, m.nombre as modalidad, 
-                     u.usuario as usuario_nombre')
+                     u.nombre as usuario_nombre')
             ->where('s.idlead', $leadId)
             ->orderBy('s.fecha', 'DESC')
             ->get()
@@ -289,7 +289,7 @@ public function registrarSeguimiento($datos)
             ->join('usuarios u', 's.idusuario = u.idusuario')
             ->select('s.*, CONCAT(p.nombres, " ", p.apellidos) as cliente,
                      p.telefono, m.nombre as modalidad,
-                     u.usuario as vendedor');
+                     u.nombre as vendedor');
 
         if (!empty($filtros['fecha_desde'])) {
             $builder->where('s.fecha >=', $filtros['fecha_desde']);

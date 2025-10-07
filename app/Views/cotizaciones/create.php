@@ -66,20 +66,14 @@
                                             <?php endforeach; ?>
                                         </select>
                                     <?php else: ?>
-                                        <!-- Selector normal -->
+                                        <!-- Selector con búsqueda Select2 -->
                                         <select class="form-select" id="idlead" name="idlead" required>
                                             <option value="">Seleccionar cliente...</option>
-                                            <?php foreach ($leads as $lead): ?>
-                                                <option value="<?= $lead['idlead'] ?>" 
-                                                        <?= old('idlead', $lead_preseleccionado ?? '') == $lead['idlead'] ? 'selected' : '' ?>>
-                                                    <?= esc($lead['lead_nombre']) ?>
-                                                </option>
-                                            <?php endforeach; ?>
                                         </select>
                                     <?php endif; ?>
                                     
                                     <small class="form-text text-muted">
-                                        Solo se muestran leads activos asignados a usted
+                                        <i class="ti-search"></i> Escribe para buscar por nombre, teléfono o DNI
                                     </small>
                                 </div>
                             </div>
@@ -92,11 +86,14 @@
                                         <option value="">Seleccionar servicio...</option>
                                         <?php foreach ($servicios as $servicio): ?>
                                             <option value="<?= $servicio['idservicio'] ?>" 
-                                                    data-precio="<?= $servicio['precio_referencial'] ?>"
-                                                    data-instalacion="<?= $servicio['precio_instalacion'] ?>"
+                                                    data-precio="<?= $servicio['precio'] ?? 0 ?>"
+                                                    data-categoria="<?= $servicio['categoria'] ?? '' ?>"
                                                     <?= old('idservicio') == $servicio['idservicio'] ? 'selected' : '' ?>>
-                                                <?= esc($servicio['nombre']) ?> - <?= esc($servicio['velocidad']) ?> 
-                                                (S/ <?= number_format($servicio['precio_referencial'], 2) ?>)
+                                                <?= esc($servicio['nombre']) ?> 
+                                                <?php if (!empty($servicio['descripcion'])): ?>
+                                                    - <?= esc($servicio['descripcion']) ?>
+                                                <?php endif; ?>
+                                                (S/ <?= number_format($servicio['precio'] ?? 0, 2) ?>)
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
@@ -204,6 +201,9 @@
     </div>
 </div>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const servicioSelect = document.getElementById('idservicio');
@@ -297,6 +297,83 @@ document.getElementById('form-cotizacion').addEventListener('submit', function(e
         e.preventDefault();
         alert('El precio cotizado debe ser mayor a 0');
         return false;
+    }
+});
+
+// Inicializar Select2 para búsqueda de leads
+$(document).ready(function() {
+    console.log('✅ Inicializando Select2 en cotizaciones');
+    console.log('Select encontrado:', $('#idlead').length);
+    
+    // Verificar si Select2 está disponible
+    if (typeof $.fn.select2 === 'undefined') {
+        console.error('❌ Select2 no está cargado');
+        return;
+    }
+    
+    // Solo inicializar si el select existe y no tiene lead preseleccionado
+    if ($('#idlead').length && !$('#idlead').is('[type="hidden"]')) {
+        console.log('✅ Inicializando Select2...');
+        
+        $('#idlead').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Buscar cliente por nombre, teléfono o DNI...',
+        allowClear: true,
+        ajax: {
+            url: '<?= base_url('cotizaciones/buscarLeads') ?>',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    q: params.term,
+                    page: params.page || 1
+                };
+            },
+            processResults: function (data, params) {
+                params.page = params.page || 1;
+                return {
+                    results: data.results,
+                    pagination: {
+                        more: data.pagination.more
+                    }
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 2,
+        language: {
+            inputTooShort: function() {
+                return 'Escribe al menos 2 caracteres para buscar';
+            },
+            searching: function() {
+                return 'Buscando clientes...';
+            },
+            noResults: function() {
+                return 'No se encontraron clientes';
+            },
+            errorLoading: function() {
+                return 'Error al cargar resultados';
+            }
+        },
+        templateResult: function(lead) {
+            if (lead.loading) return lead.text;
+            
+            var $container = $(
+                '<div class="select2-result-lead">' +
+                    '<div><strong>' + lead.text + '</strong></div>' +
+                    (lead.etapa ? '<small class="text-muted">Etapa: ' + lead.etapa + '</small>' : '') +
+                '</div>'
+            );
+            return $container;
+        },
+        templateSelection: function(lead) {
+            return lead.text || lead.id;
+        }
+        });
+        
+        console.log('✅ Select2 inicializado correctamente');
+    } else {
+        console.log('⚠️ Select no encontrado o es hidden');
     }
 });
 </script>

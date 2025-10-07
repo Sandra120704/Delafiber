@@ -99,7 +99,7 @@ class CotizacionModel extends Model
                 c.*,
                 CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre,
                 p.telefono as cliente_telefono,
-                u.usuario as usuario_nombre,
+                u.nombre as usuario_nombre,
                 l.idlead
             ');
             $builder->join('leads l', 'c.idlead = l.idlead', 'left');
@@ -116,7 +116,7 @@ class CotizacionModel extends Model
                 c.*,
                 CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre,
                 p.telefono as cliente_telefono,
-                u.usuario as usuario_nombre,
+                u.nombre as usuario_nombre,
                 l.idlead
             ');
             $builder->join('leads l', 'c.idlead = l.idlead', 'left');
@@ -165,7 +165,7 @@ class CotizacionModel extends Model
                                  personas.correo as cliente_correo,
                                  personas.telefono as cliente_telefono,
                                  personas.direccion as cliente_direccion,
-                                 u.usuario as usuario_nombre')
+                                 u.nombre as usuario_nombre')
                 ->join('leads', 'leads.idlead = cotizaciones.idlead')
                 ->join('personas', 'personas.idpersona = leads.idpersona')
                 ->join('usuarios u', 'cotizaciones.idusuario = u.idusuario', 'left')
@@ -177,7 +177,7 @@ class CotizacionModel extends Model
                                  personas.correo as cliente_correo,
                                  personas.telefono as cliente_telefono,
                                  personas.direccion as cliente_direccion,
-                                 u.usuario as usuario_nombre')
+                                 u.nombre as usuario_nombre')
                 ->join('leads', 'leads.idlead = cotizaciones.idlead')
                 ->join('personas', 'personas.idpersona = leads.idpersona')
                 ->join('usuarios u', 'leads.idusuario = u.idusuario', 'left')

@@ -100,27 +100,66 @@ class Cotizaciones extends BaseController
             return redirect()->back()->withInput()->with('errors', $validation->getErrors());
         }
 
-        $data = [
+        // Obtener ID de usuario
+        $userId = session()->get('idusuario') ?: session()->get('user_id');
+        
+        // Calcular totales
+        $precioCotizado = floatval($this->request->getPost('precio_cotizado'));
+        $descuento = floatval($this->request->getPost('descuento_aplicado') ?? 0);
+        $precioInstalacion = floatval($this->request->getPost('precio_instalacion') ?? 0);
+        
+        $descuentoMonto = $precioCotizado * ($descuento / 100);
+        $subtotal = $precioCotizado - $descuentoMonto + $precioInstalacion;
+        $igv = $subtotal * 0.18;
+        $total = $subtotal + $igv;
+        
+        // Datos de la cotización
+        $dataCotizacion = [
             'idlead' => $this->request->getPost('idlead'),
-            'idservicio' => $this->request->getPost('idservicio'),
-            'precio_cotizado' => $this->request->getPost('precio_cotizado'),
-            'descuento_aplicado' => $this->request->getPost('descuento_aplicado') ?? 0,
-            'precio_instalacion' => $this->request->getPost('precio_instalacion') ?? 0,
-            'vigencia_dias' => $this->request->getPost('vigencia_dias') ?? 30,
-            'observaciones' => $this->request->getPost('observaciones')
+            'idusuario' => $userId,
+            'subtotal' => $subtotal,
+            'igv' => $igv,
+            'total' => $total,
+            'observaciones' => $this->request->getPost('observaciones'),
+            'estado' => 'Borrador'
         ];
 
-        if ($this->cotizacionModel->insert($data)) {
-            // Mover lead a etapa COTIZACION si no está ya ahí
-            $lead = $this->leadModel->find($data['idlead']);
-            if ($lead && isset($lead->idetapa) && $lead->idetapa < 4) { 
-                $this->leadModel->update($data['idlead'], ['idetapa' => 4]);
+        try {
+            $db = \Config\Database::connect();
+            $db->transStart();
+            
+            // Insertar cotización
+            $idcotizacion = $this->cotizacionModel->insert($dataCotizacion);
+            
+            if ($idcotizacion) {
+                // Insertar detalle de servicio
+                $db->table('cotizacion_detalle')->insert([
+                    'idcotizacion' => $idcotizacion,
+                    'idservicio' => $this->request->getPost('idservicio'),
+                    'cantidad' => 1,
+                    'precio_unitario' => $precioCotizado,
+                    'subtotal' => $precioCotizado - $descuentoMonto
+                ]);
+                
+                // Mover lead a etapa COTIZACION si no está ya ahí
+                $lead = $this->leadModel->find($dataCotizacion['idlead']);
+                if ($lead && isset($lead['idetapa']) && $lead['idetapa'] < 4) { 
+                    $this->leadModel->update($dataCotizacion['idlead'], ['idetapa' => 4]);
+                }
+            }
+            
+            $db->transComplete();
+            
+            if ($db->transStatus() === false) {
+                throw new \Exception('Error en la transacción');
             }
 
             return redirect()->to('/cotizaciones')->with('success', 'Cotización creada exitosamente');
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error al crear cotización: ' . $e->getMessage());
+            return redirect()->back()->withInput()->with('error', 'Error al crear la cotización: ' . $e->getMessage());
         }
-
-        return redirect()->back()->with('error', 'Error al crear la cotización');
     }
 
     /**
@@ -259,5 +298,73 @@ class Cotizaciones extends BaseController
     {
         $cotizaciones = $this->cotizacionModel->getCotizacionesPorLead($idlead);
         return $this->response->setJSON($cotizaciones);
+    }
+
+    /**
+     * Buscar leads para Select2 (AJAX)
+     */
+    public function buscarLeads()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['results' => []]);
+        }
+
+        $searchTerm = $this->request->getGet('q') ?? '';
+        $page = $this->request->getGet('page') ?? 1;
+        $perPage = 10;
+
+        // Obtener ID de usuario
+        $userId = session()->get('idusuario') ?: session()->get('user_id');
+        
+        if (!$userId) {
+            return $this->response->setJSON(['results' => []]);
+        }
+
+        $builder = $this->leadModel
+            ->select('leads.idlead, 
+                     CONCAT(personas.nombres, " ", personas.apellidos) as text,
+                     personas.telefono,
+                     personas.dni,
+                     etapas.nombre as etapa')
+            ->join('personas', 'leads.idpersona = personas.idpersona')
+            ->join('etapas', 'leads.idetapa = etapas.idetapa', 'left')
+            ->where('leads.estado', 'Activo')
+            ->where('leads.idusuario', $userId);
+
+        // Búsqueda
+        if (!empty($searchTerm)) {
+            $builder->groupStart()
+                ->like('personas.nombres', $searchTerm)
+                ->orLike('personas.apellidos', $searchTerm)
+                ->orLike('personas.telefono', $searchTerm)
+                ->orLike('personas.dni', $searchTerm)
+                ->groupEnd();
+        }
+
+        $total = $builder->countAllResults(false);
+        
+        $leads = $builder
+            ->orderBy('leads.created_at', 'DESC')
+            ->limit($perPage, ($page - 1) * $perPage)
+            ->get()
+            ->getResultArray();
+
+        // Formatear para Select2
+        $results = array_map(function($lead) {
+            return [
+                'id' => $lead['idlead'],
+                'text' => $lead['text'] . ' - ' . $lead['telefono'],
+                'telefono' => $lead['telefono'],
+                'dni' => $lead['dni'],
+                'etapa' => $lead['etapa']
+            ];
+        }, $leads);
+
+        return $this->response->setJSON([
+            'results' => $results,
+            'pagination' => [
+                'more' => ($page * $perPage) < $total
+            ]
+        ]);
     }
 }

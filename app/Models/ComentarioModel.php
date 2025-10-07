@@ -19,7 +19,7 @@ class ComentarioModel extends Model
     public function getComentariosLead($idlead)
     {
         return $this->db->table('comentarios_lead c')
-            ->select('c.*, u.usuario as usuario_nombre, u.avatar')
+            ->select('c.*, u.nombre as usuario_nombre, u.avatar')
             ->join('usuarios u', 'c.idusuario = u.idusuario')
             ->where('c.idlead', $idlead)
             ->orderBy('c.created_at', 'DESC')
