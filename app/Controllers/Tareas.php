@@ -4,7 +4,6 @@ namespace App\Controllers;
 
 use App\Models\TareaModel;
 use App\Models\LeadModel;
-
 class Tareas extends BaseController
 {
     protected $tareaModel;
@@ -529,6 +528,74 @@ class Tareas extends BaseController
                 'message' => 'Error al eliminar'
             ]);
         }
+    }
+
+    /**
+     * Buscar leads para Select2 (AJAX)
+     */
+    public function buscarLeads()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['results' => []]);
+        }
+
+        $searchTerm = $this->request->getGet('q') ?? '';
+        $page = $this->request->getGet('page') ?? 1;
+        $perPage = 10;
+
+        // Obtener ID de usuario (puede ser 'idusuario' o 'user_id')
+        $userId = session()->get('idusuario') ?: session()->get('user_id');
+        
+        if (!$userId) {
+            return $this->response->setJSON(['results' => []]);
+        }
+
+        $builder = $this->leadModel
+            ->select('leads.idlead, 
+                     CONCAT(personas.nombres, " ", personas.apellidos) as text,
+                     personas.telefono,
+                     personas.dni,
+                     etapas.nombre as etapa')
+            ->join('personas', 'leads.idpersona = personas.idpersona')
+            ->join('etapas', 'leads.idetapa = etapas.idetapa', 'left')
+            ->where('leads.estado', 'Activo')
+            ->where('leads.idusuario', $userId);
+
+        // Búsqueda
+        if (!empty($searchTerm)) {
+            $builder->groupStart()
+                ->like('personas.nombres', $searchTerm)
+                ->orLike('personas.apellidos', $searchTerm)
+                ->orLike('personas.telefono', $searchTerm)
+                ->orLike('personas.dni', $searchTerm)
+                ->groupEnd();
+        }
+
+        $total = $builder->countAllResults(false);
+        
+        $leads = $builder
+            ->orderBy('leads.created_at', 'DESC')
+            ->limit($perPage, ($page - 1) * $perPage)
+            ->get()
+            ->getResultArray();
+
+        // Formatear para Select2
+        $results = array_map(function($lead) {
+            return [
+                'id' => $lead['idlead'],
+                'text' => $lead['text'] . ' - ' . $lead['telefono'],
+                'telefono' => $lead['telefono'],
+                'dni' => $lead['dni'],
+                'etapa' => $lead['etapa']
+            ];
+        }, $leads);
+
+        return $this->response->setJSON([
+            'results' => $results,
+            'pagination' => [
+                'more' => ($page * $perPage) < $total
+            ]
+        ]);
     }
 
     /**

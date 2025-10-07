@@ -211,3 +211,4 @@ $routes->get('notificaciones', 'Dashboard::notificaciones', ['filter' => 'auth']
 $routes->get('dashboard', 'Dashboard::index');
 $routes->get('campanias', 'Campanias::index');
 $routes->get('tareas', 'Tareas::index');
+$routes->get('tareas/buscarLeads', 'Tareas::buscarLeads');
