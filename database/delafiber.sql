@@ -1,3 +1,4 @@
+-- Active: 1743133057434@@127.0.0.1@3306@delafiber
 
 -- Eliminar y crear base de datos
 DROP DATABASE IF EXISTS `delafiber`;
@@ -43,7 +44,6 @@ CREATE TABLE `departamentos` (
 
 -- =====================================================
 -- TABLA 3: provincias
--- Provincias del Perú
 -- =====================================================
 CREATE TABLE `provincias` (
   `idprovincia` int(11) NOT NULL AUTO_INCREMENT,
@@ -57,7 +57,6 @@ CREATE TABLE `provincias` (
 
 -- =====================================================
 -- TABLA 4: distritos
--- Distritos del Perú
 -- =====================================================
 CREATE TABLE `distritos` (
   `iddistrito` int(11) NOT NULL AUTO_INCREMENT,
@@ -103,7 +102,6 @@ INSERT INTO `usuarios` (`nombre`, `email`, `password`, `idrol`, `estado`) VALUES
 
 -- =====================================================
 -- TABLA 6: personas
--- Contactos/Clientes potenciales
 -- =====================================================
 CREATE TABLE `personas` (
   `idpersona` int(11) NOT NULL AUTO_INCREMENT,
@@ -130,7 +128,6 @@ CREATE TABLE `personas` (
 
 -- =====================================================
 -- TABLA 7: origenes
--- Origen de los leads (Facebook, WhatsApp, etc.)
 -- =====================================================
 CREATE TABLE `origenes` (
   `idorigen` int(11) NOT NULL AUTO_INCREMENT,
@@ -151,7 +148,6 @@ INSERT INTO `origenes` VALUES
 
 -- =====================================================
 -- TABLA 8: etapas
--- Etapas del pipeline de ventas
 -- =====================================================
 CREATE TABLE `etapas` (
   `idetapa` int(11) NOT NULL AUTO_INCREMENT,
@@ -173,7 +169,6 @@ INSERT INTO `etapas` VALUES
 
 -- =====================================================
 -- TABLA 9: modalidades
--- Modalidades de contacto/seguimiento
 -- =====================================================
 CREATE TABLE `modalidades` (
   `idmodalidad` int(11) NOT NULL AUTO_INCREMENT,
@@ -193,7 +188,6 @@ INSERT INTO `modalidades` VALUES
 
 -- =====================================================
 -- TABLA 10: campanias
--- Campañas de marketing/ventas
 -- =====================================================
 CREATE TABLE `campanias` (
   `idcampania` int(11) NOT NULL AUTO_INCREMENT,
@@ -209,7 +203,6 @@ CREATE TABLE `campanias` (
 
 -- =====================================================
 -- TABLA 11: leads
--- Leads del sistema
 -- =====================================================
 CREATE TABLE `leads` (
   `idlead` int(11) NOT NULL AUTO_INCREMENT,
@@ -241,7 +234,6 @@ CREATE TABLE `leads` (
 
 -- =====================================================
 -- TABLA 12: seguimientos
--- Historial de seguimientos de leads
 -- =====================================================
 CREATE TABLE `seguimientos` (
   `idseguimiento` int(11) NOT NULL AUTO_INCREMENT,
@@ -262,7 +254,6 @@ CREATE TABLE `seguimientos` (
 
 -- =====================================================
 -- TABLA 13: tareas
--- Tareas y recordatorios
 -- =====================================================
 CREATE TABLE `tareas` (
   `idtarea` int(11) NOT NULL AUTO_INCREMENT,
@@ -288,12 +279,12 @@ CREATE TABLE `tareas` (
 
 -- =====================================================
 -- TABLA 14: servicios
--- Catálogo de servicios de Delafiber
 -- =====================================================
 CREATE TABLE `servicios` (
   `idservicio` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) NOT NULL,
   `descripcion` text DEFAULT NULL,
+  `velocidad` varchar(50) DEFAULT NULL COMMENT 'Velocidad del servicio (ej: 100 Mbps)',
   `precio` decimal(10,2) NOT NULL,
   `categoria` varchar(50) DEFAULT NULL,
   `estado` enum('Activo','Inactivo') DEFAULT 'Activo',
@@ -302,17 +293,16 @@ CREATE TABLE `servicios` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `servicios` VALUES
-(1, 'Internet 50 Mbps', 'Plan de internet fibra óptica 50 Mbps', 60.00, 'Internet', 'Activo', NOW()),
-(2, 'Internet 100 Mbps', 'Plan de internet fibra óptica 100 Mbps', 80.00, 'Internet', 'Activo', NOW()),
-(3, 'Internet 200 Mbps', 'Plan de internet fibra óptica 200 Mbps', 120.00, 'Internet', 'Activo', NOW()),
-(4, 'Cable TV Básico', 'Paquete básico de cable TV', 30.00, 'Cable TV', 'Activo', NOW()),
-(5, 'Cable TV HD', 'Paquete HD de cable TV', 40.00, 'Cable TV', 'Activo', NOW()),
-(6, 'Netflix Premium', 'Suscripción Netflix Premium', 20.00, 'Streaming', 'Activo', NOW()),
-(7, 'Instalación', 'Costo de instalación', 50.00, 'Instalación', 'Activo', NOW());
+(1, 'Internet 50 Mbps', 'Plan de internet fibra óptica 50 Mbps', '50 Mbps', 60.00, 'Internet', 'Activo', NOW()),
+(2, 'Internet 100 Mbps', 'Plan de internet fibra óptica 100 Mbps', '100 Mbps', 80.00, 'Internet', 'Activo', NOW()),
+(3, 'Internet 200 Mbps', 'Plan de internet fibra óptica 200 Mbps', '200 Mbps', 120.00, 'Internet', 'Activo', NOW()),
+(4, 'Cable TV Básico', 'Paquete básico de cable TV', NULL, 30.00, 'Cable TV', 'Activo', NOW()),
+(5, 'Cable TV HD', 'Paquete HD de cable TV', 'HD', 40.00, 'Cable TV', 'Activo', NOW()),
+(6, 'Netflix Premium', 'Suscripción Netflix Premium', '4K', 20.00, 'Streaming', 'Activo', NOW()),
+(7, 'Instalación', 'Costo de instalación', NULL, 50.00, 'Instalación', 'Activo', NOW());
 
 -- =====================================================
 -- TABLA 15: cotizaciones
--- Cotizaciones generadas
 -- =====================================================
 CREATE TABLE `cotizaciones` (
   `idcotizacion` int(11) NOT NULL AUTO_INCREMENT,
@@ -322,11 +312,16 @@ CREATE TABLE `cotizaciones` (
   `subtotal` decimal(10,2) NOT NULL,
   `igv` decimal(10,2) NOT NULL,
   `total` decimal(10,2) NOT NULL,
+  `precio_cotizado` decimal(10,2) DEFAULT 0 COMMENT 'Precio base del servicio',
+  `descuento_aplicado` decimal(5,2) DEFAULT 0 COMMENT 'Porcentaje de descuento',
+  `precio_instalacion` decimal(10,2) DEFAULT 0 COMMENT 'Costo de instalación',
+  `vigencia_dias` int(11) DEFAULT 30 COMMENT 'Días de vigencia de la cotización',
   `observaciones` text DEFAULT NULL,
   `estado` enum('Borrador','Enviada','Aceptada','Rechazada') DEFAULT 'Borrador',
   `fecha_envio` datetime DEFAULT NULL,
   `fecha_respuesta` datetime DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`idcotizacion`),
   KEY `fk_cotizacion_lead` (`idlead`),
   KEY `fk_cotizacion_usuario` (`idusuario`),
@@ -336,7 +331,6 @@ CREATE TABLE `cotizaciones` (
 
 -- =====================================================
 -- TABLA 16: cotizacion_detalle
--- Detalle de servicios en cotizaciones
 -- =====================================================
 CREATE TABLE `cotizacion_detalle` (
   `iddetalle` int(11) NOT NULL AUTO_INCREMENT,
@@ -354,7 +348,6 @@ CREATE TABLE `cotizacion_detalle` (
 
 -- =====================================================
 -- TABLA 17: tb_zonas_campana
--- Zonas geográficas de campañas
 -- =====================================================
 CREATE TABLE `tb_zonas_campana` (
   `id_zona` int(11) NOT NULL AUTO_INCREMENT,
@@ -365,22 +358,30 @@ CREATE TABLE `tb_zonas_campana` (
   `color` varchar(7) DEFAULT '#3498db',
   `prioridad` enum('Alta','Media','Baja') DEFAULT 'Media',
   `estado` enum('Activa','Inactiva') DEFAULT 'Activa',
+  `area_m2` decimal(15,2) DEFAULT NULL COMMENT 'Área en metros cuadrados',
+  `iduser_create` int(11) DEFAULT NULL COMMENT 'Usuario que creó la zona',
+  `iduser_update` int(11) DEFAULT NULL COMMENT 'Usuario que actualizó la zona',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_zona`),
   KEY `fk_zona_campana` (`id_campana`),
-  CONSTRAINT `fk_zona_campana` FOREIGN KEY (`id_campana`) REFERENCES `campanias` (`idcampania`) ON DELETE CASCADE
+  KEY `fk_zona_user_create` (`iduser_create`),
+  KEY `fk_zona_user_update` (`iduser_update`),
+  CONSTRAINT `fk_zona_campana` FOREIGN KEY (`id_campana`) REFERENCES `campanias` (`idcampania`) ON DELETE CASCADE,
+  CONSTRAINT `fk_zona_user_create` FOREIGN KEY (`iduser_create`) REFERENCES `usuarios` (`idusuario`) ON DELETE SET NULL,
+  CONSTRAINT `fk_zona_user_update` FOREIGN KEY (`iduser_update`) REFERENCES `usuarios` (`idusuario`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
 -- TABLA 18: tb_asignaciones_zona
--- Asignación de agentes a zonas
 -- =====================================================
 CREATE TABLE `tb_asignaciones_zona` (
   `id_asignacion` int(11) NOT NULL AUTO_INCREMENT,
   `id_zona` int(11) NOT NULL,
   `idusuario` int(11) NOT NULL,
   `fecha_asignacion` datetime DEFAULT CURRENT_TIMESTAMP,
-  `meta_contactos` int(11) DEFAULT NULL,
+  `meta_contactos` int(11) DEFAULT NULL COMMENT 'Meta de contactos a realizar',
+  `meta_conversiones` int(11) DEFAULT NULL COMMENT 'Meta de conversiones esperadas',
   `estado` enum('Activa','Finalizada') DEFAULT 'Activa',
   PRIMARY KEY (`id_asignacion`),
   KEY `fk_asignacion_zona` (`id_zona`),
@@ -391,7 +392,6 @@ CREATE TABLE `tb_asignaciones_zona` (
 
 -- =====================================================
 -- TABLA 19: auditoria
--- Registro de acciones del sistema
 -- =====================================================
 CREATE TABLE `auditoria` (
   `idauditoria` int(11) NOT NULL AUTO_INCREMENT,
@@ -412,7 +412,6 @@ CREATE TABLE `auditoria` (
 
 -- =====================================================
 -- TABLA 20: historial_leads
--- Historial de cambios de etapa de leads
 -- =====================================================
 CREATE TABLE `historial_leads` (
   `idhistorial` int(11) NOT NULL AUTO_INCREMENT,
@@ -529,9 +528,9 @@ INSERT INTO `usuarios` (`idusuario`, `nombre`, `email`, `password`, `idrol`, `tu
 
 -- Insertar campañas de prueba
 INSERT INTO `campanias` (`idcampania`, `nombre`, `descripcion`, `fecha_inicio`, `fecha_fin`, `presupuesto`, `estado`) VALUES
-(1, 'Campaña Verano 2025', 'Promoción de internet para temporada de verano', '2025-01-01', '2025-03-31', 15000.00, 'Activa'),
-(2, 'Campaña Fiestas Patrias', 'Ofertas especiales por fiestas patrias', '2025-07-01', '2025-07-31', 10000.00, 'Activa'),
-(3, 'Campaña Navidad 2024', 'Promociones navideñas', '2024-12-01', '2024-12-31', 20000.00, 'Finalizada');
+(1, 'Campaña Verano 2025', 'Promoción de internet para temporada de verano', '2025-10-01', '2025-12-31', 15000.00, 'Activa'),
+(2, 'Campaña Fiestas Patrias', 'Ofertas especiales por fiestas patrias', '2025-10-08', '2025-11-30', 10000.00, 'Activa'),
+(3, 'Campaña Navidad 2025', 'Promociones navideñas', '2025-12-01', '2025-12-31', 20000.00, 'Activa');
 
 -- Insertar zonas de campaña (ejemplo con polígonos en Chincha)
 INSERT INTO `tb_zonas_campana` (`id_zona`, `id_campana`, `nombre_zona`, `descripcion`, `poligono`, `color`, `prioridad`, `estado`) VALUES
@@ -560,43 +559,44 @@ INSERT INTO `personas` (`idpersona`, `dni`, `nombres`, `apellidos`, `telefono`, 
 
 -- Insertar leads de prueba
 INSERT INTO `leads` (`idlead`, `idpersona`, `idusuario`, `idorigen`, `idetapa`, `idcampania`, `nota_inicial`, `estado`, `created_at`) VALUES
-(1, 1, 3, 1, 2, 1, 'Cliente interesado en plan de 100 Mbps', 'Activo', '2025-01-15 10:30:00'),
-(2, 2, 3, 2, 3, 1, 'Solicitó cotización por WhatsApp', 'Activo', '2025-01-16 14:20:00'),
-(3, 3, 4, 3, 1, 1, 'Referido por cliente actual', 'Activo', '2025-01-17 09:15:00'),
-(4, 4, 5, 1, 4, 2, 'En negociación de precio', 'Activo', '2025-01-18 11:45:00'),
-(5, 5, 3, 4, 2, 1, 'Vio publicidad en la calle', 'Activo', '2025-01-19 16:00:00'),
-(6, 6, 4, 5, 1, 1, 'Llenó formulario web', 'Activo', '2025-01-20 08:30:00'),
-(7, 7, 5, 2, 3, 2, 'Interesado en combo internet + cable', 'Activo', '2025-01-21 13:10:00'),
-(8, 8, 3, 6, 5, 1, 'Venta cerrada - Plan 50 Mbps', 'Convertido', '2025-01-22 10:00:00'),
-(9, 9, 4, 1, 2, 1, 'Preguntó por cobertura en su zona', 'Activo', '2025-01-23 15:30:00'),
-(10, 10, 5, 3, 6, 2, 'No le interesó el servicio', 'Descartado', '2025-01-24 12:00:00');
+(1, 1, 3, 1, 2, 1, 'Cliente interesado en plan de 100 Mbps', 'Activo', '2025-10-01 10:30:00'),
+(2, 2, 3, 2, 3, 1, 'Solicitó cotización por WhatsApp', 'Activo', '2025-10-02 14:20:00'),
+(3, 3, 4, 3, 1, 1, 'Referido por cliente actual', 'Activo', '2025-10-03 09:15:00'),
+(4, 4, 5, 1, 4, 2, 'En negociación de precio', 'Activo', '2025-10-04 11:45:00'),
+(5, 5, 3, 4, 2, 1, 'Vio publicidad en la calle', 'Activo', '2025-10-05 16:00:00'),
+(6, 6, 4, 5, 1, 1, 'Llenó formulario web', 'Activo', '2025-10-06 08:30:00'),
+(7, 7, 5, 2, 3, 2, 'Interesado en combo internet + cable', 'Activo', '2025-10-07 13:10:00'),
+(8, 8, 3, 6, 5, 1, 'Venta cerrada - Plan 50 Mbps', 'Convertido', '2025-10-08 10:00:00'),
+(9, 9, 4, 1, 2, 1, 'Preguntó por cobertura en su zona', 'Activo', '2025-10-08 15:30:00'),
+(10, 10, 5, 3, 6, 2, 'No le interesó el servicio', 'Descartado', '2025-10-08 12:00:00');
 
 -- Insertar seguimientos
 INSERT INTO `seguimientos` (`idlead`, `idusuario`, `idmodalidad`, `nota`, `fecha`) VALUES
-(1, 3, 1, 'Primera llamada - Cliente muy interesado', '2025-01-15 10:35:00'),
-(1, 3, 2, 'Envié información por WhatsApp', '2025-01-15 11:00:00'),
-(2, 3, 2, 'Cliente solicitó cotización formal', '2025-01-16 14:25:00'),
-(3, 4, 1, 'Llamada de seguimiento - Aún evaluando', '2025-01-17 10:00:00'),
-(4, 5, 4, 'Visita domiciliaria realizada', '2025-01-18 15:00:00'),
-(5, 3, 1, 'Cliente preguntó por promociones', '2025-01-19 16:15:00'),
-(8, 3, 1, 'Confirmación de instalación', '2025-01-22 10:30:00'),
-(9, 4, 2, 'Envié mapa de cobertura', '2025-01-23 16:00:00');
+(1, 3, 1, 'Primera llamada - Cliente muy interesado', '2025-10-01 10:35:00'),
+(1, 3, 2, 'Envié información por WhatsApp', '2025-10-01 11:00:00'),
+(2, 3, 2, 'Cliente solicitó cotización formal', '2025-10-02 14:25:00'),
+(3, 4, 1, 'Llamada de seguimiento - Aún evaluando', '2025-10-03 10:00:00'),
+(4, 5, 4, 'Visita domiciliaria realizada', '2025-10-04 15:00:00'),
+(5, 3, 1, 'Cliente preguntó por promociones', '2025-10-05 16:15:00'),
+(8, 3, 1, 'Confirmación de instalación', '2025-10-08 10:30:00'),
+(9, 4, 2, 'Envié mapa de cobertura', '2025-10-08 16:00:00');
 
 -- Insertar tareas
 INSERT INTO `tareas` (`idlead`, `idusuario`, `titulo`, `descripcion`, `fecha_vencimiento`, `prioridad`, `estado`) VALUES
-(1, 3, 'Enviar cotización formal', 'Preparar cotización detallada para plan 100 Mbps', '2025-01-25 17:00:00', 'alta', 'pendiente'),
-(2, 3, 'Llamar para confirmar interés', 'Hacer seguimiento de cotización enviada', '2025-01-26 10:00:00', 'media', 'pendiente'),
-(3, 4, 'Agendar visita técnica', 'Coordinar visita para verificar factibilidad', '2025-01-27 14:00:00', 'alta', 'pendiente'),
-(4, 5, 'Negociar descuento', 'Cliente solicita descuento especial', '2025-01-28 11:00:00', 'urgente', 'pendiente'),
-(5, 3, 'Enviar información de planes', 'Compartir catálogo completo de servicios', '2025-01-29 09:00:00', 'baja', 'completada'),
-(7, 5, 'Preparar combo personalizado', 'Armar paquete internet + cable TV', '2025-01-30 16:00:00', 'media', 'pendiente'),
-(9, 4, 'Verificar cobertura en zona', 'Consultar con técnicos disponibilidad', '2025-01-31 10:00:00', 'alta', 'pendiente');
+(1, 3, 'Enviar cotización formal', 'Preparar cotización detallada para plan 100 Mbps', '2025-10-10 17:00:00', 'alta', 'pendiente'),
+(2, 3, 'Llamar para confirmar interés', 'Hacer seguimiento de cotización enviada', '2025-10-11 10:00:00', 'media', 'pendiente'),
+(3, 4, 'Agendar visita técnica', 'Coordinar visita para verificar factibilidad', '2025-10-12 14:00:00', 'alta', 'pendiente'),
+(4, 5, 'Negociar descuento', 'Cliente solicita descuento especial', '2025-10-13 11:00:00', 'urgente', 'pendiente'),
+(5, 3, 'Enviar información de planes', 'Compartir catálogo completo de servicios', '2025-10-05 09:00:00', 'baja', 'completada'),
+(7, 5, 'Preparar combo personalizado', 'Armar paquete internet + cable TV', '2025-10-14 16:00:00', 'media', 'pendiente'),
+(9, 4, 'Verificar cobertura en zona', 'Consultar con técnicos disponibilidad', '2025-10-15 10:00:00', 'alta', 'pendiente');
 
 -- Insertar cotizaciones
-INSERT INTO `cotizaciones` (`idcotizacion`, `idlead`, `idusuario`, `numero_cotizacion`, `subtotal`, `igv`, `total`, `observaciones`, `estado`, `fecha_envio`) VALUES
-(1, 2, 3, 'COT-2025-0001', 80.00, 14.40, 94.40, 'Plan Internet 100 Mbps', 'Enviada', '2025-01-16 15:00:00'),
-(2, 7, 5, 'COT-2025-0002', 120.00, 21.60, 141.60, 'Combo: Internet 100 Mbps + Cable TV HD', 'Enviada', '2025-01-21 14:00:00'),
-(3, 8, 3, 'COT-2025-0003', 60.00, 10.80, 70.80, 'Plan Internet 50 Mbps', 'Aceptada', '2025-01-22 09:00:00');
+INSERT INTO `cotizaciones` (`idcotizacion`, `idlead`, `idusuario`, `numero_cotizacion`, `subtotal`, `igv`, `total`, `precio_cotizado`, `descuento_aplicado`, `precio_instalacion`, `vigencia_dias`, `observaciones`, `estado`, `fecha_envio`) VALUES
+(1, 2, 3, 'COT-2025-0001', 80.00, 14.40, 94.40, 80.00, 0, 50.00, 30, 'Plan Internet 100 Mbps', 'Enviada', '2025-10-02 15:00:00'),
+(2, 7, 5, 'COT-2025-0002', 120.00, 21.60, 141.60, 120.00, 0, 50.00, 30, 'Combo: Internet 100 Mbps + Cable TV HD', 'Enviada', '2025-10-07 14:00:00'),
+(3, 8, 3, 'COT-2025-0003', 60.00, 10.80, 70.80, 60.00, 0, 50.00, 30, 'Plan Internet 50 Mbps', 'Aceptada', '2025-10-08 09:00:00'),
+(4, 4, 5, 'COT-2025-0004', 120.00, 21.60, 141.60, 120.00, 10, 50.00, 30, 'Plan Internet 200 Mbps con 10% descuento', 'Borrador', NULL);
 
 -- Insertar detalles de cotizaciones
 INSERT INTO `cotizacion_detalle` (`idcotizacion`, `idservicio`, `cantidad`, `precio_unitario`, `subtotal`) VALUES
@@ -605,16 +605,18 @@ INSERT INTO `cotizacion_detalle` (`idcotizacion`, `idservicio`, `cantidad`, `pre
 -- Cotización 2
 (2, 2, 1, 80.00, 80.00),
 (2, 5, 1, 40.00, 40.00),
+-- Cotización 3
+(3, 1, 1, 60.00, 60.00),
 -- Cotización 4
-(3, 1, 1, 60.00, 60.00);
+(4, 3, 1, 120.00, 108.00);
 
 -- Insertar historial de leads
 INSERT INTO `historial_leads` (`idlead`, `idusuario`, `etapa_anterior`, `etapa_nueva`, `motivo`, `fecha`) VALUES
-(1, 3, 1, 2, 'Cliente mostró interés después de la llamada', '2025-01-15 11:00:00'),
-(2, 3, 2, 3, 'Se envió cotización formal', '2025-01-16 15:00:00'),
-(4, 5, 3, 4, 'Cliente solicitó negociar precio', '2025-01-18 12:00:00'),
-(8, 3, 4, 5, 'Cliente aceptó cotización y firmó contrato', '2025-01-22 10:00:00'),
-(10, 5, 2, 6, 'Cliente no tiene interés en el servicio', '2025-01-24 12:00:00');
+(1, 3, 1, 2, 'Cliente mostró interés después de la llamada', '2025-10-01 11:00:00'),
+(2, 3, 2, 3, 'Se envió cotización formal', '2025-10-02 15:00:00'),
+(4, 5, 3, 4, 'Cliente solicitó negociar precio', '2025-10-04 12:00:00'),
+(8, 3, 4, 5, 'Cliente aceptó cotización y firmó contrato', '2025-10-08 10:00:00'),
+(10, 5, 2, 6, 'Cliente no tiene interés en el servicio', '2025-10-08 12:00:00');
 
 -- Insertar auditoría de ejemplo
 INSERT INTO `auditoria` (`idusuario`, `accion`, `tabla_afectada`, `registro_id`, `datos_nuevos`, `ip_address`) VALUES

@@ -154,9 +154,9 @@
                                 <h6 class="mb-1"><?= esc($lead['cliente_nombre']) ?></h6>
                                 <p class="text-muted small mb-1">
                                     <i class="ti-mobile"></i> <?= $lead['telefono'] ?>
-                                    <span class="ml-3"><i class="ti-location-pin"></i> <?= esc($lead['distrito']) ?></span>
+                                    <span class="ml-3"><i class="ti-location-pin"></i> <?= esc($lead['distrito'] ?? ($lead['distrito_nombre'] ?? '-')) ?></span>
                                 </p>
-                                <span class="badge badge-warning"><?= esc($lead['etapa']) ?></span>
+                                <span class="badge badge-warning"><?= esc($lead['etapa'] ?? ($lead['etapa_nombre'] ?? '-')) ?></span>
                             </div>
                             <div class="btn-group">
                                 <button class="btn btn-success btn-sm quick-action">

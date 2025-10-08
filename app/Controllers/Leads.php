@@ -47,7 +47,14 @@ class Leads extends BaseController
     // Lista de leads con filtros
     public function index()
     {
-        $userId = session()->get('user_id');
+        $userId = session()->get('idusuario') ?: session()->get('user_id');
+        $rol = session()->get('nombreRol');
+        
+        // Si es admin, mostrar todos los leads (userId = null)
+        if ($rol === 'Administrador') {
+            $userId = null;
+        }
+        
         $filtro_etapa = $this->request->getGet('etapa');
         $filtro_origen = $this->request->getGet('origen');
         $filtro_busqueda = $this->request->getGet('buscar');

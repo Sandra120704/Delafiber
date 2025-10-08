@@ -38,7 +38,7 @@ class LeadModel extends Model
         $builder = $this->db->table('leads l')
             ->select('l.idlead, l.created_at, l.estado,
                      CONCAT(p.nombres, " ", p.apellidos) as nombre_completo,
-                     p.nombres, p.apellidos, p.telefono, p.correo, p.dni,
+                     p.nombres, p.apellidos, p.telefono, p.correo, p.dni, p.coordenadas,
                      e.nombre as etapa, e.idetapa,
                      o.nombre as origen,
                      c.nombre as campania,
@@ -47,9 +47,13 @@ class LeadModel extends Model
             ->join('etapas e', 'e.idetapa = l.idetapa')
             ->join('origenes o', 'o.idorigen = l.idorigen')
             ->join('campanias c', 'c.idcampania = l.idcampania', 'LEFT')
-            ->join('distritos d', 'd.iddistrito = p.iddistrito', 'LEFT')
-            ->where('l.idusuario', $userId);
+            ->join('distritos d', 'd.iddistrito = p.iddistrito', 'LEFT');
 
+        // Solo filtrar por usuario si no es null (admin ve todos)
+        if ($userId !== null) {
+            $builder->where('l.idusuario', $userId);
+        }
+        
         // Filtro por etapa
         if (!empty($filtros['etapa'])) {
             $builder->where('l.idetapa', $filtros['etapa']);

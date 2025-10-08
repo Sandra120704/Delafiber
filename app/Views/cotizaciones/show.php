@@ -14,7 +14,7 @@
                            class="btn btn-outline-danger me-2" target="_blank">
                             <i class="ti-download me-1"></i>Descargar PDF
                         </a>
-                        <?php if ($cotizacion['estado'] === 'vigente'): ?>
+                        <?php if ($cotizacion['estado'] === 'Borrador' || $cotizacion['estado'] === 'Enviada'): ?>
                             <a href="<?= base_url('cotizaciones/edit/' . $cotizacion['idcotizacion']) ?>" 
                                class="btn btn-primary">
                                 <i class="ti-pencil me-1"></i>Editar
@@ -81,13 +81,13 @@
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-sm-4"><strong>Servicio:</strong></div>
-                                        <div class="col-sm-8"><?= esc($cotizacion['servicio_nombre']) ?></div>
+                                        <div class="col-sm-8"><?= esc($cotizacion['servicio_nombre'] ?? ($cotizacion['detalles'][0]['servicio_nombre'] ?? '-')) ?></div>
                                     </div>
                                     <hr class="my-2">
                                     <div class="row">
                                         <div class="col-sm-4"><strong>Velocidad:</strong></div>
                                         <div class="col-sm-8">
-                                            <span class="badge bg-info"><?= esc($cotizacion['velocidad']) ?></span>
+                                            <span class="badge bg-info"><?= esc($cotizacion['velocidad'] ?? ($cotizacion['detalles'][0]['servicio_velocidad'] ?? ($cotizacion['detalles'][0]['velocidad'] ?? '-'))) ?></span>
                                         </div>
                                     </div>
                                     <?php if (!empty($cotizacion['servicio_descripcion'])): ?>
@@ -186,35 +186,42 @@
                                 <div class="card-body">
                                     <?php
                                     $badgeClass = [
-                                        'vigente' => 'bg-success',
-                                        'aceptada' => 'bg-primary',
-                                        'rechazada' => 'bg-danger',
-                                        'vencida' => 'bg-secondary'
+                                        'Borrador' => 'bg-secondary',
+                                        'Enviada' => 'bg-info',
+                                        'Aceptada' => 'bg-success',
+                                        'Rechazada' => 'bg-danger'
                                     ];
                                     ?>
                                     <div class="d-flex align-items-center mb-3">
                                         <span class="badge <?= $badgeClass[$cotizacion['estado']] ?? 'bg-secondary' ?> me-2">
-                                            <?= ucfirst($cotizacion['estado']) ?>
+                                            <?= esc($cotizacion['estado']) ?>
                                         </span>
-                                        <?php if ($cotizacion['estado'] === 'vigente'): ?>
-                                            <small class="text-muted">La cotización está activa</small>
-                                        <?php elseif ($cotizacion['estado'] === 'aceptada'): ?>
+                                        <?php if ($cotizacion['estado'] === 'Borrador'): ?>
+                                            <small class="text-muted">Cotización en borrador</small>
+                                        <?php elseif ($cotizacion['estado'] === 'Enviada'): ?>
+                                            <small class="text-info">Cotización enviada al cliente</small>
+                                        <?php elseif ($cotizacion['estado'] === 'Aceptada'): ?>
                                             <small class="text-success">¡Cotización aceptada por el cliente!</small>
-                                        <?php elseif ($cotizacion['estado'] === 'rechazada'): ?>
+                                        <?php elseif ($cotizacion['estado'] === 'Rechazada'): ?>
                                             <small class="text-danger">Cotización rechazada</small>
-                                        <?php else: ?>
-                                            <small class="text-muted">Cotización vencida</small>
                                         <?php endif; ?>
                                     </div>
 
-                                    <?php if ($cotizacion['estado'] === 'vigente'): ?>
+                                    <?php if ($cotizacion['estado'] === 'Borrador' || $cotizacion['estado'] === 'Enviada'): ?>
                                         <div class="d-grid gap-2">
-                                            <button class="btn btn-success" onclick="cambiarEstado('aceptada')">
-                                                <i class="ti-check me-1"></i>Marcar como Aceptada
-                                            </button>
-                                            <button class="btn btn-outline-danger" onclick="cambiarEstado('rechazada')">
-                                                <i class="ti-close me-1"></i>Marcar como Rechazada
-                                            </button>
+                                            <?php if ($cotizacion['estado'] === 'Borrador'): ?>
+                                                <button class="btn btn-info" onclick="cambiarEstado('Enviada')">
+                                                    <i class="ti-email me-1"></i>Marcar como Enviada
+                                                </button>
+                                            <?php endif; ?>
+                                            <?php if ($cotizacion['estado'] === 'Enviada'): ?>
+                                                <button class="btn btn-success" onclick="cambiarEstado('Aceptada')">
+                                                    <i class="ti-check me-1"></i>Marcar como Aceptada
+                                                </button>
+                                                <button class="btn btn-outline-danger" onclick="cambiarEstado('Rechazada')">
+                                                    <i class="ti-close me-1"></i>Marcar como Rechazada
+                                                </button>
+                                            <?php endif; ?>
                                         </div>
                                     <?php endif; ?>
                                 </div>
@@ -249,7 +256,7 @@
                                             $diasRestantes = (strtotime($fechaVencimiento) - time()) / (60 * 60 * 24);
                                             ?>
                                             <?= date('d/m/Y', strtotime($fechaVencimiento)) ?>
-                                            <?php if ($cotizacion['estado'] === 'vigente'): ?>
+                                            <?php if ($cotizacion['estado'] === 'Borrador' || $cotizacion['estado'] === 'Enviada'): ?>
                                                 <br>
                                                 <?php if ($diasRestantes > 0): ?>
                                                     <small class="text-warning">
@@ -311,7 +318,12 @@
 
 <script>
 function cambiarEstado(nuevoEstado) {
-    const accion = nuevoEstado === 'aceptada' ? 'aceptar' : 'rechazar';
+    const acciones = {
+        'Enviada': 'enviar',
+        'Aceptada': 'aceptar',
+        'Rechazada': 'rechazar'
+    };
+    const accion = acciones[nuevoEstado] || 'cambiar';
     
     if (!confirm(`¿Está seguro de ${accion} esta cotización?`)) {
         return;

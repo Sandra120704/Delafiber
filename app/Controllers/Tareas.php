@@ -22,6 +22,10 @@ class Tareas extends BaseController
         }
 
         $idusuario = session()->get('idusuario');
+        $rol = session()->get('nombreRol');
+        
+        // Si es admin, ver todas las tareas (null = sin filtro)
+        $filtroUsuario = ($rol === 'Administrador') ? null : $idusuario;
         
         // Datos básicos para evitar errores
         $data = [
@@ -36,10 +40,10 @@ class Tareas extends BaseController
 
         try {
             // Obtener todas las tareas
-            $data['pendientes'] = $this->getTareasPendientes($idusuario);
-            $data['hoy'] = $this->getTareasHoy($idusuario);
-            $data['vencidas'] = $this->getTareasVencidas($idusuario);
-            $data['completadas'] = $this->getTareasCompletadas($idusuario);
+            $data['pendientes'] = $this->getTareasPendientes($filtroUsuario);
+            $data['hoy'] = $this->getTareasHoy($filtroUsuario);
+            $data['vencidas'] = $this->getTareasVencidas($filtroUsuario);
+            $data['completadas'] = $this->getTareasCompletadas($filtroUsuario);
             $data['tareas_pendientes_count'] = count($data['pendientes']);
             
             // Obtener leads con datos de personas usando el modelo
@@ -55,12 +59,16 @@ class Tareas extends BaseController
     private function getTareasPendientes($idusuario)
     {
         try {
-            return $this->tareaModel
+            $builder = $this->tareaModel
                 ->select('tareas.*, COALESCE(CONCAT(p.nombres, " ", p.apellidos), "Sin lead") as lead_nombre, COALESCE(p.telefono, "") as lead_telefono')
                 ->join('leads l', 'l.idlead = tareas.idlead', 'left')
-                ->join('personas p', 'p.idpersona = l.idpersona', 'left')
-                ->where('tareas.idusuario', $idusuario)
-                ->where('tareas.estado', 'Pendiente')
+                ->join('personas p', 'p.idpersona = l.idpersona', 'left');
+            
+            if ($idusuario !== null) {
+                $builder->where('tareas.idusuario', $idusuario);
+            }
+            
+            return $builder->where('tareas.estado', 'pendiente')
                 ->where('tareas.fecha_vencimiento >', date('Y-m-d H:i:s'))
                 ->orderBy('tareas.prioridad', 'DESC')
                 ->orderBy('tareas.fecha_vencimiento', 'ASC')
@@ -77,12 +85,16 @@ class Tareas extends BaseController
             $hoy_inicio = date('Y-m-d 00:00:00');
             $hoy_fin = date('Y-m-d 23:59:59');
             
-            return $this->tareaModel
+            $builder = $this->tareaModel
                 ->select('tareas.*, COALESCE(CONCAT(p.nombres, " ", p.apellidos), "Sin lead") as lead_nombre')
                 ->join('leads l', 'l.idlead = tareas.idlead', 'left')
-                ->join('personas p', 'p.idpersona = l.idpersona', 'left')
-                ->where('tareas.idusuario', $idusuario)
-                ->where('tareas.estado', 'Pendiente')
+                ->join('personas p', 'p.idpersona = l.idpersona', 'left');
+            
+            if ($idusuario !== null) {
+                $builder->where('tareas.idusuario', $idusuario);
+            }
+            
+            return $builder->where('tareas.estado', 'pendiente')
                 ->where('tareas.fecha_vencimiento >=', $hoy_inicio)
                 ->where('tareas.fecha_vencimiento <=', $hoy_fin)
                 ->orderBy('tareas.fecha_vencimiento', 'ASC')
@@ -96,12 +108,16 @@ class Tareas extends BaseController
     private function getTareasVencidas($idusuario)
     {
         try {
-            return $this->tareaModel
+            $builder = $this->tareaModel
                 ->select('tareas.*, COALESCE(CONCAT(p.nombres, " ", p.apellidos), "Sin lead") as lead_nombre')
                 ->join('leads l', 'l.idlead = tareas.idlead', 'left')
-                ->join('personas p', 'p.idpersona = l.idpersona', 'left')
-                ->where('tareas.idusuario', $idusuario)
-                ->where('tareas.estado', 'Pendiente')
+                ->join('personas p', 'p.idpersona = l.idpersona', 'left');
+            
+            if ($idusuario !== null) {
+                $builder->where('tareas.idusuario', $idusuario);
+            }
+            
+            return $builder->where('tareas.estado', 'pendiente')
                 ->where('tareas.fecha_vencimiento <', date('Y-m-d H:i:s'))
                 ->orderBy('tareas.fecha_vencimiento', 'ASC')
                 ->findAll();
@@ -113,12 +129,16 @@ class Tareas extends BaseController
 
     private function getTareasCompletadas($idusuario)
     {
-        return $this->tareaModel
+        $builder = $this->tareaModel
             ->select('tareas.*, CONCAT(p.nombres, " ", p.apellidos) as lead_nombre')
             ->join('leads l', 'l.idlead = tareas.idlead', 'left')
-            ->join('personas p', 'p.idpersona = l.idpersona', 'left')
-            ->where('tareas.idusuario', $idusuario)
-            ->where('tareas.estado', 'Completada')
+            ->join('personas p', 'p.idpersona = l.idpersona', 'left');
+        
+        if ($idusuario !== null) {
+            $builder->where('tareas.idusuario', $idusuario);
+        }
+        
+        return $builder->where('tareas.estado', 'completada')
             ->orderBy('tareas.fecha_completada', 'DESC')
             ->limit(50)
             ->findAll();

@@ -251,8 +251,8 @@
             </a>
             <div class="collapse <?= (strpos(uri_string(), 'tareas') !== false) ? 'show' : '' ?>" id="tareas-menu">
               <ul class="nav flex-column sub-menu">
-                <li class="nav-item"><a class="nav-link" href="<?= base_url('tareas') ?>">📋 Lista de Tareas</a></li>
-                <li class="nav-item"><a class="nav-link" href="<?= base_url('tareas/calendario') ?>">📅 Calendario</a></li>
+                <li class="nav-item"><a class="nav-link" href="<?= base_url('tareas') ?>">Lista de Tareas</a></li>
+                <li class="nav-item"><a class="nav-link" href="<?= base_url('tareas/calendario') ?>">Calendario</a></li>
               </ul>
             </div>
           </li>

@@ -236,10 +236,12 @@ class DashboardModel extends Model
             ->select('l.idlead,
                      CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre,
                      p.telefono,
-                     e.nombre as etapa_nombre,
+                     d.nombre as distrito,
+                     e.nombre as etapa,
                      l.created_at')
             ->join('personas p', 'l.idpersona = p.idpersona')
             ->join('etapas e', 'l.idetapa = e.idetapa')
+            ->join('distritos d', 'p.iddistrito = d.iddistrito', 'LEFT')
             ->where('l.idusuario', $idusuario)
             ->where('l.estado', 'Activo')
             ->whereIn('e.nombre', ['COTIZACION', 'NEGOCIACION', 'CIERRE'])

@@ -55,16 +55,16 @@ class ZonaCampanaModel extends Model
             z.*,
             c.nombre as nombre_campana,
             COUNT(DISTINCT p.idpersona) as total_prospectos,
-            COUNT(DISTINCT a.id_usuario) as agentes_asignados,
+            COUNT(DISTINCT a.idusuario) as agentes_asignados,
             ROUND(z.area_m2 / 1000000, 2) as area_km2
         ');
         $builder->join('campanias c', 'z.id_campana = c.idcampania', 'left');
         $builder->join('personas p', 'p.id_zona = z.id_zona', 'left');
-        $builder->join('tb_asignaciones_zona a', 'a.id_zona = z.id_zona AND a.activo = 1', 'left');
+        $builder->join('tb_asignaciones_zona a', 'a.id_zona = z.id_zona AND a.estado = "Activa"', 'left');
         $builder->where('z.id_campana', $idCampana);
         
         if (!$incluirInactivas) {
-            $builder->where('z.inactive_at IS NULL');
+            $builder->where('z.estado', 'Activa');
         }
         
         $builder->groupBy('z.id_zona');
@@ -88,7 +88,7 @@ class ZonaCampanaModel extends Model
             CONCAT(pc.nombres, " ", pc.apellidos) as creado_por,
             CONCAT(pu.nombres, " ", pu.apellidos) as actualizado_por,
             COUNT(DISTINCT p.idpersona) as total_prospectos,
-            COUNT(DISTINCT a.id_usuario) as agentes_asignados,
+            COUNT(DISTINCT a.idusuario) as agentes_asignados,
             ROUND(z.area_m2 / 1000000, 2) as area_km2
         ');
         $builder->join('campanias c', 'z.id_campana = c.idcampania', 'left');
@@ -97,7 +97,7 @@ class ZonaCampanaModel extends Model
         $builder->join('usuarios uu', 'z.iduser_update = uu.idusuario', 'left');
         $builder->join('personas pu', 'uu.idpersona = pu.idpersona', 'left');
         $builder->join('personas p', 'p.id_zona = z.id_zona', 'left');
-        $builder->join('tb_asignaciones_zona a', 'a.id_zona = z.id_zona AND a.activo = 1', 'left');
+        $builder->join('tb_asignaciones_zona a', 'a.id_zona = z.id_zona AND a.estado = "Activa"', 'left');
         $builder->where('z.id_zona', $idZona);
         $builder->groupBy('z.id_zona');
         

@@ -19,6 +19,10 @@ class CotizacionModel extends Model
         'subtotal',
         'igv',
         'total',
+        'precio_cotizado',
+        'descuento_aplicado',
+        'precio_instalacion',
+        'vigencia_dias',
         'observaciones',
         'estado',
         'fecha_envio',
@@ -26,10 +30,10 @@ class CotizacionModel extends Model
     ];
 
     // Dates
-    protected $useTimestamps = false;
+    protected $useTimestamps = true;
     protected $dateFormat = 'datetime';
     protected $createdField = 'created_at';
-    protected $updatedField = '';
+    protected $updatedField = 'updated_at';
 
     // Validation
     protected $validationRules = [
@@ -107,7 +111,7 @@ class CotizacionModel extends Model
             $builder->join('usuarios u', 'c.idusuario = u.idusuario', 'left');
             
             // Si no es admin, solo mostrar cotizaciones de sus leads
-            if ($rol !== 'admin' && $userId) {
+            if ($rol !== 'Administrador' && $userId) {
                 $builder->where('c.idusuario', $userId);
             }
         } else {
@@ -124,7 +128,7 @@ class CotizacionModel extends Model
             $builder->join('usuarios u', 'l.idusuario = u.idusuario', 'left');
             
             // Si no es admin, filtrar por leads del usuario
-            if ($rol !== 'admin' && $userId) {
+            if ($rol !== 'Administrador' && $userId) {
                 $builder->where('l.idusuario', $userId);
             }
         }
@@ -190,12 +194,31 @@ class CotizacionModel extends Model
             try {
                 if ($this->tableExists('cotizacion_detalle') && $this->tableExists('servicios')) {
                     $db = \Config\Database::connect();
+                    // Include servicio velocidad from servicios table (if available)
                     $cotizacion['detalles'] = $db->table('cotizacion_detalle cd')
-                        ->select('cd.*, s.nombre as servicio_nombre, s.descripcion as servicio_descripcion')
+                        ->select('cd.*, s.nombre as servicio_nombre, s.descripcion as servicio_descripcion, s.velocidad as servicio_velocidad')
                         ->join('servicios s', 'cd.idservicio = s.idservicio')
                         ->where('cd.idcotizacion', $idcotizacion)
                         ->get()
                         ->getResultArray();
+                    // Promote main service fields to top-level for backward compatibility with views
+                    if (!empty($cotizacion['detalles'])) {
+                        $first = $cotizacion['detalles'][0];
+                        // set top-level keys if not already present
+                        if (!isset($cotizacion['servicio_nombre'])) {
+                            $cotizacion['servicio_nombre'] = $first['servicio_nombre'] ?? null;
+                        }
+                        if (!isset($cotizacion['servicio_descripcion'])) {
+                            $cotizacion['servicio_descripcion'] = $first['servicio_descripcion'] ?? null;
+                        }
+                        if (!isset($cotizacion['idservicio']) && isset($first['idservicio'])) {
+                            $cotizacion['idservicio'] = $first['idservicio'];
+                        }
+                        // Some views expect velocidad at top-level. Prefer servicio_velocidad from joined servicios
+                        if (!isset($cotizacion['velocidad'])) {
+                            $cotizacion['velocidad'] = $first['servicio_velocidad'] ?? $first['velocidad'] ?? null;
+                        }
+                    }
                 } else {
                     $cotizacion['detalles'] = [];
                 }

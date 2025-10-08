@@ -28,7 +28,7 @@ class Cotizaciones extends BaseController
     public function index()
     {
         $userId = session()->get('idusuario');
-        $rol = session()->get('rol');
+        $rol = session()->get('nombreRol'); // Corregido: nombreRol en lugar de rol
 
         // Obtener cotizaciones con información completa
         $cotizaciones = $this->cotizacionModel->getCotizacionesCompletas($userId, $rol);
