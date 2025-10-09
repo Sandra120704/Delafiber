@@ -1,4 +1,4 @@
-# 🚀 Guía de Instalación - Delafiber CRM
+# Guía de Instalación - Delafiber CRM
 
 ## Requisitos Previos
 - PHP 8.2 o superior
@@ -10,7 +10,7 @@
 
 ### 1. Clonar el Repositorio
 ```bash
-git clone <url-del-repositorio>
+git clone <https://github.com/SandraGeraldine/Delafiber.git>
 cd Delafiber
 ```
 
@@ -45,27 +45,21 @@ Editar `.env` y configurar:
 database.default.hostname = localhost
 database.default.database = delafiber
 database.default.username = root
-database.default.password = tu_password
+database.default.password = 
 database.default.DBDriver = MySQLi
-```
 
-### 5. Configurar Permisos (Linux/Mac)
-```bash
-chmod -R 777 writable/
-```
-
-### 6. Iniciar el Servidor
+### 5. Iniciar el Servidor
 
 #### Opción 1: Con XAMPP
 - Colocar el proyecto en `C:\xampp\htdocs\Delafiber`
 - Iniciar Apache y MySQL desde XAMPP Control Panel
-- Acceder a: `http://localhost/Delafiber`
+- Acceder a: `delafiber.test`
 
 #### Opción 2: Servidor integrado de PHP
 ```bash
 php spark serve
 ```
-Acceder a: `http://localhost:8080`
+Acceder a: `delafiber.test`
 
 ## Credenciales por Defecto
 
@@ -89,14 +83,3 @@ Acceder a la aplicación y verificar que:
 ### Error 500
 - Verificar permisos en carpeta `writable/`
 - Revisar logs en `writable/logs/`
-
-### Composer no encontrado
-```bash
-# Instalar Composer globalmente
-php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-php composer-setup.php
-php -r "unlink('composer-setup.php');"
-```
-
-## Soporte
-Para más información, revisar la documentación en `/docs` o contactar al equipo de desarrollo.
