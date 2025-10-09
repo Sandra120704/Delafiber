@@ -197,6 +197,7 @@ $routes->group('usuarios', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'UsuarioController::index');
     $routes->get('crear', 'UsuarioController::crear');
     $routes->post('crear', 'UsuarioController::crear');
+    $routes->get('buscar-dni', 'UsuarioController::buscarPorDni'); // Búsqueda AJAX por DNI
     $routes->post('editar/(:num)', 'UsuarioController::editar/$1');
     $routes->delete('eliminar/(:num)', 'UsuarioController::eliminar/$1');
     $routes->post('cambiarEstado/(:num)', 'UsuarioController::cambiarEstado/$1');
@@ -206,8 +207,6 @@ $routes->group('usuarios', ['filter' => 'auth'], function($routes) {
 
 // === NOTIFICACIONES ===
 $routes->get('notificaciones', 'Dashboard::notificaciones', ['filter' => 'auth']);
-
-// Rutas principales
 $routes->get('dashboard', 'Dashboard::index');
 $routes->get('campanias', 'Campanias::index');
 $routes->get('tareas', 'Tareas::index');

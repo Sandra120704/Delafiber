@@ -28,10 +28,10 @@ class Cotizaciones extends BaseController
     public function index()
     {
         $userId = session()->get('idusuario');
-        $rol = session()->get('nombreRol'); // Corregido: nombreRol en lugar de rol
+        $rol = session()->get('nombreRol');
 
-        // Obtener cotizaciones con información completa
-        $cotizaciones = $this->cotizacionModel->getCotizacionesCompletas($userId, $rol);
+        // Todos ven todas las cotizaciones (coordinación entre turnos)
+        $cotizaciones = $this->cotizacionModel->getCotizacionesCompletas(null, 'Administrador');
 
         $data = [
             'title' => 'Cotizaciones',
@@ -143,7 +143,7 @@ class Cotizaciones extends BaseController
                 
                 // Mover lead a etapa COTIZACION si no está ya ahí
                 $lead = $this->leadModel->find($dataCotizacion['idlead']);
-                if ($lead && isset($lead['idetapa']) && $lead['idetapa'] < 4) { 
+                if ($lead && isset($lead->idetapa) && $lead->idetapa < 4) { 
                     $this->leadModel->update($dataCotizacion['idlead'], ['idetapa' => 4]);
                 }
             }

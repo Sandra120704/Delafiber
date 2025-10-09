@@ -24,7 +24,9 @@ class UsuarioController extends BaseController
     public function index()
     {
         try {
-            $usuarios = $this->usuarioModel->getUsuariosConDetalle();
+            // Soportar búsqueda simple desde GET: q o dni
+            $search = $this->request->getGet('q') ?? $this->request->getGet('dni');
+            $usuarios = $this->usuarioModel->getUsuariosConDetalle($search);
             
             $data = [
                 'title' => 'Gestión de Usuarios - Delafiber CRM',
@@ -49,9 +51,7 @@ class UsuarioController extends BaseController
         }
 
         $data = [
-            'header' => view('layouts/header'),
-            'footer' => view('layouts/footer'),
-            'personas' => $this->personaModel->findAll(),
+            'title' => 'Nuevo Usuario',
             'roles' => $this->rolesModel->findAll()
         ];
         
@@ -60,41 +60,177 @@ class UsuarioController extends BaseController
 
     public function guardar()
     {
+        // Validación de datos de persona
         $rules = [
-            'usuario' => 'required|min_length[4]|is_unique[usuarios.usuario]',
-            'password' => 'required|min_length[6]', 
-            'idpersona' => 'permit_empty|integer'
+            'dni' => 'required|exact_length[8]|numeric',
+            'nombres' => 'required|min_length[2]|max_length[100]',
+            'apellidos' => 'required|min_length[2]|max_length[100]',
+            'telefono' => 'required|exact_length[9]|numeric',
+            'usuario' => 'required|min_length[4]|max_length[50]',
+            'clave' => 'required|min_length[6]',
+            'idrol' => 'required|integer'
         ];
 
         if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $this->validator->getErrors());
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            // 1. Buscar si la persona ya existe por DNI
+            $personaExistente = $this->personaModel->where('dni', $this->request->getPost('dni'))->first();
+            
+            if ($personaExistente) {
+                // Verificar si ya tiene usuario
+                $usuarioExistente = $this->usuarioModel->where('idpersona', $personaExistente['idpersona'])->first();
+                if ($usuarioExistente) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Esta persona ya tiene un usuario registrado');
+                }
+                $idpersona = $personaExistente['idpersona'];
+            } else {
+                // 2. Crear nueva persona
+                $personaData = [
+                    'dni' => $this->request->getPost('dni'),
+                    'nombres' => $this->request->getPost('nombres'),
+                    'apellidos' => $this->request->getPost('apellidos'),
+                    'telefono' => $this->request->getPost('telefono'),
+                    'correo' => $this->request->getPost('correo'),
+                    'direccion' => $this->request->getPost('direccion'),
+                    'referencias' => $this->request->getPost('referencias'),
+                    'iddistrito' => $this->request->getPost('iddistrito') ?: null
+                ];
+                
+                $idpersona = $this->personaModel->insert($personaData);
+                
+                if (!$idpersona) {
+                    throw new \Exception('Error al crear la persona');
+                }
+            }
+
+            // 3. Crear usuario (sin relación directa con personas)
+            $usuarioData = [
+                'nombre' => $this->request->getPost('nombres') . ' ' . $this->request->getPost('apellidos'),
+                'email' => $this->request->getPost('correo') ?: $this->request->getPost('usuario') . '@delafiber.com',
+                'password' => password_hash($this->request->getPost('clave'), PASSWORD_DEFAULT),
+                'idrol' => $this->request->getPost('idrol'),
+                'turno' => $this->request->getPost('turno') ?: 'completo',
+                'telefono' => $this->request->getPost('telefono'),
+                'estado' => 'Activo'
+            ];
+
+            $idusuario = $this->usuarioModel->insert($usuarioData);
+
+            if (!$idusuario) {
+                throw new \Exception('Error al crear el usuario');
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Error en la transacción');
+            }
+
+            return redirect()->to('usuarios')
+                ->with('success', 'Usuario creado correctamente');
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Error al crear el usuario: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Buscar persona por DNI (AJAX)
+     */
+    public function buscarPorDni()
+    {
+        $dni = $this->request->getGet('dni');
+        
+        if (!$dni || strlen($dni) != 8) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Errores de validación',
-                'errors' => $this->validator->getErrors()
+                'message' => 'DNI inválido'
             ]);
         }
 
         try {
-            $data = [
-                'idpersona' => $this->request->getVar('idpersona') ?: null,
-                'usuario' => $this->request->getVar('usuario'),
-                'password' => password_hash($this->request->getVar('password'), PASSWORD_DEFAULT),
-                'idrol' => $this->request->getVar('idrol'),
-                'activo' => $this->request->getVar('activo') ? 1 : 0
-            ];
+            // 1. Buscar en base de datos local
+            $persona = $this->personaModel->where('dni', $dni)->first();
+            
+            if ($persona) {
+                // Verificar si ya tiene usuario
+                $usuario = $this->usuarioModel->where('idpersona', $persona['idpersona'])->first();
+                
+                return $this->response->setJSON([
+                    'success' => true,
+                    'source' => 'local',
+                    'persona' => $persona,
+                    'tiene_usuario' => !empty($usuario),
+                    'message' => $usuario ? 'Esta persona ya tiene un usuario registrado' : 'Persona encontrada en la base de datos'
+                ]);
+            }
 
-            $id = $this->usuarioModel->insert($data);
+            // 2. Si no existe, buscar en RENIEC
+            $api_token = env('API_DECOLECTA_TOKEN');
+            
+            if ($api_token) {
+                $api_endpoint = "https://api.decolecta.com/v1/reniec/dni?numero=" . $dni;
+                
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $api_endpoint);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . $api_token,
+                ]);
+                
+                $api_response = curl_exec($ch);
+                $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+
+                if ($api_response !== false && $http_code === 200) {
+                    $decoded_response = json_decode($api_response, true);
+                    
+                    if (isset($decoded_response['first_name'])) {
+                        $apellidos = trim(($decoded_response['first_last_name'] ?? '') . ' ' . ($decoded_response['second_last_name'] ?? ''));
+                        return $this->response->setJSON([
+                            'success' => true,
+                            'source' => 'reniec',
+                            'persona' => [
+                                'dni' => $dni,
+                                'nombres' => $decoded_response['first_name'] ?? '',
+                                'apellidos' => $apellidos,
+                                'telefono' => '',
+                                'correo' => '',
+                                'direccion' => '',
+                                'iddistrito' => ''
+                            ],
+                            'tiene_usuario' => false,
+                            'message' => 'Datos obtenidos de RENIEC'
+                        ]);
+                    }
+                }
+            }
 
             return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Usuario creado correctamente',
-                'idusuario' => $id
+                'success' => false,
+                'message' => 'No se encontró información para este DNI'
             ]);
 
         } catch (\Exception $e) {
+            log_message('error', 'Error en buscarPorDni: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Error al crear el usuario: ' . $e->getMessage()
+                'message' => 'Error al buscar: ' . $e->getMessage()
             ]);
         }
     }
@@ -105,17 +241,15 @@ class UsuarioController extends BaseController
             return $this->actualizar($idusuario);
         }
 
-        $usuario = $this->usuarioModel->obtenerUsuarioCompleto($idusuario);
+        $usuario = $this->usuarioModel->find($idusuario);
         
         if (!$usuario) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Usuario no encontrado');
         }
 
         $data = [
-            'header' => view('layouts/header'),
-            'footer' => view('layouts/footer'),
+            'title' => 'Editar Usuario',
             'usuario' => $usuario,
-            'personas' => $this->personaModel->findAll(),
             'roles' => $this->rolesModel->findAll()
         ];
 

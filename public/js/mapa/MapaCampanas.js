@@ -91,12 +91,18 @@ function inicializarDrawingManager() {
     google.maps.event.addListener(drawingManager, 'polygoncomplete', function(polygon) {
         manejarNuevaZona(polygon);
     });
+    
+    // Agregar botón de "Borrar Zona Actual"
+    agregarBotonBorrarZona();
 }
 
 // ============================================
 // 3. CREAR NUEVA ZONA DE CAMPAÑA
 // ============================================
 async function manejarNuevaZona(polygon) {
+    // Guardar referencia a la zona actual
+    zonaActual = polygon;
+    
     const coordenadas = polygon.getPath().getArray().map(latLng => ({
         lat: latLng.lat(),
         lng: latLng.lng()
@@ -456,12 +462,17 @@ function mostrarInfoZona(zona, position) {
             <p style="margin: 5px 0; font-size: 13px;">
                 <strong>Agentes:</strong> ${zona.agentes_asignados || 0}
             </p>
-            <div style="margin-top: 10px;">
+            <div style="margin-top: 10px; display: flex; gap: 5px;">
                 <a href="/crm-campanas/zona-detalle/${zona.id_zona}" 
                    class="btn btn-sm btn-primary" 
                    style="font-size: 12px;">
-                    Ver Detalle
+                    <i class="icon-eye"></i> Ver Detalle
                 </a>
+                <button onclick="MapaCampanas.editarZona(${zona.id_zona})" 
+                   class="btn btn-sm btn-warning" 
+                   style="font-size: 12px;">
+                    <i class="icon-edit"></i> Editar
+                </button>
             </div>
         </div>
     `;
@@ -548,6 +559,9 @@ function mostrarModalNuevaZona(datos) {
                         </form>
                     </div>
                     <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" id="btnBorrarRedibujar">
+                            <i class="icon-trash"></i> Borrar y Redibujar
+                        </button>
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                         <button type="button" class="btn btn-primary" id="btnGuardarZona">Guardar Zona</button>
                     </div>
@@ -564,6 +578,40 @@ function mostrarModalNuevaZona(datos) {
     
     // Mostrar modal
     $('#modalNuevaZona').modal('show');
+    
+    // Manejar botón "Borrar y Redibujar"
+    $('#btnBorrarRedibujar').on('click', function() {
+        Swal.fire({
+            title: '¿Borrar y redibujar?',
+            text: 'Se eliminará el polígono actual y podrás dibujar uno nuevo',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c',
+            cancelButtonColor: '#95a5a6',
+            confirmButtonText: '<i class="icon-trash"></i> Sí, borrar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Cerrar modal
+                $('#modalNuevaZona').modal('hide');
+                
+                // Eliminar polígono
+                datos.polygon.setMap(null);
+                zonaActual = null;
+                
+                // Reactivar modo de dibujo
+                drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Zona borrada',
+                    text: 'Dibuja una nueva zona en el mapa',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+        });
+    });
     
     // Manejar guardado
     $('#btnGuardarZona').on('click', async function() {
@@ -688,6 +736,250 @@ export async function cargarProspectosEnMapa(idZona = null) {
 }
 
 // ============================================
+// 16. AGREGAR BOTÓN PARA BORRAR ZONA
+// ============================================
+function agregarBotonBorrarZona() {
+    // Crear botón personalizado
+    const botonBorrar = document.createElement('button');
+    botonBorrar.innerHTML = '🗑️ Borrar Zona Actual';
+    botonBorrar.className = 'btn btn-danger btn-sm';
+    botonBorrar.style.cssText = `
+        margin: 10px;
+        padding: 8px 15px;
+        background: #e74c3c;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    `;
+    
+    botonBorrar.addEventListener('click', borrarZonaActual);
+    
+    // Agregar al mapa
+    mapa.controls[google.maps.ControlPosition.TOP_CENTER].push(botonBorrar);
+}
+
+// ============================================
+// 17. BORRAR ZONA ACTUAL
+// ============================================
+function borrarZonaActual() {
+    if (!zonaActual) {
+        Swal.fire({
+            icon: 'info',
+            title: 'No hay zona para borrar',
+            text: 'Primero dibuja una zona en el mapa',
+            confirmButtonColor: '#3085d6'
+        });
+        return;
+    }
+    
+    Swal.fire({
+        title: '¿Borrar zona?',
+        text: 'Se eliminará el polígono dibujado. Podrás dibujar uno nuevo.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: '<i class="icon-trash"></i> Sí, borrar',
+        cancelButtonText: '<i class="icon-close"></i> Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Eliminar polígono del mapa
+            zonaActual.setMap(null);
+            zonaActual = null;
+            
+            // Reactivar modo de dibujo
+            drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Zona borrada',
+                text: 'Puedes dibujar una nueva zona',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+    });
+}
+
+// ============================================
+// 18. EDITAR ZONA EXISTENTE
+// ============================================
+export function habilitarEdicionZona(idZona) {
+    const zonaItem = zonasPoligonos.find(z => z.id_zona === idZona);
+    
+    if (!zonaItem) {
+        console.error('Zona no encontrada');
+        return;
+    }
+    
+    Swal.fire({
+        title: '¿Editar zona?',
+        html: `
+            <p>Podrás modificar los vértices del polígono arrastrándolos.</p>
+            <p><strong>Zona:</strong> ${zonaItem.data.nombre_zona}</p>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3498db',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: '<i class="icon-edit"></i> Habilitar edición',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Hacer el polígono editable
+            zonaItem.polygon.setOptions({
+                editable: true,
+                draggable: true,
+                strokeWeight: 3,
+                strokeColor: '#f39c12'
+            });
+            
+            // Guardar referencia
+            zonaActual = zonaItem.polygon;
+            
+            // Mostrar botones de guardar/cancelar
+            mostrarBotonesEdicion(zonaItem);
+        }
+    });
+}
+
+// ============================================
+// 19. MOSTRAR BOTONES DE EDICIÓN
+// ============================================
+function mostrarBotonesEdicion(zonaItem) {
+    // Crear contenedor de botones
+    const contenedor = document.createElement('div');
+    contenedor.id = 'botonesEdicionZona';
+    contenedor.style.cssText = `
+        position: absolute;
+        top: 70px;
+        right: 10px;
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        z-index: 1000;
+    `;
+    
+    contenedor.innerHTML = `
+        <h6 style="margin: 0 0 10px 0;">Editando: ${zonaItem.data.nombre_zona}</h6>
+        <button id="btnGuardarEdicion" class="btn btn-success btn-sm mb-2" style="width: 100%;">
+            <i class="icon-check"></i> Guardar Cambios
+        </button>
+        <button id="btnCancelarEdicion" class="btn btn-secondary btn-sm" style="width: 100%;">
+            <i class="icon-close"></i> Cancelar
+        </button>
+    `;
+    
+    document.body.appendChild(contenedor);
+    
+    // Eventos de botones
+    document.getElementById('btnGuardarEdicion').addEventListener('click', () => {
+        guardarEdicionZona(zonaItem);
+    });
+    
+    document.getElementById('btnCancelarEdicion').addEventListener('click', () => {
+        cancelarEdicionZona(zonaItem);
+    });
+}
+
+// ============================================
+// 20. GUARDAR EDICIÓN DE ZONA
+// ============================================
+async function guardarEdicionZona(zonaItem) {
+    try {
+        const nuevasCoordenadas = zonaItem.polygon.getPath().getArray().map(latLng => ({
+            lat: latLng.lat(),
+            lng: latLng.lng()
+        }));
+        
+        // Calcular nueva área
+        const turfPolygon = turf.polygon([[
+            ...nuevasCoordenadas.map(c => [c.lng, c.lat]),
+            [nuevasCoordenadas[0].lng, nuevasCoordenadas[0].lat]
+        ]]);
+        const nuevaArea = turf.area(turfPolygon);
+        
+        // Actualizar en BD
+        const response = await fetch('/crm-campanas/actualizar-zona', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                id_zona: zonaItem.id_zona,
+                coordenadas: nuevasCoordenadas,
+                area_m2: nuevaArea
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.message);
+        }
+        
+        // Deshabilitar edición
+        zonaItem.polygon.setOptions({
+            editable: false,
+            draggable: false,
+            strokeWeight: 2,
+            strokeColor: zonaItem.data.color
+        });
+        
+        // Remover botones
+        document.getElementById('botonesEdicionZona')?.remove();
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Zona actualizada',
+            text: 'Los cambios se guardaron correctamente',
+            timer: 2000,
+            showConfirmButton: false
+        });
+        
+    } catch (error) {
+        console.error('Error al guardar edición:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo guardar la edición: ' + error.message
+        });
+    }
+}
+
+// ============================================
+// 21. CANCELAR EDICIÓN DE ZONA
+// ============================================
+function cancelarEdicionZona(zonaItem) {
+    // Recargar zona original
+    zonaItem.polygon.setOptions({
+        editable: false,
+        draggable: false,
+        strokeWeight: 2,
+        strokeColor: zonaItem.data.color
+    });
+    
+    // Restaurar coordenadas originales
+    zonaItem.polygon.setPath(zonaItem.data.poligono);
+    
+    // Remover botones
+    document.getElementById('botonesEdicionZona')?.remove();
+    
+    Swal.fire({
+        icon: 'info',
+        title: 'Edición cancelada',
+        text: 'Se restauró la zona original',
+        timer: 2000,
+        showConfirmButton: false
+    });
+}
+
+// ============================================
 // EXPORTAR FUNCIONES PÚBLICAS
 // ============================================
 window.MapaCampanas = {
@@ -698,7 +990,9 @@ window.MapaCampanas = {
     detectarSolapamiento: detectarSolapamientoZonas,
     calcularDensidad: calcularDensidadProspectos,
     cargarProspectos: cargarProspectosEnMapa,
-    guardarZona: guardarZonaCampana
+    guardarZona: guardarZonaCampana,
+    borrarZona: borrarZonaActual,
+    editarZona: habilitarEdicionZona
 };
 
 console.log('Módulo MapaCampanas.js cargado');

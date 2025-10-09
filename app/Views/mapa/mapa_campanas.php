@@ -132,10 +132,11 @@
                 <div class="alert alert-info mb-0">
                     <strong>💡 Instrucciones:</strong>
                     <ul class="mb-0 mt-2">
-                        <li>Usa la herramienta de polígono para dibujar nuevas zonas</li>
-                        <li>Haz clic en una zona para ver sus detalles</li>
-                        <li>Los prospectos se asignan automáticamente según su ubicación</li>
-                        <li>Usa "Asignar Automático" para procesar prospectos sin zona</li>
+                        <li>🖊️ <strong>Dibujar:</strong> Usa la herramienta de polígono en el mapa</li>
+                        <li>🗑️ <strong>Borrar:</strong> Usa el botón "Borrar Zona Actual" si te equivocas</li>
+                        <li>✏️ <strong>Editar:</strong> Haz clic en una zona y luego en "Editar" para modificarla</li>
+                        <li>👥 <strong>Prospectos:</strong> Se asignan automáticamente según su ubicación</li>
+                        <li>⚡ <strong>Asignar Automático:</strong> Procesa prospectos sin zona asignada</li>
                     </ul>
                 </div>
             </div>

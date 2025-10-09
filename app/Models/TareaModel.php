@@ -13,17 +13,17 @@ class TareaModel extends Model
         'idusuario',
         'titulo',
         'descripcion',
-        'tipo_tarea',
         'prioridad',
-        'fecha_inicio',
-        'fecha_fin',
         'fecha_vencimiento',
         'fecha_completada',
         'estado',
-        'notas_resultado'
+        'visible_para_equipo',
+        'turno_asignado'
     ];
     
-    protected $useTimestamps = false;
+    protected $useTimestamps = true;
+    protected $createdField = 'created_at';
+    protected $updatedField = '';
     
     /**
      * Obtener tareas con información completa

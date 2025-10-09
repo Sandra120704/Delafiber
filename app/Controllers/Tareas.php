@@ -24,8 +24,8 @@ class Tareas extends BaseController
         $idusuario = session()->get('idusuario');
         $rol = session()->get('nombreRol');
         
-        // Si es admin, ver todas las tareas (null = sin filtro)
-        $filtroUsuario = ($rol === 'Administrador') ? null : $idusuario;
+        // Todos ven todas las tareas (coordinación entre turnos)
+        $filtroUsuario = null;
         
         // Datos básicos para evitar errores
         $data = [

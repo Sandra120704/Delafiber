@@ -361,6 +361,94 @@
 
 <script>
     const base_url = "<?= rtrim(base_url(), '/') ?>";
+    
+    // Búsqueda por DNI
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnBuscarDni = document.getElementById('buscar-dni');
+        const inputDni = document.getElementById('dni');
+        
+        if (btnBuscarDni) {
+            btnBuscarDni.addEventListener('click', function() {
+                const dni = inputDni.value.trim();
+                
+                if (dni.length !== 8) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'DNI Inválido',
+                        text: 'El DNI debe tener 8 dígitos'
+                    });
+                    return;
+                }
+                
+                // Mostrar loading
+                btnBuscarDni.disabled = true;
+                btnBuscarDni.innerHTML = '<i class="bx bx-loader bx-spin"></i> Buscando...';
+                
+                // Realizar búsqueda
+                fetch(`${base_url}/usuarios/buscar-dni?dni=${dni}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Respuesta:', data);
+                        
+                        if (data.success) {
+                            // Autocompletar campos
+                            if (data.persona) {
+                                document.getElementById('nombres').value = data.persona.nombres || '';
+                                document.getElementById('apellidos').value = data.persona.apellidos || '';
+                                document.getElementById('telefono').value = data.persona.telefono || '';
+                                document.getElementById('correo').value = data.persona.correo || '';
+                                document.getElementById('direccion').value = data.persona.direccion || '';
+                                document.getElementById('referencias').value = data.persona.referencias || '';
+                                
+                                if (data.persona.iddistrito) {
+                                    document.getElementById('iddistrito').value = data.persona.iddistrito;
+                                }
+                            } else if (data.data) {
+                                // Compatibilidad con respuesta alternativa
+                                document.getElementById('nombres').value = data.data.nombres || '';
+                                document.getElementById('apellidos').value = data.data.apellidos || '';
+                                document.getElementById('telefono').value = data.data.telefono || '';
+                            }
+                            
+                            // Mostrar mensaje
+                            if (data.tiene_usuario) {
+                                Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Persona ya registrada',
+                                    text: data.message
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Datos encontrados',
+                                    text: data.message,
+                                    timer: 2000
+                                });
+                            }
+                        } else {
+                            Swal.fire({
+                                icon: 'info',
+                                title: 'No encontrado',
+                                text: data.message || 'Ingresa los datos manualmente'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error al buscar el DNI'
+                        });
+                    })
+                    .finally(() => {
+                        // Restaurar botón
+                        btnBuscarDni.disabled = false;
+                        btnBuscarDni.innerHTML = '<i class="bx bx-search"></i> Buscar';
+                    });
+            });
+        }
+    });
 </script>
 
 <?= $this->endSection() ?>

@@ -316,20 +316,26 @@ class LeadModel extends Model
     public function descartarLead($leadId)
     {
         // Actualizar lead a estado "descartado"
-        $this->update($leadId, [
-            'estado' => 'descartado'
+        return $this->update($leadId, [
+            'estado' => 'Descartado'
         ]);
     }
 
     /**
-     * Registrar historial de un lead
+     * Registrar historial de un lead en la tabla historial_leads
      */
-    public function registrarHistorial($leadId, $etapaId, $usuarioId)
+    public function registrarHistorial($leadId, $etapaId, $usuarioId, $motivo = null)
     {
-        $this->db->table('seguimientos')->insert([
+        // Obtener etapa anterior
+        $lead = $this->find($leadId);
+        $etapaAnterior = $lead ? $lead['idetapa'] : null;
+        
+        $this->db->table('historial_leads')->insert([
             'idlead' => $leadId,
-            'idetapa' => $etapaId,
             'idusuario' => $usuarioId,
+            'etapa_anterior' => $etapaAnterior,
+            'etapa_nueva' => $etapaId,
+            'motivo' => $motivo,
             'fecha' => date('Y-m-d H:i:s')
         ]);
     }
@@ -342,8 +348,8 @@ class LeadModel extends Model
         return $this->db->table('leads l')
             ->select('
                 COUNT(*) as total_leads,
-                SUM(CASE WHEN l.estado = "convertido" THEN 1 ELSE 0 END) as leads_convertidos,
-                SUM(CASE WHEN l.estado = "descartado" THEN 1 ELSE 0 END) as leads_descartados
+                SUM(CASE WHEN l.estado = "Convertido" THEN 1 ELSE 0 END) as leads_convertidos,
+                SUM(CASE WHEN l.estado = "Descartado" THEN 1 ELSE 0 END) as leads_descartados
             ')
             ->where('l.idusuario', $userId)
             ->get()

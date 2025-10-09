@@ -50,10 +50,9 @@ class Leads extends BaseController
         $userId = session()->get('idusuario') ?: session()->get('user_id');
         $rol = session()->get('nombreRol');
         
-        // Si es admin, mostrar todos los leads (userId = null)
-        if ($rol === 'Administrador') {
-            $userId = null;
-        }
+        // Todos los usuarios ven todos los leads (coordinación entre turnos)
+        // Solo se filtra por usuario para reportes individuales
+        $userId = null;
         
         $filtro_etapa = $this->request->getGet('etapa');
         $filtro_origen = $this->request->getGet('origen');

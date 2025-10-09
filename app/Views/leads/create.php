@@ -2,6 +2,8 @@
 
 <?= $this->section('content') ?>
 
+<link rel="stylesheet" href="<?= base_url('css/leads/create.css') ?>">
+
 <div class="row">
     <div class="col-md-12 grid-margin stretch-card">
         <div class="card">
@@ -145,12 +147,15 @@
                                         <select class="form-control" id="idorigen" name="idorigen" required>
                                             <option value="">Seleccione el origen</option>
                                             <?php foreach ($origenes as $origen): ?>
-                                            <option value="<?= $origen['idorigen'] ?>">
+                                            <option value="<?= $origen['idorigen'] ?>" data-nombre="<?= esc($origen['nombre']) ?>">
                                                 <?= esc($origen['nombre']) ?>
                                             </option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
+                                    
+                                    <!-- Campos dinámicos según origen -->
+                                    <div id="campos-dinamicos-origen"></div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
@@ -163,6 +168,7 @@
                                             </option>
                                             <?php endforeach; ?>
                                         </select>
+                                        <small class="text-muted">Selecciona si viene de una campaña específica</small>
                                     </div>
                                 </div>
                             </div>
@@ -224,267 +230,20 @@
     </div>
 </div>
 
-<style>
-.rotating {
-    animation: rotate 1s linear infinite;
-}
-@keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-</style>
-
 <script>
+// Variable de configuración para los archivos JS externos
 const BASE_URL = '<?= base_url() ?>';
-
-class PersonaManager {
-    constructor() {
-        this.initEvents();
-    }
-
-    initEvents() {
-        const btnBuscarDni = document.getElementById('btnBuscarDni');
-        const dniInput = document.getElementById('dni');
-        const dniLoading = document.getElementById('dni-loading');
-        
-        // Verificar cobertura al seleccionar distrito
-        this.initVerificarCobertura();
-
-        btnBuscarDni.addEventListener('click', () => {
-            const dni = dniInput.value.trim();
-            if (dni.length !== 8) {
-                Swal.fire('Error', 'El DNI debe tener 8 dígitos', 'error');
-                return;
-            }
-
-            dniLoading.style.display = 'block';
-            btnBuscarDni.disabled = true;
-
-            // Primero verificar si ya existe en la BD
-            fetch('<?= base_url('personas/verificarDni') ?>?dni=' + dni)
-            .then(response => response.json())
-            .then(data => {
-                if (data.existe) {
-                    dniLoading.style.display = 'none';
-                    btnBuscarDni.disabled = false;
-                    
-                    Swal.fire({
-                        icon: 'warning',
-                        title: '⚠️ Persona Ya Registrada',
-                        html: `
-                            <div class="text-start">
-                                <p><strong>Esta persona ya está en el sistema:</strong></p>
-                                <ul class="list-unstyled">
-                                    <li>👤 <strong>Nombre:</strong> ${data.persona.nombres} ${data.persona.apellidos}</li>
-                                    <li>📞 <strong>Teléfono:</strong> ${data.persona.telefono || 'No registrado'}</li>
-                                    <li>📧 <strong>Correo:</strong> ${data.persona.correo || 'No registrado'}</li>
-                                </ul>
-                            </div>
-                        `,
-                        showCancelButton: true,
-                        confirmButtonText: 'Usar estos datos',
-                        cancelButtonText: 'Cancelar',
-                        confirmButtonColor: '#3085d6'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            // Autocompletar con datos existentes
-                            document.getElementById('nombres').value = data.persona.nombres;
-                            document.getElementById('apellidos').value = data.persona.apellidos;
-                            document.getElementById('telefono').value = data.persona.telefono || '';
-                            document.getElementById('correo').value = data.persona.correo || '';
-                            if (data.persona.iddistrito) {
-                                document.getElementById('iddistrito').value = data.persona.iddistrito;
-                            }
-                            
-                            // Agregar campo hidden con idpersona
-                            let hiddenInput = document.getElementById('idpersona_hidden');
-                            if (!hiddenInput) {
-                                hiddenInput = document.createElement('input');
-                                hiddenInput.type = 'hidden';
-                                hiddenInput.name = 'idpersona';
-                                hiddenInput.id = 'idpersona_hidden';
-                                document.getElementById('formLead').appendChild(hiddenInput);
-                            }
-                            hiddenInput.value = data.persona.idpersona;
-                            
-                            Swal.fire({
-                                icon: 'success',
-                                title: '✅ Datos Cargados',
-                                text: 'Ahora completa la información del lead',
-                                timer: 2000,
-                                showConfirmButton: false
-                            });
-                        }
-                    });
-                    return;
-                }
-
-                // Si no existe, buscar en RENIEC
-                fetch('<?= base_url('api/personas/buscar') ?>?dni=' + dni)
-                .then(response => response.json())
-                .then(data => {
-                    dniLoading.style.display = 'none';
-                    btnBuscarDni.disabled = false;
-                    
-                    if (data.success && data.persona) {
-                        document.getElementById('nombres').value = data.persona.nombres || '';
-                        document.getElementById('apellidos').value = data.persona.apellidos || '';
-                        
-                        Swal.fire({
-                            icon: 'success',
-                            title: '✅ Datos de RENIEC',
-                            text: 'Completa los demás campos',
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-                        
-                        document.getElementById('telefono').focus();
-                    } else {
-                        Swal.fire({
-                            icon: 'info',
-                            title: 'DNI no encontrado',
-                            text: 'Puedes registrar manualmente los datos',
-                            confirmButtonText: 'Entendido'
-                        });
-                        document.getElementById('nombres').focus();
-                    }
-                })
-                .catch(error => {
-                    dniLoading.style.display = 'none';
-                    btnBuscarDni.disabled = false;
-                    console.error('Error:', error);
-                    Swal.fire('Error', 'No se pudo conectar al servidor', 'error');
-                });
-            });
-        });
-
-        // Validación del formulario
-        const form = document.getElementById('formLead');
-        form.addEventListener('submit', function(e) {
-            const telefono = document.getElementById('telefono').value;
-            
-            // Validar teléfono
-            if (telefono.length !== 9 || !telefono.startsWith('9')) {
-                e.preventDefault();
-                alert('El teléfono debe tener 9 dígitos y comenzar con 9');
-                document.getElementById('telefono').focus();
-                return false;
-            }
-
-            // Deshabilitar botón de guardar
-            document.getElementById('btnGuardar').disabled = true;
-            document.getElementById('btnGuardar').innerHTML = '<i class="icon-refresh rotating"></i> Guardando...';
-        });
-
-        // Permitir búsqueda with Enter en DNI
-        dniInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                btnBuscarDni.click();
-            }
-        });
-    }
-    
-    // Verificar cobertura de zonas en el distrito seleccionado
-    initVerificarCobertura() {
-        const distritoSelect = document.getElementById('iddistrito');
-        const alertCobertura = document.getElementById('alertCobertura');
-        
-        if (!distritoSelect || !alertCobertura) return;
-        
-        distritoSelect.addEventListener('change', async function() {
-            const distrito = this.value;
-            
-            if (!distrito) {
-                alertCobertura.style.display = 'none';
-                return;
-            }
-            
-            try {
-                const response = await fetch(`<?= base_url('leads/verificar-cobertura') ?>?distrito=${distrito}`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    if (result.tiene_cobertura) {
-                        // Hay cobertura - Mostrar alerta verde
-                        alertCobertura.className = 'alert alert-success mt-2';
-                        
-                        let zonasHtml = '';
-                        if (result.zonas && result.zonas.length > 0) {
-                            zonasHtml = '<div class="mt-2"><small><strong>Zonas activas:</strong></small><ul class="mb-0 mt-1">';
-                            result.zonas.forEach(zona => {
-                                zonasHtml += `<li><small>${zona.nombre_zona} (${zona.campania_nombre})</small></li>`;
-                            });
-                            zonasHtml += '</ul></div>';
-                        }
-                        
-                        alertCobertura.innerHTML = `
-                            <div class="d-flex align-items-start">
-                                <i class="icon-check-circle mr-2" style="font-size: 1.2rem;"></i>
-                                <div>
-                                    <strong>¡Excelente!</strong> ${result.mensaje}
-                                    <br><small class="text-muted">El lead será asignado automáticamente a una zona al guardar.</small>
-                                    ${zonasHtml}
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        // No hay cobertura - Mostrar alerta amarilla
-                        alertCobertura.className = 'alert alert-warning mt-2';
-                        alertCobertura.innerHTML = `
-                            <div class="d-flex align-items-start">
-                                <i class="icon-alert-triangle mr-2" style="font-size: 1.2rem;"></i>
-                                <div>
-                                    <strong>Atención:</strong> ${result.mensaje}
-                                    <br><small class="text-muted">El lead se registrará pero no se asignará a ninguna campaña activa.</small>
-                                    <br><small class="text-muted">Puedes crear zonas en el <a href="<?= base_url('crm-campanas/mapa-campanas') ?>" target="_blank">mapa de campañas</a>.</small>
-                                </div>
-                            </div>
-                        `;
-                    }
-                    
-                    alertCobertura.style.display = 'block';
-                    
-                    // Animación suave
-                    alertCobertura.style.opacity = '0';
-                    setTimeout(() => {
-                        alertCobertura.style.transition = 'opacity 0.3s';
-                        alertCobertura.style.opacity = '1';
-                    }, 10);
-                }
-            } catch (error) {
-                console.error('Error al verificar cobertura:', error);
-                alertCobertura.className = 'alert alert-danger mt-2';
-                alertCobertura.innerHTML = `
-                    <i class="icon-x-circle"></i> 
-                    Error al verificar cobertura. Por favor, intenta de nuevo.
-                `;
-                alertCobertura.style.display = 'block';
-            }
-        });
-    }
-}
-
-// Inicializar cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', () => {
-    window.personaManager = new PersonaManager();
-});
-
-// Funciones globales para compatibilidad (si se necesitan)
-function activarBotonesEliminar() {
-    console.log('Función legacy - ahora manejada por PersonaManager');
-}
-function activarBotonesEditar() {
-    console.log('Función legacy - ahora manejada por PersonaManager');
-}
-function activarBotonesConvertirLead() {
-    console.log('Función legacy - ahora manejada por PersonaManager');
-}
+console.log('✅ BASE_URL definida:', BASE_URL);
+</script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="<?= base_url('js/leads/create.js') ?>"></script>
+<script src="<?= base_url('js/leads/campos-dinamicos-origen.js') ?>"></script>
+<script>
+console.log('Todos los scripts cargados');
+console.log('PersonaManager existe:', typeof PersonaManager !== 'undefined');
+console.log('window.personaManager:', window.personaManager);
 </script>
 
 <?= $this->endSection() ?>
 
-<?= $this->section('scripts') ?>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<?= $this->endSection() ?>
 <?= $this->include('Layouts/footer') ?>

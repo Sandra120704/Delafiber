@@ -1,47 +1,9 @@
 $(document).ready(function() {
     // La variable base_url se define en la vista HTML (index.php)
     
-    // Buscar persona por DNI (API RENIEC)
-    $('#buscar-dni').click(function() {
-        const dni = $('#dni').val();
-        
-        if (dni.length !== 8) {
-            Swal.fire('Error', 'El DNI debe tener 8 dígitos', 'error');
-            return;
-        }
-
-        $(this).prop('disabled', true).html('<i class="bx bx-loader bx-spin"></i> Buscando...');
-
-        $.ajax({
-            url: `${base_url}/api/personas/buscar?dni=${dni}`,
-            method: 'GET',
-            dataType: 'json'
-        })
-        .done(function(response) {
-            if (response.success && response.data) {
-                // Llenar campos con datos de RENIEC
-                $('#nombres').val(response.data.nombres);
-                $('#apellidos').val(response.data.apellidoPaterno + ' ' + response.data.apellidoMaterno);
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: '¡Encontrado!',
-                    text: 'Datos obtenidos de RENIEC',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            } else {
-                Swal.fire('No encontrado', 'DNI no encontrado en RENIEC. Ingresa los datos manualmente.', 'warning');
-            }
-        })
-        .fail(function() {
-            Swal.fire('Error', 'No se pudo conectar con la API. Ingresa los datos manualmente.', 'error');
-        })
-        .always(function() {
-            $('#buscar-dni').prop('disabled', false).html('<i class="bx bx-search"></i> Buscar');
-        });
-    });
-
+    // NOTA: El handler de búsqueda por DNI está en index.php (vanilla JS)
+    // para evitar duplicación de eventos
+    
     // Cambiar estado activo/inactivo
     $('.estado-switch').change(function() {
         const usuarioId = $(this).data('id');

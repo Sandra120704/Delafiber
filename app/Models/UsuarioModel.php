@@ -115,28 +115,45 @@ class UsuarioModel extends Model
         
         return in_array('todo', $rolPermisos) || in_array($permiso, $rolPermisos);
     }
-    public function getUsuariosConDetalle()
+    public function getUsuariosConDetalle($search = null)
     {
         try {
-            // Usar Query Builder del modelo para la consulta completa
-            return $this->select('
-                usuarios.idusuario,
-                usuarios.nombre as nombreUsuario,
-                usuarios.email,
-                usuarios.estado as estadoActivo,
-                usuarios.idrol,
-                usuarios.telefono,
-                usuarios.turno,
-                roles.nombre as nombreRol,
-                roles.descripcion as descripcionRol,
-                0 as totalLeads,
-                0 as totalTareas,
-                0 as tasaConversion
-            ')
-            ->join('roles', 'usuarios.idrol = roles.idrol', 'left')
-            ->orderBy('usuarios.idusuario')
-            ->findAll();
-            
+            // Construir la selección base
+            $builder = $this->db->table('usuarios')
+                ->select(
+                    'usuarios.idusuario,
+                    usuarios.nombre as nombreUsuario,
+                    usuarios.email,
+                    usuarios.estado as estadoActivo,
+                    usuarios.idrol,
+                    usuarios.telefono,
+                    usuarios.turno,
+                    roles.nombre as nombreRol,
+                    roles.descripcion as descripcionRol,
+                    0 as totalLeads,
+                    0 as totalTareas,
+                    0 as tasaConversion'
+                )
+                ->join('roles', 'usuarios.idrol = roles.idrol', 'left')
+                ->orderBy('usuarios.idusuario');
+            // Si se proporcionó un término de búsqueda, aplicar filtros
+            if (!empty($search)) {
+                $search = trim($search);
+
+                // Si es exactamente 8 dígitos, buscar por DNI en la tabla personas (relacionada por idpersona en usuarios via persona)
+                if (preg_match('/^[0-9]{8}$/', $search)) {
+                    // Búsqueda por email o teléfono (usuarios no tienen DNI directamente)
+                    $builder->groupStart()
+                        ->where('usuarios.email', $search)
+                        ->orWhere('usuarios.telefono', $search)
+                        ->orLike('usuarios.telefono', $search)
+                    ->groupEnd();
+                }
+            }
+
+            $result = $builder->get()->getResultArray();
+            return $result;
+
         } catch (\Exception $error) {
             // Si hay error en la consulta compleja, usar método simple
             return $this->getUsuariosBasico();

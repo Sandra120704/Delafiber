@@ -1,0 +1,76 @@
+/**
+ * Estilos para el formulario de creación de Leads
+ */
+
+/* Animación de rotación para el loading */
+.rotating {
+    animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+    from { 
+        transform: rotate(0deg); 
+    }
+    to { 
+        transform: rotate(360deg); 
+    }
+}
+
+/* Animación para campos dinámicos */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.campo-dinamico {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Estilos para alertas de cobertura */
+#alertCobertura {
+    transition: opacity 0.3s ease;
+}
+
+/* Mejoras visuales para el formulario */
+.card-header {
+    font-weight: 600;
+}
+
+.form-group label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.form-control:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+/* Estilos para el botón de búsqueda DNI */
+#btnBuscarDni:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Loading indicator */
+#dni-loading {
+    font-size: 0.9rem;
+    color: #4e73df;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-header h5 {
+        font-size: 1rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+}

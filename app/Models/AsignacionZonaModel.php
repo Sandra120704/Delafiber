@@ -43,7 +43,6 @@ class AsignacionZonaModel extends Model
             z.color,
             z.area_m2,
             c.nombre as campana_nombre,
-            c.tipo_campana,
             COUNT(DISTINCT p.idpersona) as total_prospectos,
             0 as interacciones_realizadas,
             0 as conversiones_logradas
@@ -73,14 +72,13 @@ class AsignacionZonaModel extends Model
         $builder = $this->db->table($this->table . ' a');
         $builder->select('
             a.*,
-            CONCAT(p.nombres, " ", p.apellidos) as agente_nombre,
-            u.correo as agente_correo,
+            u.nombre as agente_nombre,
+            u.email as agente_correo,
             r.nombre as rol_nombre,
             0 as interacciones_realizadas,
             0 as conversiones_logradas
         ');
         $builder->join('usuarios u', 'a.idusuario = u.idusuario', 'left');
-        $builder->join('personas p', 'u.idpersona = p.idpersona', 'left');
         $builder->join('roles r', 'u.idrol = r.idrol', 'left');
         // $builder->join('tb_interacciones i', 'i.id_usuario = a.idusuario', 'left'); // Tabla no existe
         $builder->where('a.id_zona', $idZona);
@@ -158,7 +156,7 @@ class AsignacionZonaModel extends Model
         $builder->select('
             a.*,
             z.nombre_zona,
-            CONCAT(p.nombres, " ", p.apellidos) as agente_nombre,
+            u.nombre as agente_nombre,
             COUNT(DISTINCT pros.idpersona) as total_prospectos_zona,
             0 as interacciones_realizadas,
             0 as contactos_exitosos,
@@ -168,9 +166,8 @@ class AsignacionZonaModel extends Model
         ');
         $builder->join('tb_zonas_campana z', 'a.id_zona = z.id_zona', 'left');
         $builder->join('usuarios u', 'a.idusuario = u.idusuario', 'left');
-        $builder->join('personas p', 'u.idpersona = p.idpersona', 'left');
         $builder->join('personas pros', 'pros.id_zona = z.id_zona', 'left');
-        // $builder->join('tb_interacciones i', 'i.id_usuario = a.idusuario AND i.id_prospecto = pros.idpersona', 'left'); // Tabla no existe
+        // $builder->join('tb_interacciones i', 'i.id_usuario = a.idusuario AND i.id_prospecto = pros.idpersona', 'left'); 
         $builder->where('a.id_asignacion', $idAsignacion);
         $builder->groupBy('a.id_asignacion');
         
@@ -185,7 +182,7 @@ class AsignacionZonaModel extends Model
         $builder = $this->db->table($this->table . ' a');
         $builder->select('
             a.idusuario,
-            CONCAT(p.nombres, " ", p.apellidos) as agente_nombre,
+            u.nombre as agente_nombre,
             COUNT(DISTINCT a.id_zona) as zonas_asignadas,
             SUM(a.meta_contactos) as meta_contactos_total,
             SUM(a.meta_conversiones) as meta_conversiones_total,
@@ -194,7 +191,6 @@ class AsignacionZonaModel extends Model
             0 as porcentaje_cumplimiento
         ');
         $builder->join('usuarios u', 'a.idusuario = u.idusuario', 'left');
-        $builder->join('personas p', 'u.idpersona = p.idpersona', 'left');
         $builder->join('tb_zonas_campana z', 'a.id_zona = z.id_zona', 'left');
         // $builder->join('tb_interacciones i', 'i.id_usuario = a.idusuario', 'left'); // Tabla no existe
         $builder->where('a.estado', 'Activa');

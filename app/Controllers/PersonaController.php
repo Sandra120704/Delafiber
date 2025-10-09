@@ -209,7 +209,11 @@ class PersonaController extends BaseController
     // Búsqueda por DNI (API y local)
     public function buscardni($dni = "")
     {
-        $dni = $this->request->getGet('q') ?: $dni;
+        // Obtener DNI de forma segura
+        if ($this->request && method_exists($this->request, 'getGet')) {
+            $dniFromRequest = $this->request->getGet('q') ?? $this->request->getGet('dni');
+            $dni = $dniFromRequest ?: $dni;
+        }
         $dni = preg_replace('/\D/', '', $dni); // Solo números
 
         if (strlen($dni) !== 8) {

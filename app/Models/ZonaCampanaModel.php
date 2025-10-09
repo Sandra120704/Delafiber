@@ -15,17 +15,16 @@ class ZonaCampanaModel extends Model
         'poligono',
         'color',
         'prioridad',
+        'estado',
         'area_m2',
         'iduser_create',
-        'iduser_update',
-        'inactive_at'
+        'iduser_update'
     ];
     
-    protected $useTimestamps = false;
-    protected $createdField = 'create_at';
-    protected $updatedField = 'update_at';
-    protected $deletedField = 'inactive_at';
-    protected $useSoftDeletes = true;
+    protected $useTimestamps = true;
+    protected $createdField = 'created_at';
+    protected $updatedField = 'updated_at';
+    protected $useSoftDeletes = false;
     
     protected $returnType = 'array';
     protected $validationRules = [
@@ -83,19 +82,16 @@ class ZonaCampanaModel extends Model
         $builder->select('
             z.*,
             c.nombre as nombre_campana,
-            c.tipo_campana,
             c.estado as estado_campana,
-            CONCAT(pc.nombres, " ", pc.apellidos) as creado_por,
-            CONCAT(pu.nombres, " ", pu.apellidos) as actualizado_por,
+            uc.nombre as creado_por,
+            uu.nombre as actualizado_por,
             COUNT(DISTINCT p.idpersona) as total_prospectos,
             COUNT(DISTINCT a.idusuario) as agentes_asignados,
             ROUND(z.area_m2 / 1000000, 2) as area_km2
         ');
         $builder->join('campanias c', 'z.id_campana = c.idcampania', 'left');
         $builder->join('usuarios uc', 'z.iduser_create = uc.idusuario', 'left');
-        $builder->join('personas pc', 'uc.idpersona = pc.idpersona', 'left');
         $builder->join('usuarios uu', 'z.iduser_update = uu.idusuario', 'left');
-        $builder->join('personas pu', 'uu.idpersona = pu.idpersona', 'left');
         $builder->join('personas p', 'p.id_zona = z.id_zona', 'left');
         $builder->join('tb_asignaciones_zona a', 'a.id_zona = z.id_zona AND a.estado = "Activa"', 'left');
         $builder->where('z.id_zona', $idZona);
@@ -111,7 +107,7 @@ class ZonaCampanaModel extends Model
     {
         $builder = $this->db->table($this->table);
         $builder->select('id_zona, id_campana, nombre_zona, poligono, color, prioridad, area_m2');
-        $builder->where('inactive_at IS NULL');
+        $builder->where('estado', 'Activa');
         
         if ($idCampana !== null) {
             $builder->where('id_campana', $idCampana);
@@ -138,7 +134,7 @@ class ZonaCampanaModel extends Model
         // La validación exacta se hace con Turf.js en el frontend
         $builder = $this->db->table($this->table);
         $builder->select('id_zona, nombre_zona, poligono');
-        $builder->where('inactive_at IS NULL');
+        $builder->where('estado', 'Activa');
         
         if ($idCampana !== null) {
             $builder->where('id_campana', $idCampana);
@@ -149,34 +145,44 @@ class ZonaCampanaModel extends Model
     
     /**
      * Obtener métricas de una zona
+     * Calcula métricas en tiempo real desde las tablas existentes
      */
     public function getMetricasZona($idZona, $fechaInicio = null, $fechaFin = null)
     {
-        $builder = $this->db->table('tb_metricas_zona');
+        // Calcular métricas en tiempo real desde personas y leads
+        $builder = $this->db->table('personas p');
         $builder->select('
-            fecha,
-            total_prospectos,
-            contactados,
-            interesados,
-            convertidos,
-            rechazados,
-            tasa_conversion,
-            tasa_contacto,
-            roi
+            COUNT(DISTINCT p.idpersona) as total_prospectos,
+            COUNT(DISTINCT CASE WHEN l.idlead IS NOT NULL THEN l.idlead END) as contactados,
+            COUNT(DISTINCT CASE WHEN l.estado = "Activo" THEN l.idlead END) as interesados,
+            COUNT(DISTINCT CASE WHEN l.estado = "Convertido" THEN l.idlead END) as convertidos,
+            COUNT(DISTINCT CASE WHEN l.estado = "Descartado" THEN l.idlead END) as rechazados
         ');
-        $builder->where('id_zona', $idZona);
+        $builder->join('leads l', 'l.idpersona = p.idpersona', 'left');
+        $builder->where('p.id_zona', $idZona);
         
         if ($fechaInicio) {
-            $builder->where('fecha >=', $fechaInicio);
+            $builder->where('p.created_at >=', $fechaInicio);
         }
         
         if ($fechaFin) {
-            $builder->where('fecha <=', $fechaFin);
+            $builder->where('p.created_at <=', $fechaFin);
         }
         
-        $builder->orderBy('fecha', 'DESC');
+        $result = $builder->get()->getRowArray();
         
-        return $builder->get()->getResultArray();
+        // Calcular tasas
+        if ($result && $result['total_prospectos'] > 0) {
+            $result['tasa_contacto'] = round(($result['contactados'] / $result['total_prospectos']) * 100, 2);
+            $result['tasa_conversion'] = $result['contactados'] > 0 
+                ? round(($result['convertidos'] / $result['contactados']) * 100, 2) 
+                : 0;
+        } else {
+            $result['tasa_contacto'] = 0;
+            $result['tasa_conversion'] = 0;
+        }
+        
+        return [$result]; // Retornar como array para compatibilidad
     }
     
     /**
@@ -193,12 +199,17 @@ class ZonaCampanaModel extends Model
             p.correo,
             p.direccion,
             p.coordenadas,
-            p.origen,
-            COUNT(i.id_interaccion) as total_interacciones,
-            MAX(i.fecha_interaccion) as ultima_interaccion,
-            MAX(i.resultado) as ultimo_resultado
+            l.idlead,
+            l.estado as estado_lead,
+            e.nombre as etapa,
+            COUNT(s.idseguimiento) as total_interacciones,
+            MAX(s.fecha) as ultima_interaccion,
+            m.nombre as ultimo_resultado
         ');
-        $builder->join('tb_interacciones i', 'i.id_prospecto = p.idpersona', 'left');
+        $builder->join('leads l', 'l.idpersona = p.idpersona', 'left');
+        $builder->join('etapas e', 'l.idetapa = e.idetapa', 'left');
+        $builder->join('seguimientos s', 's.idlead = l.idlead', 'left');
+        $builder->join('modalidades m', 's.idmodalidad = m.idmodalidad', 'left');
         $builder->where('p.id_zona', $idZona);
         $builder->groupBy('p.idpersona');
         $builder->orderBy('p.created_at', 'DESC');
@@ -227,12 +238,12 @@ class ZonaCampanaModel extends Model
     }
     
     /**
-     * Desactivar zona (soft delete)
+     * Desactivar zona
      */
     public function desactivarZona($idZona, $idUsuario)
     {
         return $this->update($idZona, [
-            'inactive_at' => date('Y-m-d H:i:s'),
+            'estado' => 'Inactiva',
             'iduser_update' => $idUsuario
         ]);
     }
@@ -243,7 +254,7 @@ class ZonaCampanaModel extends Model
     public function reactivarZona($idZona, $idUsuario)
     {
         return $this->update($idZona, [
-            'inactive_at' => null,
+            'estado' => 'Activa',
             'iduser_update' => $idUsuario
         ]);
     }

@@ -166,20 +166,22 @@ class InteraccionModel extends Model
     
     /**
      * Obtener estadísticas de interacciones por zona
+     * Usa la tabla seguimientos ya que tb_interacciones no existe
      */
     public function getEstadisticasZona($idZona)
     {
-        $builder = $this->db->table($this->table . ' i');
+        $builder = $this->db->table('seguimientos s');
         $builder->select('
             COUNT(*) as total_interacciones,
-            COUNT(CASE WHEN i.resultado = "Contactado" THEN 1 END) as contactados,
-            COUNT(CASE WHEN i.resultado = "Interesado" THEN 1 END) as interesados,
-            COUNT(CASE WHEN i.resultado = "Convertido" THEN 1 END) as convertidos,
-            COUNT(CASE WHEN i.resultado = "Rechazado" THEN 1 END) as rechazados,
-            SUM(i.duracion_minutos) as total_duracion,
-            SUM(i.costo) as total_costo
+            COUNT(DISTINCT l.idlead) as contactados,
+            COUNT(CASE WHEN l.estado = "Activo" THEN 1 END) as interesados,
+            COUNT(CASE WHEN l.estado = "Convertido" THEN 1 END) as convertidos,
+            COUNT(CASE WHEN l.estado = "Descartado" THEN 1 END) as rechazados,
+            0 as total_duracion,
+            0 as total_costo
         ');
-        $builder->join('personas p', 'i.id_prospecto = p.idpersona', 'inner');
+        $builder->join('leads l', 's.idlead = l.idlead', 'inner');
+        $builder->join('personas p', 'l.idpersona = p.idpersona', 'inner');
         $builder->where('p.id_zona', $idZona);
         
         return $builder->get()->getRowArray();
@@ -187,28 +189,30 @@ class InteraccionModel extends Model
     
     /**
      * Obtener próximas acciones pendientes
+     * Usa la tabla tareas ya que tb_interacciones no existe
      */
     public function getProximasAcciones($idUsuario = null, $limite = 10)
     {
-        $builder = $this->db->table($this->table . ' i');
+        $builder = $this->db->table('tareas t');
         $builder->select('
-            i.*,
+            t.*,
             CONCAT(p.nombres, " ", p.apellidos) as prospecto_nombre,
             p.telefono as prospecto_telefono,
             c.nombre as campana_nombre,
             z.nombre_zona
         ');
-        $builder->join('personas p', 'i.id_prospecto = p.idpersona', 'left');
-        $builder->join('campanias c', 'i.id_campana = c.idcampania', 'left');
+        $builder->join('leads l', 't.idlead = l.idlead', 'left');
+        $builder->join('personas p', 'l.idpersona = p.idpersona', 'left');
+        $builder->join('campanias c', 'l.idcampania = c.idcampania', 'left');
         $builder->join('tb_zonas_campana z', 'p.id_zona = z.id_zona', 'left');
-        $builder->where('i.proxima_accion IS NOT NULL');
-        $builder->where('i.proxima_accion >=', date('Y-m-d'));
+        $builder->where('t.estado', 'Pendiente');
+        $builder->where('t.fecha_vencimiento >=', date('Y-m-d'));
         
         if ($idUsuario) {
-            $builder->where('i.id_usuario', $idUsuario);
+            $builder->where('t.idusuario', $idUsuario);
         }
         
-        $builder->orderBy('i.proxima_accion', 'ASC');
+        $builder->orderBy('t.fecha_vencimiento', 'ASC');
         $builder->limit($limite);
         
         return $builder->get()->getResultArray();

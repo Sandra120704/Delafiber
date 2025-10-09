@@ -61,10 +61,8 @@ class Campanias extends BaseController
         $validation = \Config\Services::validation();
         $validation->setRules([
             'nombre' => 'required|min_length[3]|max_length[100]',
-            'tipo' => 'required',
             'fecha_inicio' => 'required|valid_date',
-            'presupuesto' => 'permit_empty|decimal',
-            'canal' => 'permit_empty|max_length[50]' 
+            'presupuesto' => 'permit_empty|decimal'
         ]);
 
         if (!$validation->withRequest($this->request)->run()) {
@@ -80,8 +78,7 @@ class Campanias extends BaseController
             'fecha_inicio' => $this->request->getPost('fecha_inicio'),
             'fecha_fin' => $this->request->getPost('fecha_fin'),
             'presupuesto' => $this->request->getPost('presupuesto') ?: 0,
-            'estado' => 'Activa',
-            'canal' => $this->request->getPost('canal')
+            'estado' => 'Activa'
         ];
 
         // Guardar
@@ -93,7 +90,7 @@ class Campanias extends BaseController
                 ->withInput()
                 ->with('error', 'Error al crear la campaña');
         }
-            }
+    }
 
     /**
      * Formulario de editar campaña
@@ -131,10 +128,8 @@ class Campanias extends BaseController
         $validation = \Config\Services::validation();
         $validation->setRules([
             'nombre' => 'required|min_length[3]|max_length[100]',
-            'tipo' => 'required',
             'fecha_inicio' => 'required|valid_date',
-            'presupuesto' => 'permit_empty|decimal',
-            'canal' => 'permit_empty|max_length[50]' 
+            'presupuesto' => 'permit_empty|decimal'
         ]);
 
         if (!$validation->withRequest($this->request)->run()) {
@@ -146,13 +141,11 @@ class Campanias extends BaseController
         // Preparar datos
         $data = [
             'nombre' => $this->request->getPost('nombre'),
-            'tipo' => $this->request->getPost('tipo'),
             'descripcion' => $this->request->getPost('descripcion'),
             'fecha_inicio' => $this->request->getPost('fecha_inicio'),
             'fecha_fin' => $this->request->getPost('fecha_fin'),
             'presupuesto' => $this->request->getPost('presupuesto') ?: 0,
-            'activo' => $this->request->getPost('activo') ? 1 : 0,
-            'canal' => $this->request->getPost('canal')
+            'estado' => $this->request->getPost('estado') ?: 'Activa'
         ];
 
         // Actualizar
