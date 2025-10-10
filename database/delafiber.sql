@@ -215,6 +215,11 @@ CREATE TABLE `leads` (
   `estado` enum('Activo','Convertido','Descartado') DEFAULT 'Activo',
   `fecha_conversion` datetime DEFAULT NULL,
   `motivo_descarte` text DEFAULT NULL,
+  `direccion_servicio` varchar(255) DEFAULT NULL COMMENT 'Dirección específica para este servicio',
+  `distrito_servicio` int(11) DEFAULT NULL COMMENT 'Distrito donde se instalará el servicio',
+  `coordenadas_servicio` varchar(100) DEFAULT NULL COMMENT 'Coordenadas de instalación (lat,lng)',
+  `zona_servicio` int(11) DEFAULT NULL COMMENT 'Zona de campaña para este servicio',
+  `tipo_solicitud` enum('Casa','Negocio','Oficina','Otro') DEFAULT 'Casa' COMMENT 'Tipo de instalación',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`idlead`),
@@ -223,13 +228,17 @@ CREATE TABLE `leads` (
   KEY `fk_lead_origen` (`idorigen`),
   KEY `fk_lead_etapa` (`idetapa`),
   KEY `fk_lead_campania` (`idcampania`),
+  KEY `fk_lead_distrito_servicio` (`distrito_servicio`),
   KEY `idx_lead_estado` (`estado`),
   KEY `idx_leads_fecha` (`created_at`),
+  KEY `idx_leads_coordenadas_servicio` (`coordenadas_servicio`),
+  KEY `idx_leads_zona_servicio` (`zona_servicio`),
   CONSTRAINT `fk_lead_persona` FOREIGN KEY (`idpersona`) REFERENCES `personas` (`idpersona`) ON DELETE CASCADE,
   CONSTRAINT `fk_lead_usuario` FOREIGN KEY (`idusuario`) REFERENCES `usuarios` (`idusuario`) ON DELETE SET NULL,
   CONSTRAINT `fk_lead_origen` FOREIGN KEY (`idorigen`) REFERENCES `origenes` (`idorigen`),
   CONSTRAINT `fk_lead_etapa` FOREIGN KEY (`idetapa`) REFERENCES `etapas` (`idetapa`),
-  CONSTRAINT `fk_lead_campania` FOREIGN KEY (`idcampania`) REFERENCES `campanias` (`idcampania`) ON DELETE SET NULL
+  CONSTRAINT `fk_lead_campania` FOREIGN KEY (`idcampania`) REFERENCES `campanias` (`idcampania`) ON DELETE SET NULL,
+  CONSTRAINT `fk_lead_distrito_servicio` FOREIGN KEY (`distrito_servicio`) REFERENCES `distritos` (`iddistrito`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
@@ -261,9 +270,13 @@ CREATE TABLE `tareas` (
   `idusuario` int(11) NOT NULL,
   `titulo` varchar(200) NOT NULL,
   `descripcion` text DEFAULT NULL,
+  `fecha_inicio` datetime DEFAULT NULL,
   `fecha_vencimiento` datetime NOT NULL,
+  `recordatorio` datetime DEFAULT NULL COMMENT 'Fecha/hora para notificar',
+  `tipo_tarea` enum('Llamada','Visita','Email','Cotización','Seguimiento','Instalación','Otro') DEFAULT 'Seguimiento',
   `prioridad` enum('baja','media','alta','urgente') DEFAULT 'media',
   `estado` enum('pendiente','completada','cancelada') DEFAULT 'pendiente',
+  `resultado` text DEFAULT NULL COMMENT 'Resultado de la tarea completada',
   `visible_para_equipo` tinyint(1) DEFAULT 1,
   `turno_asignado` enum('mañana','tarde','ambos') DEFAULT 'ambos',
   `fecha_completada` datetime DEFAULT NULL,
@@ -307,6 +320,7 @@ INSERT INTO `servicios` VALUES
 CREATE TABLE `cotizaciones` (
   `idcotizacion` int(11) NOT NULL AUTO_INCREMENT,
   `idlead` int(11) NOT NULL,
+  `iddireccion` int(11) DEFAULT NULL COMMENT 'Dirección específica para esta cotización',
   `idusuario` int(11) NOT NULL,
   `numero_cotizacion` varchar(50) DEFAULT NULL,
   `subtotal` decimal(10,2) NOT NULL,
@@ -316,8 +330,15 @@ CREATE TABLE `cotizaciones` (
   `descuento_aplicado` decimal(5,2) DEFAULT 0 COMMENT 'Porcentaje de descuento',
   `precio_instalacion` decimal(10,2) DEFAULT 0 COMMENT 'Costo de instalación',
   `vigencia_dias` int(11) DEFAULT 30 COMMENT 'Días de vigencia de la cotización',
+  `fecha_vencimiento` date DEFAULT NULL COMMENT 'Fecha límite de vigencia',
+  `condiciones_pago` text DEFAULT NULL COMMENT 'Condiciones de pago acordadas',
+  `tiempo_instalacion` varchar(50) DEFAULT '24-48 horas' COMMENT 'Tiempo estimado de instalación',
   `observaciones` text DEFAULT NULL,
+  `direccion_instalacion` varchar(255) DEFAULT NULL COMMENT 'Dirección de instalación (copiada del lead)',
+  `pdf_generado` varchar(255) DEFAULT NULL COMMENT 'Ruta del PDF generado',
+  `enviado_por` enum('Email','WhatsApp','Impreso','Sistema','Otro') DEFAULT NULL,
   `estado` enum('Borrador','Enviada','Aceptada','Rechazada') DEFAULT 'Borrador',
+  `motivo_rechazo` text DEFAULT NULL COMMENT 'Razón del rechazo',
   `fecha_envio` datetime DEFAULT NULL,
   `fecha_respuesta` datetime DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -325,8 +346,10 @@ CREATE TABLE `cotizaciones` (
   PRIMARY KEY (`idcotizacion`),
   KEY `fk_cotizacion_lead` (`idlead`),
   KEY `fk_cotizacion_usuario` (`idusuario`),
+  KEY `fk_cotizacion_direccion` (`iddireccion`),
   CONSTRAINT `fk_cotizacion_lead` FOREIGN KEY (`idlead`) REFERENCES `leads` (`idlead`) ON DELETE CASCADE,
-  CONSTRAINT `fk_cotizacion_usuario` FOREIGN KEY (`idusuario`) REFERENCES `usuarios` (`idusuario`)
+  CONSTRAINT `fk_cotizacion_usuario` FOREIGN KEY (`idusuario`) REFERENCES `usuarios` (`idusuario`),
+  CONSTRAINT `fk_cotizacion_direccion` FOREIGN KEY (`iddireccion`) REFERENCES `direcciones` (`iddireccion`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
@@ -347,7 +370,37 @@ CREATE TABLE `cotizacion_detalle` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
--- TABLA 17: tb_zonas_campana
+-- TABLA 17: eventos_calendario
+-- =====================================================
+CREATE TABLE `eventos_calendario` (
+  `idevento` int(11) NOT NULL AUTO_INCREMENT,
+  `idusuario` int(11) NOT NULL,
+  `idlead` int(11) DEFAULT NULL,
+  `idtarea` int(11) DEFAULT NULL,
+  `tipo_evento` enum('Tarea','Reunion','Instalacion','Llamada','Visita','Seguimiento','Otro') NOT NULL DEFAULT 'Otro',
+  `titulo` varchar(200) NOT NULL,
+  `descripcion` text,
+  `fecha_inicio` datetime NOT NULL,
+  `fecha_fin` datetime NOT NULL,
+  `todo_el_dia` tinyint(1) DEFAULT 0,
+  `ubicacion` varchar(255) DEFAULT NULL,
+  `color` varchar(7) DEFAULT '#3498db',
+  `recordatorio` int DEFAULT 15 COMMENT 'Minutos antes para recordar',
+  `estado` enum('Pendiente','Completado','Cancelado') DEFAULT 'Pendiente',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`idevento`),
+  KEY `fk_evento_usuario` (`idusuario`),
+  KEY `fk_evento_lead` (`idlead`),
+  KEY `fk_evento_tarea` (`idtarea`),
+  KEY `idx_evento_fecha` (`fecha_inicio`),
+  CONSTRAINT `fk_evento_usuario` FOREIGN KEY (`idusuario`) REFERENCES `usuarios` (`idusuario`) ON DELETE CASCADE,
+  CONSTRAINT `fk_evento_lead` FOREIGN KEY (`idlead`) REFERENCES `leads` (`idlead`) ON DELETE CASCADE,
+  CONSTRAINT `fk_evento_tarea` FOREIGN KEY (`idtarea`) REFERENCES `tareas` (`idtarea`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
+-- TABLA 18: tb_zonas_campana
 -- =====================================================
 CREATE TABLE `tb_zonas_campana` (
   `id_zona` int(11) NOT NULL AUTO_INCREMENT,
@@ -373,7 +426,7 @@ CREATE TABLE `tb_zonas_campana` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
--- TABLA 18: tb_asignaciones_zona
+-- TABLA 19: tb_asignaciones_zona
 -- =====================================================
 CREATE TABLE `tb_asignaciones_zona` (
   `id_asignacion` int(11) NOT NULL AUTO_INCREMENT,
@@ -391,7 +444,7 @@ CREATE TABLE `tb_asignaciones_zona` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
--- TABLA 19: auditoria
+-- TABLA 20: auditoria
 -- =====================================================
 CREATE TABLE `auditoria` (
   `idauditoria` int(11) NOT NULL AUTO_INCREMENT,
@@ -411,7 +464,7 @@ CREATE TABLE `auditoria` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
--- TABLA 20: historial_leads
+-- TABLA 21: historial_leads
 -- =====================================================
 CREATE TABLE `historial_leads` (
   `idhistorial` int(11) NOT NULL AUTO_INCREMENT,
@@ -427,6 +480,23 @@ CREATE TABLE `historial_leads` (
   CONSTRAINT `fk_historial_lead` FOREIGN KEY (`idlead`) REFERENCES `leads` (`idlead`) ON DELETE CASCADE,
   CONSTRAINT `fk_historial_usuario` FOREIGN KEY (`idusuario`) REFERENCES `usuarios` (`idusuario`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `direcciones` (
+  `iddireccion` int(11) NOT NULL AUTO_INCREMENT,
+  `idpersona` int(11) NOT NULL,
+  `tipo` enum('Casa','Negocio','Oficina','Otro') DEFAULT 'Casa',
+  `direccion` varchar(255) NOT NULL,
+  `referencias` text,
+  `iddistrito` int(11),
+  `coordenadas` varchar(100),
+  `id_zona` int(11),
+  `es_principal` tinyint(1) DEFAULT 0,
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`iddireccion`),
+  KEY `fk_direccion_persona` (`idpersona`),
+  CONSTRAINT `fk_direccion_persona` FOREIGN KEY (`idpersona`) 
+    REFERENCES `personas` (`idpersona`) ON DELETE CASCADE
+);
 
 -- =====================================================
 -- VISTAS
@@ -450,7 +520,7 @@ LEFT JOIN roles r ON u.idrol = r.idrol
 LEFT JOIN tb_zonas_campana z ON u.zona_asignada = z.id_zona
 WHERE u.estado = 'Activo';
 
--- Vista de leads completos
+-- Vista de leads completos (ACTUALIZADA con campos de dirección de servicio)
 CREATE OR REPLACE VIEW `v_leads_completos` AS
 SELECT 
     l.idlead,
@@ -461,23 +531,165 @@ SELECT
     CONCAT(p.nombres, ' ', p.apellidos) as nombre_completo,
     p.telefono,
     p.correo,
-    p.direccion,
-    p.coordenadas,
-    d.nombre as distrito,
+    
+    -- Dirección personal
+    p.direccion as direccion_personal,
+    p.coordenadas as coordenadas_personal,
+    d.nombre as distrito_personal,
+    
+    -- Dirección de servicio (puede ser diferente)
+    l.direccion_servicio,
+    l.coordenadas_servicio,
+    l.tipo_solicitud,
+    ds.nombre as distrito_servicio,
+    
+    -- Dirección efectiva (prioriza la de servicio si existe)
+    COALESCE(l.direccion_servicio, p.direccion) as direccion_efectiva,
+    COALESCE(l.coordenadas_servicio, p.coordenadas) as coordenadas_efectivas,
+    COALESCE(ds.nombre, d.nombre) as distrito_efectivo,
+    
+    -- Otros campos
     o.nombre as origen,
     e.nombre as etapa,
     e.color as etapa_color,
     u.nombre as vendedor,
     c.nombre as campania,
-    z.nombre_zona as zona
+    
+    -- Zona (prioriza la zona del servicio si existe)
+    COALESCE(zs.nombre_zona, z.nombre_zona) as zona
 FROM leads l
 INNER JOIN personas p ON l.idpersona = p.idpersona
 LEFT JOIN distritos d ON p.iddistrito = d.iddistrito
+LEFT JOIN distritos ds ON l.distrito_servicio = ds.iddistrito
 INNER JOIN origenes o ON l.idorigen = o.idorigen
 INNER JOIN etapas e ON l.idetapa = e.idetapa
 LEFT JOIN usuarios u ON l.idusuario = u.idusuario
 LEFT JOIN campanias c ON l.idcampania = c.idcampania
-LEFT JOIN tb_zonas_campana z ON p.id_zona = z.id_zona;
+LEFT JOIN tb_zonas_campana z ON p.id_zona = z.id_zona
+LEFT JOIN tb_zonas_campana zs ON l.zona_servicio = zs.id_zona;
+
+CREATE OR REPLACE VIEW `v_leads_con_ubicacion` AS
+SELECT 
+    l.idlead,
+    l.idpersona,
+    CONCAT(p.nombres, ' ', p.apellidos) as cliente,
+    p.telefono,
+    p.correo,
+    p.direccion as direccion_personal,
+    dp.nombre as distrito_personal,    
+    COALESCE(l.direccion_servicio, p.direccion) as direccion_instalacion,
+    COALESCE(ds.nombre, dp.nombre) as distrito_instalacion,
+    l.tipo_solicitud,
+    COALESCE(l.coordenadas_servicio, p.coordenadas) as coordenadas,
+    COALESCE(l.zona_servicio, p.id_zona) as id_zona,
+    z.nombre_zona,
+    e.nombre as etapa,
+    l.estado,
+    l.created_at as fecha_solicitud
+    
+FROM leads l
+INNER JOIN personas p ON l.idpersona = p.idpersona
+LEFT JOIN distritos dp ON p.iddistrito = dp.iddistrito
+LEFT JOIN distritos ds ON l.distrito_servicio = ds.iddistrito
+LEFT JOIN tb_zonas_campana z ON COALESCE(l.zona_servicio, p.id_zona) = z.id_zona
+INNER JOIN etapas e ON l.idetapa = e.idetapa
+WHERE l.estado = 'Activo';
+
+DELIMITER $$
+
+CREATE PROCEDURE `sp_crear_lead_con_direccion`(
+    IN p_idpersona INT,
+    IN p_idusuario INT,
+    IN p_idorigen INT,
+    IN p_direccion_servicio VARCHAR(255),
+    IN p_distrito_servicio INT,
+    IN p_tipo_solicitud VARCHAR(20),
+    OUT p_idlead INT
+)
+BEGIN
+    DECLARE v_coordenadas VARCHAR(100);
+    DECLARE v_zona INT;
+    
+    -- Insertar el lead
+    INSERT INTO leads (
+        idpersona, 
+        idusuario, 
+        idorigen, 
+        idetapa,
+        direccion_servicio,
+        distrito_servicio,
+        tipo_solicitud,
+        estado
+    ) VALUES (
+        p_idpersona,
+        p_idusuario,
+        p_idorigen,
+        1, -- CAPTACIÓN
+        p_direccion_servicio,
+        p_distrito_servicio,
+        p_tipo_solicitud,
+        'Activo'
+    );
+    
+    SET p_idlead = LAST_INSERT_ID();
+    
+    -- Aquí se podría agregar lógica para geocodificar
+    -- y asignar zona automáticamente
+    
+END$$
+
+DELIMITER ;
+
+-- =====================================================
+-- DATOS DE PRUEBA
+-- =====================================================
+
+-- Ejemplo: Juan Pérez solicita servicio en dos ubicaciones diferentes
+
+-- Insertar persona
+INSERT INTO personas (nombres, apellidos, telefono, correo, direccion, iddistrito)
+VALUES ('Juan', 'Pérez García', '987654321', 'juan.perez@email.com', 'Av. Benavides 123', 1);
+
+SET @idpersona = LAST_INSERT_ID();
+
+-- Lead 1: Servicio para su casa
+INSERT INTO leads (
+    idpersona, idusuario, idorigen, idetapa,
+    direccion_servicio, distrito_servicio, tipo_solicitud
+) VALUES (
+    @idpersona, 1, 1, 1,
+    'Av. Benavides 123, Grocio Prado', 1, 'Casa'
+);
+
+-- Lead 2: Servicio para su negocio (DIFERENTE UBICACIÓN)
+INSERT INTO leads (
+    idpersona, idusuario, idorigen, idetapa,
+    direccion_servicio, distrito_servicio, tipo_solicitud
+) VALUES (
+    @idpersona, 1, 1, 1,
+    'Jr. Comercio 456, Chincha Alta', 2, 'Negocio'
+);
+
+-- =====================================================
+-- CONSULTA PARA VERIFICAR
+-- =====================================================
+
+SELECT 
+    CONCAT(p.nombres, ' ', p.apellidos) as cliente,
+    l.idlead,
+    l.tipo_solicitud,
+    l.direccion_servicio as direccion_instalacion,
+    d.nombre as distrito,
+    e.nombre as etapa
+FROM leads l
+INNER JOIN personas p ON l.idpersona = p.idpersona
+LEFT JOIN distritos d ON l.distrito_servicio = d.iddistrito
+INNER JOIN etapas e ON l.idetapa = e.idetapa
+WHERE p.idpersona = @idpersona;
+
+-- =====================================================
+-- NOTAS IMPORTANTES:
+-- ===================
 
 -- =====================================================
 -- CONFIGURACIÓN FINAL

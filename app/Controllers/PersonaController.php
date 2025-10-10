@@ -45,10 +45,7 @@ class PersonaController extends BaseController
                     ->orLike('dni', $query)
                     ->orLike('telefono', $query)
                     ->orLike('correo', $query)
-                    ->groupEnd()
-                    ->limit(50);
-        } else {
-            $builder->limit(20);
+                    ->groupEnd();
         }
 
         $data = [

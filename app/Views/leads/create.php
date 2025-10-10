@@ -28,26 +28,54 @@
                 <form id="formLead" action="<?= base_url('leads/store') ?>" method="POST">
                     <?= csrf_field() ?>
 
-                    <!-- PASO 1: Búsqueda por DNI -->
+                    <!-- PASO 1: Búsqueda de Cliente Existente -->
                     <div class="card mb-4">
                         <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0">1. Buscar o Ingresar Datos del Cliente</h5>
+                            <h5 class="mb-0">1. Buscar Cliente Existente</h5>
                         </div>
                         <div class="card-body">
+                            <!-- Buscar por Teléfono (NUEVO) -->
+                            <div class="alert alert-info">
+                                <i class="icon-info"></i> <strong>¿Cliente existente?</strong> Busca primero por teléfono para evitar duplicados y permitir múltiples solicitudes.
+                            </div>
+
+                            <div class="form-group">
+                                <label for="buscar_telefono">Buscar por Teléfono</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="buscar_telefono" 
+                                           placeholder="Ingrese teléfono (9 dígitos)" maxlength="9">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-success" type="button" id="btnBuscarTelefono">
+                                            <i class="icon-search"></i> Buscar Cliente
+                                        </button>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Si el cliente ya existe, sus datos se autocompletarán y podrás crear una nueva solicitud de servicio.
+                                </small>
+                            </div>
+
+                            <!-- Resultado de búsqueda -->
+                            <div id="resultado-busqueda" style="display:none;"></div>
+
+                            <!-- Campo oculto para ID de persona -->
+                            <input type="hidden" id="idpersona" name="idpersona" value="<?= !empty($persona) ? $persona['idpersona'] : '' ?>">
+
                             <?php if (!empty($persona)): ?>
-                            <!-- Persona autocompletada -->
-                            <input type="hidden" name="idpersona" value="<?= $persona['idpersona'] ?>">
                             <div class="alert alert-success">
-                                <i class="icon-check"></i> <strong>Datos autocompletados</strong> desde el contacto existente.
+                                <i class="icon-check"></i> <strong>Cliente encontrado:</strong> <?= esc($persona['nombres'] . ' ' . $persona['apellidos']) ?>
                             </div>
                             <?php endif; ?>
 
+                            <hr>
+
+                            <!-- Búsqueda por DNI (opcional) -->
                             <div class="form-group">
-                                <label for="dni">DNI del Cliente</label>
+                                <label for="dni">DNI del Cliente (Opcional)</label>
                                 <div class="input-group">
                                     <input type="text" class="form-control" id="dni" name="dni" 
                                            value="<?= !empty($persona) ? esc($persona['dni']) : '' ?>"
-                                           placeholder="Ingrese DNI de 8 dígitos (opcional)" maxlength="8"
+                                           placeholder="Ingrese DNI de 8 dígitos" maxlength="8"
                                            <?= !empty($persona) ? 'readonly' : '' ?>>
                                     <div class="input-group-append">
                                         <button class="btn btn-primary" type="button" id="btnBuscarDni"
@@ -56,9 +84,6 @@
                                         </button>
                                     </div>
                                 </div>
-                                <small class="form-text text-muted">
-                                    <?= !empty($persona) ? 'Datos cargados desde contacto existente' : 'Ingrese el DNI y presione buscar para autocompletar los datos' ?>
-                                </small>
                                 <div id="dni-loading" class="text-primary mt-2" style="display:none;">
                                     <i class="icon-refresh rotating"></i> Buscando...
                                 </div>
@@ -134,12 +159,60 @@
                         </div>
                     </div>
 
-                    <!-- PASO 2: Información del Lead -->
+                    <!-- PASO 2: Información de la Solicitud de Servicio -->
                     <div class="card mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h5 class="mb-0">2. Información del Lead</h5>
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">2. Información de la Solicitud de Servicio</h5>
                         </div>
                         <div class="card-body">
+                            <!-- NUEVO: Tipo de Solicitud -->
+                            <div class="alert alert-warning">
+                                <i class="icon-info"></i> <strong>Importante:</strong> Especifica dónde se instalará el servicio. Un mismo cliente puede tener múltiples solicitudes en diferentes ubicaciones.
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="tipo_solicitud">Tipo de Instalación *</label>
+                                        <select class="form-control" id="tipo_solicitud" name="tipo_solicitud" required>
+                                            <option value="">Seleccione</option>
+                                            <option value="Casa">🏠 Casa / Hogar</option>
+                                            <option value="Negocio">🏢 Negocio / Empresa</option>
+                                            <option value="Oficina">🏛️ Oficina</option>
+                                            <option value="Otro">📍 Otro</option>
+                                        </select>
+                                        <small class="text-muted">Indica el tipo de instalación que solicita el cliente</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="distrito_servicio">Distrito de Instalación *</label>
+                                        <select class="form-control" id="distrito_servicio" name="distrito_servicio" required>
+                                            <option value="">Seleccione distrito</option>
+                                            <?php if (!empty($distritos) && is_array($distritos)): ?>
+                                                <?php foreach ($distritos as $distrito): ?>
+                                                    <option value="<?= $distrito['iddistrito'] ?>">
+                                                        <?= esc(isset($distrito['nombre']) ? $distrito['nombre'] : '') ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                        <small class="text-muted">¿Dónde se instalará el servicio?</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="direccion_servicio">Dirección de Instalación del Servicio *</label>
+                                <input type="text" class="form-control" id="direccion_servicio" name="direccion_servicio" required
+                                       placeholder="Ej: Jr. Comercio 456, Chincha Alta">
+                                <small class="text-muted">
+                                    <i class="icon-info"></i> Esta dirección puede ser diferente a la dirección personal del cliente
+                                </small>
+                            </div>
+
+                            <hr>
+
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
@@ -236,12 +309,12 @@ const BASE_URL = '<?= base_url() ?>';
 console.log('✅ BASE_URL definida:', BASE_URL);
 </script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="<?= base_url('js/leads/buscar-cliente.js') ?>"></script>
 <script src="<?= base_url('js/leads/create.js') ?>"></script>
 <script src="<?= base_url('js/leads/campos-dinamicos-origen.js') ?>"></script>
 <script>
-console.log('Todos los scripts cargados');
-console.log('PersonaManager existe:', typeof PersonaManager !== 'undefined');
-console.log('window.personaManager:', window.personaManager);
+console.log('✅ Todos los scripts cargados');
+console.log('✅ Módulo de búsqueda de cliente cargado');
 </script>
 
 <?= $this->endSection() ?>
