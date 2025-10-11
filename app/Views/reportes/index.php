@@ -1,5 +1,9 @@
 <?= $this->extend('layouts/base') ?>
 
+<?= $this->section('styles') ?>
+<link rel="stylesheet" href="<?= base_url('css/reportes/reportes-index.css') ?>">
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 
 <?php
@@ -137,7 +141,8 @@ $datos_tendencia = $datos_tendencia ?? [];
                             <h5 class="mb-0">Leads por Etapa</h5>
                         </div>
                         <div class="card-body">
-                            <canvas id="chartEtapas" height="200"></canvas>
+                            <canvas id="chartEtapas" height="200" 
+                                    data-etapas='{"labels": <?= json_encode(array_column($datos_etapas, 'etapa')) ?>, "data": <?= json_encode(array_column($datos_etapas, 'total')) ?>}'></canvas>
                         </div>
                     </div>
                 </div>
@@ -149,7 +154,8 @@ $datos_tendencia = $datos_tendencia ?? [];
                             <h5 class="mb-0">Leads por Origen</h5>
                         </div>
                         <div class="card-body">
-                            <canvas id="chartOrigenes" height="200"></canvas>
+                            <canvas id="chartOrigenes" height="200" 
+                                    data-origenes='{"labels": <?= json_encode(array_column($datos_origenes, 'origen')) ?>, "data": <?= json_encode(array_column($datos_origenes, 'total')) ?>}'></canvas>
                         </div>
                     </div>
                 </div>
@@ -163,7 +169,8 @@ $datos_tendencia = $datos_tendencia ?? [];
                             <h5 class="mb-0">Tendencia de Leads y Conversiones</h5>
                         </div>
                         <div class="card-body">
-                            <canvas id="chartTendencia" height="80"></canvas>
+                            <canvas id="chartTendencia" height="80" 
+                                    data-tendencia='{"labels": <?= json_encode(array_column($datos_tendencia, 'fecha')) ?>, "leads": <?= json_encode(array_column($datos_tendencia, 'leads')) ?>, "conversiones": <?= json_encode(array_column($datos_tendencia, 'conversiones')) ?>}'></canvas>
                         </div>
                     </div>
                 </div>
@@ -289,114 +296,5 @@ $datos_tendencia = $datos_tendencia ?? [];
 
 <?= $this->section('scripts') ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-<script>
-// Funciones básicas para reportes
-function imprimirReporte() {
-    window.print();
-}
-
-function exportarExcel() {
-    const periodo = document.getElementById('periodoSelect').value;
-    const fechaInicio = document.querySelector('input[name="fecha_inicio"]')?.value || '';
-    const fechaFin = document.querySelector('input[name="fecha_fin"]')?.value || '';
-    
-    let url = '<?= base_url('reportes/exportar-excel') ?>?periodo=' + periodo;
-    
-    if (periodo === 'personalizado' && fechaInicio && fechaFin) {
-        url += '&fecha_inicio=' + fechaInicio + '&fecha_fin=' + fechaFin;
-    }
-    
-    window.location.href = url;
-}
-
-// Cambio de período
-document.getElementById('periodoSelect').addEventListener('change', function() {
-    const rangoFechas = document.getElementById('rangoFechas');
-    if (this.value === 'personalizado') {
-        rangoFechas.style.display = 'inline-flex';
-    } else {
-        rangoFechas.style.display = 'none';
-    }
-});
-
-// Gráficos con datos reales del backend
-$(document).ready(function() {
-    // Gráfico de Etapas
-    if (document.getElementById('chartEtapas')) {
-        const ctxEtapas = document.getElementById('chartEtapas').getContext('2d');
-        new Chart(ctxEtapas, {
-            type: 'doughnut',
-            data: {
-                labels: <?= json_encode(array_column($datos_etapas, 'etapa')) ?>,
-                datasets: [{
-                    data: <?= json_encode(array_column($datos_etapas, 'total')) ?>,
-                    backgroundColor: ['#007bff', '#28a745', '#ffc107', '#fd7e14', '#dc3545', '#6f42c1', '#17a2b8']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-    }
-    
-    // Gráfico de Orígenes
-    if (document.getElementById('chartOrigenes')) {
-        const ctxOrigenes = document.getElementById('chartOrigenes').getContext('2d');
-        new Chart(ctxOrigenes, {
-            type: 'bar',
-            data: {
-                labels: <?= json_encode(array_column($datos_origenes, 'origen')) ?>,
-                datasets: [{
-                    label: 'Leads',
-                    data: <?= json_encode(array_column($datos_origenes, 'total')) ?>,
-                    backgroundColor: '#007bff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-    }
-
-    // Gráfico de Tendencia
-    if (document.getElementById('chartTendencia')) {
-        const ctxTendencia = document.getElementById('chartTendencia').getContext('2d');
-        new Chart(ctxTendencia, {
-            type: 'line',
-            data: {
-                labels: <?= json_encode(array_column($datos_tendencia, 'fecha')) ?>,
-                datasets: [
-                    {
-                        label: 'Leads',
-                        data: <?= json_encode(array_column($datos_tendencia, 'leads')) ?>,
-                        borderColor: '#007bff',
-                        backgroundColor: 'rgba(0,123,255,0.1)',
-                        fill: true
-                    },
-                    {
-                        label: 'Conversiones',
-                        data: <?= json_encode(array_column($datos_tendencia, 'conversiones')) ?>,
-                        borderColor: '#28a745',
-                        backgroundColor: 'rgba(40,167,69,0.1)',
-                        fill: true
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-    }
-});
-</script>
-
-<style>
-@media print {
-    .btn, .card-header, nav { display: none !important; }
-    .card { page-break-inside: avoid; }
-}
-</style>
+<script src="<?= base_url('js/reportes/reportes-index.js') ?>"></script>
 <?= $this->endSection() ?>

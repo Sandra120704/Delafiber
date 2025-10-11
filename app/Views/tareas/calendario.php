@@ -7,7 +7,7 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h3 class="mb-0">📅 Calendario de Tareas</h3>
+                    <h3 class="mb-0"> Calendario de Tareas</h3>
                     <p class="text-muted mb-0">Gestiona tus tareas y seguimientos</p>
                 </div>
                 <div>
@@ -73,13 +73,13 @@
                         <div class="col-md-6 mb-3">
                             <label for="tipo_tarea" class="form-label">Tipo *</label>
                             <select class="form-select" id="tipo_tarea" name="tipo_tarea" required>
-                                <option value="llamada">📞 Llamada</option>
-                                <option value="reunion">🤝 Reunión</option>
-                                <option value="seguimiento">📋 Seguimiento</option>
-                                <option value="instalacion">🔧 Instalación</option>
-                                <option value="visita">🏠 Visita</option>
-                                <option value="email">📧 Email</option>
-                                <option value="otro">📝 Otro</option>
+                                <option value="llamada">Llamada</option>
+                                <option value="reunion">Reunión</option>
+                                <option value="seguimiento">Seguimiento</option>
+                                <option value="instalacion">Instalación</option>
+                                <option value="visita">Visita</option>
+                                <option value="email">Email</option>
+                                <option value="otro">Otro</option>
                             </select>
                         </div>
 
