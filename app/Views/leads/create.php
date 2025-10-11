@@ -176,10 +176,10 @@
                                         <label for="tipo_solicitud">Tipo de Instalación *</label>
                                         <select class="form-control" id="tipo_solicitud" name="tipo_solicitud" required>
                                             <option value="">Seleccione</option>
-                                            <option value="Casa">🏠 Casa / Hogar</option>
-                                            <option value="Negocio">🏢 Negocio / Empresa</option>
-                                            <option value="Oficina">🏛️ Oficina</option>
-                                            <option value="Otro">📍 Otro</option>
+                                            <option value="Casa">Casa / Hogar</option>
+                                            <option value="Negocio"> Negocio / Empresa</option>
+                                            <option value="Oficina">Oficina</option>
+                                            <option value="Otro">Otro</option>
                                         </select>
                                         <small class="text-muted">Indica el tipo de instalación que solicita el cliente</small>
                                     </div>
@@ -306,15 +306,15 @@
 <script>
 // Variable de configuración para los archivos JS externos
 const BASE_URL = '<?= base_url() ?>';
-console.log('✅ BASE_URL definida:', BASE_URL);
+console.log('BASE_URL definida:', BASE_URL);
 </script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="<?= base_url('js/leads/buscar-cliente.js') ?>"></script>
 <script src="<?= base_url('js/leads/create.js') ?>"></script>
 <script src="<?= base_url('js/leads/campos-dinamicos-origen.js') ?>"></script>
 <script>
-console.log('✅ Todos los scripts cargados');
-console.log('✅ Módulo de búsqueda de cliente cargado');
+console.log('Todos los scripts cargados');
+console.log('Módulo de búsqueda de cliente cargado');
 </script>
 
 <?= $this->endSection() ?>

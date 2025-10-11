@@ -1,5 +1,9 @@
 <?= $this->extend('layouts/base') ?>
 
+<?= $this->section('styles') ?>
+<link rel="stylesheet" href="<?= base_url('css/leads/leads-view.css') ?>">
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 
 <?php
@@ -15,7 +19,17 @@ $modalidades = $modalidades ?? [];
 $historial = $historial ?? [];
 ?>
 
-<div class="row">
+<div class="row" 
+     data-lead-id="<?= $lead['idlead'] ?? '' ?>"
+     data-lead-nombre="<?= esc(($lead['nombres'] ?? '') . ' ' . ($lead['apellidos'] ?? '')) ?>"
+     data-lead-telefono="<?= esc($lead['telefono'] ?? '') ?>"
+     data-lead-direccion="<?= esc($lead['direccion'] ?? 'Sin dirección') ?>"
+     data-coordenadas="<?= esc($lead['coordenadas'] ?? '') ?>"
+     <?php if (!empty($zona)): ?>
+     data-zona-poligono='<?= $zona['poligono'] ?? '' ?>'
+     data-zona-color="<?= $zona['color'] ?? '' ?>"
+     data-zona-nombre="<?= esc($zona['nombre_zona'] ?? '') ?>"
+     <?php endif; ?>>
     <div class="col-12">
         <!-- Encabezado con acciones -->
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -470,212 +484,12 @@ $historial = $historial ?? [];
     </div>
 </div>
 
-<style>
-.timeline-item {
-    position: relative;
-    padding-left: 35px;
-    padding-bottom: 20px;
-    border-left: 2px solid #e0e0e0;
-}
-.timeline-item:last-child {
-    border-left: none;
-}
-.timeline-marker {
-    position: absolute;
-    left: -7px;
-    top: 5px;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-}
-</style>
+<?= $this->endSection() ?>
 
+<?= $this->section('scripts') ?>
 <!-- Google Maps API -->
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAACo2qyElsl8RwIqW3x0peOA_20f7SEHA&libraries=geometry"></script>
-
-<script>
-// Inicializar mapa si hay coordenadas
-<?php if (!empty($lead['coordenadas'])): ?>
-document.addEventListener('DOMContentLoaded', function() {
-    initMiniMap();
-});
-
-function initMiniMap() {
-    const coords = '<?= $lead['coordenadas'] ?>'.split(',');
-    const lat = parseFloat(coords[0]);
-    const lng = parseFloat(coords[1]);
-    
-    // Crear mapa
-    const map = new google.maps.Map(document.getElementById('miniMapLead'), {
-        zoom: 16,
-        center: { lat, lng },
-        mapTypeControl: true,
-        streetViewControl: false,
-        fullscreenControl: true,
-        zoomControl: true
-    });
-    
-    // Marker del lead
-    const marker = new google.maps.Marker({
-        position: { lat, lng },
-        map: map,
-        title: '<?= esc($lead['nombres'] . ' ' . $lead['apellidos']) ?>',
-        icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 10,
-            fillColor: '#e74c3c',
-            fillOpacity: 1,
-            strokeColor: '#c0392b',
-            strokeWeight: 2
-        },
-        animation: google.maps.Animation.DROP
-    });
-    
-    // InfoWindow del marker
-    const infoWindow = new google.maps.InfoWindow({
-        content: `
-            <div style="padding: 10px;">
-                <h6 style="margin: 0 0 8px 0;"><?= esc($lead['nombres'] . ' ' . $lead['apellidos']) ?></h6>
-                <p style="margin: 0; font-size: 13px;">
-                    <i class="icon-phone"></i> <?= esc($lead['telefono']) ?><br>
-                    <i class="icon-map-pin"></i> <?= esc($lead['direccion'] ?? 'Sin dirección') ?>
-                </p>
-            </div>
-        `
-    });
-    
-    marker.addListener('click', () => {
-        infoWindow.open(map, marker);
-    });
-    
-    // Dibujar zona si está asignada
-    <?php if (!empty($zona) && !empty($zona['poligono'])): ?>
-    try {
-        const zonaCoords = <?= $zona['poligono'] ?>;
-        const zonaPolygon = new google.maps.Polygon({
-            paths: zonaCoords,
-            strokeColor: '<?= $zona['color'] ?>',
-            strokeOpacity: 0.8,
-            strokeWeight: 2,
-            fillColor: '<?= $zona['color'] ?>',
-            fillOpacity: 0.2,
-            map: map
-        });
-        
-        // Ajustar zoom para mostrar zona completa
-        const bounds = new google.maps.LatLngBounds();
-        zonaCoords.forEach(coord => {
-            bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
-        });
-        map.fitBounds(bounds);
-        
-        // Agregar label de zona
-        const zonaCentro = bounds.getCenter();
-        new google.maps.Marker({
-            position: zonaCentro,
-            map: map,
-            label: {
-                text: '<?= esc($zona['nombre_zona']) ?>',
-                color: '#fff',
-                fontSize: '14px',
-                fontWeight: 'bold'
-            },
-            icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 0
-            }
-        });
-    } catch (error) {
-        console.error('Error al dibujar zona:', error);
-    }
-    <?php endif; ?>
-}
-<?php endif; ?>
-
-// Función para geocodificar lead sin coordenadas
-function geocodificarLeadAhora() {
-    alert('Funcionalidad de geocodificación manual próximamente. Por ahora, edita el lead y agrega una dirección.');
-}
-
-// Cambiar etapa
-document.getElementById('formCambiarEtapa').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    formData.append('idlead', <?= $lead['idlead'] ?>);
-    
-    fetch('<?= base_url('leads/moverEtapa') ?>', {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Error al mover etapa');
-        }
-    });
-});
-
-// Agregar seguimiento
-document.getElementById('formSeguimiento').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    
-    fetch('<?= base_url('leads/agregarSeguimiento') ?>', {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Error');
-        }
-    });
-});
-
-// Crear tarea
-document.getElementById('formTarea').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    
-    fetch('<?= base_url('leads/crearTarea') ?>', {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Error');
-        }
-    });
-});
-
-// Completar tarea
-function completarTarea(id) {
-    if (confirm('¿Marcar como completada?')) {
-        const formData = new FormData();
-        formData.append('idtarea', id);
-        
-        fetch('<?= base_url('leads/completarTarea') ?>', {
-            method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            body: formData
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) location.reload();
-        });
-    }
-}
-</script>
-
+<script src="<?= base_url('js/leads/leads-view.js') ?>"></script>
 <?= $this->endSection() ?>
+
 <?= $this->include('Layouts/footer') ?>

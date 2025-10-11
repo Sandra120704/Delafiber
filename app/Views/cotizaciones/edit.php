@@ -195,63 +195,8 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const precioCotizadoInput = document.getElementById('precio_cotizado');
-    const precioInstalacionInput = document.getElementById('precio_instalacion');
-    const descuentoInput = document.getElementById('descuento_aplicado');
+<?= $this->endSection() ?>
 
-    // Calcular total cuando cambien los valores
-    [precioCotizadoInput, precioInstalacionInput, descuentoInput].forEach(input => {
-        input.addEventListener('input', calcularTotal);
-    });
-
-    function calcularTotal() {
-        const precioServicio = parseFloat(precioCotizadoInput.value) || 0;
-        const precioInstalacion = parseFloat(precioInstalacionInput.value) || 0;
-        const descuentoPorcentaje = parseFloat(descuentoInput.value) || 0;
-        
-        const descuentoMonto = precioServicio * (descuentoPorcentaje / 100);
-        const precioServicioConDescuento = precioServicio - descuentoMonto;
-        const total = precioServicioConDescuento + precioInstalacion;
-        
-        // Actualizar display
-        document.getElementById('precio-servicio').textContent = `S/ ${precioServicioConDescuento.toFixed(2)}`;
-        document.getElementById('precio-instalacion-display').textContent = `S/ ${precioInstalacion.toFixed(2)}`;
-        document.getElementById('precio-total').textContent = `S/ ${total.toFixed(2)}`;
-        document.getElementById('precio-mensual').textContent = `S/ ${precioServicioConDescuento.toFixed(2)}`;
-        
-        // Mostrar/ocultar descuento
-        const descuentoDisplay = document.getElementById('descuento-display');
-        if (descuentoPorcentaje > 0) {
-            descuentoDisplay.style.display = 'flex !important';
-            document.getElementById('descuento-monto').textContent = `-S/ ${descuentoMonto.toFixed(2)}`;
-        } else {
-            descuentoDisplay.style.display = 'none !important';
-        }
-    }
-
-    // Calcular total inicial
-    calcularTotal();
-});
-
-// Validación del formulario
-document.getElementById('form-cotizacion').addEventListener('submit', function(e) {
-    const precio = parseFloat(document.getElementById('precio_cotizado').value);
-    
-    if (precio <= 0) {
-        e.preventDefault();
-        alert('El precio cotizado debe ser mayor a 0');
-        return false;
-    }
-    
-    const descuento = parseFloat(document.getElementById('descuento_aplicado').value) || 0;
-    if (descuento < 0 || descuento > 100) {
-        e.preventDefault();
-        alert('El descuento debe estar entre 0% y 100%');
-        return false;
-    }
-});
-</script>
-
+<?= $this->section('scripts') ?>
+<script src="<?= base_url('js/cotizaciones/cotizaciones-edit.js') ?>"></script>
 <?= $this->endSection() ?>

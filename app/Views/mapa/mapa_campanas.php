@@ -130,13 +130,13 @@
                 </div>
                 <hr>
                 <div class="alert alert-info mb-0">
-                    <strong>💡 Instrucciones:</strong>
+                    <strong> Instrucciones:</strong>
                     <ul class="mb-0 mt-2">
-                        <li>🖊️ <strong>Dibujar:</strong> Usa la herramienta de polígono en el mapa</li>
-                        <li>🗑️ <strong>Borrar:</strong> Usa el botón "Borrar Zona Actual" si te equivocas</li>
-                        <li>✏️ <strong>Editar:</strong> Haz clic en una zona y luego en "Editar" para modificarla</li>
-                        <li>👥 <strong>Prospectos:</strong> Se asignan automáticamente según su ubicación</li>
-                        <li>⚡ <strong>Asignar Automático:</strong> Procesa prospectos sin zona asignada</li>
+                        <li><strong>Dibujar:</strong> Usa la herramienta de polígono en el mapa</li>
+                        <li><strong>Borrar:</strong> Usa el botón "Borrar Zona Actual" si te equivocas</li>
+                        <li><strong>Editar:</strong> Haz clic en una zona y luego en "Editar" para modificarla</li>
+                        <li><strong>Prospectos:</strong> Se asignan automáticamente según su ubicación</li>
+                        <li><strong>Asignar Automático:</strong> Procesa prospectos sin zona asignada</li>
                     </ul>
                 </div>
             </div>

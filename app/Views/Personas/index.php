@@ -1,36 +1,11 @@
 <?= $this->extend('Layouts/base') ?>
 
-<?= $this->section('content') ?>
-
+<?= $this->section('styles') ?>
 <link rel="stylesheet" href="<?= base_url('css/personas.css') ?>">
-<style>
-  /* Estilos adicionales para mantener tu diseño original */
-  .main-card {
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    width: 100%;
-    max-width: 1200px;
-  }
-  .person-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 14px;
-  }
-  .small-muted {
-    color: #6c757d;
-    font-size: 0.875rem;
-  }
-  .btn-group-actions .btn {
-    margin: 0 2px;
-  }
-</style>
+<link rel="stylesheet" href="<?= base_url('css/personas/personas-index.css') ?>">
+<?= $this->endSection() ?>
+
+<?= $this->section('content') ?>
 
 <div class="d-flex justify-content-center py-4">
   <div class="main-card p-4 mx-auto">
@@ -162,100 +137,6 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-  const BASE_URL = "<?= rtrim(base_url(), '/') ?>/";
-
-  // Configuración para SweetAlert2
-  const Toast = Swal.mixin({
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 3000,
-    timerProgressBar: true,
-    didOpen: (toast) => {
-      toast.addEventListener('mouseenter', Swal.stopTimer);
-      toast.addEventListener('mouseleave', Swal.resumeTimer);
-    }
-  });
-
-  // Manejo de eliminación de personas
-  document.querySelectorAll('.btn-eliminar').forEach(button => {
-    button.addEventListener('click', function() {
-      const id = this.getAttribute('data-id');
-      const nombre = this.getAttribute('data-nombre');
-
-      Swal.fire({
-        title: '¿Eliminar contacto?',
-        text: `¿Estás seguro de eliminar a ${nombre}?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          fetch(`${BASE_URL}personas/eliminar/${id}`, {
-            method: 'POST',
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest',
-              'Content-Type': 'application/json',
-              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.success) {
-              Toast.fire({
-                icon: 'success',
-                title: 'Contacto eliminado correctamente'
-              });
-              setTimeout(() => window.location.reload(), 1500);
-            } else {
-              Toast.fire({
-                icon: 'error',
-                title: data.message || 'Error al eliminar'
-              });
-            }
-          })
-          .catch(error => {
-            Toast.fire({
-              icon: 'error',
-              title: 'Error de conexión'
-            });
-          });
-        }
-      });
-    });
-  });
-
-  // Manejo de conversión a Lead
-  document.querySelectorAll('.btn-convertir-lead').forEach(button => {
-    button.addEventListener('click', function() {
-      const id = this.getAttribute('data-id');
-      const nombre = this.getAttribute('data-nombre');
-
-      Swal.fire({
-        title: '¿Convertir a Lead?',
-        html: `
-          <p>Vas a convertir a <strong>${nombre}</strong> en un Lead.</p>
-          <p class="text-muted small">Los datos personales se autocompletarán y solo necesitarás agregar la información comercial del lead.</p>
-        `,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#28a745',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: '<i class="ti-check"></i> Sí, convertir',
-        cancelButtonText: 'Cancelar'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          window.location.href = `${BASE_URL}leads/crear?persona_id=${id}`;
-        }
-      });
-    });
-  });
-</script>
-<script src="<?= base_url('js/personasJS/personas.js') ?>"></script>
+<script src="<?= base_url('js/personas/personas-index.js') ?>"></script>
+<script src="<?= base_url('js/personas/personas.js') ?>"></script>
 <?= $this->endSection() ?>

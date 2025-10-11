@@ -227,13 +227,8 @@
     </div>
 </div>
 
-<script>
-function toggleEstado(id) {
-    if (confirm('¿Cambiar el estado de la campaña?')) {
-        window.location.href = '<?= base_url('campanias/toggleEstado/') ?>' + id;
-    }
-}
-</script>
-
 <?= $this->endSection() ?>
-<?= $this->include('Layouts/footer') ?>
+
+<?= $this->section('scripts') ?>
+<script src="<?= base_url('js/campaniasJS/campanias-view.js') ?>"></script>
+<?= $this->endSection() ?>

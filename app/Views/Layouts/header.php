@@ -25,6 +25,10 @@
 
   <!-- Layout CSS -->
   <link rel="stylesheet" href="<?= base_url('css/layout/sidebar.css') ?>">
+  <link rel="stylesheet" href="<?= base_url('css/dashboard/dashboard.css') ?>">
+
+  <!-- CSS específico de cada página -->
+  <?= $this->renderSection('styles') ?>
 
   <!-- Favicon y CSRF -->
   <link rel="shortcut icon" href="<?= base_url('images/favicon.png') ?>" />

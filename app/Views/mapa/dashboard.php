@@ -145,7 +145,7 @@
         <?php if (isset($proximas_acciones) && !empty($proximas_acciones)): ?>
         <div class="row">
             <div class="col-12">
-                <h5 class="mb-3">📅 Próximas Acciones</h5>
+                <h5 class="mb-3">Próximas Acciones</h5>
             </div>
             <div class="col-12">
                 <div class="card">

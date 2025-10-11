@@ -555,38 +555,8 @@ $error = $error ?? null;
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script>
-// Inicializar Select2 cuando se abre el modal
-$(document).ready(function() {
-    console.log('✅ Select2 inicializando...');
-    
-    // Inicializar cuando se muestra el modal
-    $('#modalNuevaTarea').on('shown.bs.modal', function () {
-        console.log('✅ Modal abierto');
-        
-        if (!$('#selectLead').hasClass('select2-hidden-accessible')) {
-            console.log('✅ Inicializando Select2 en #selectLead');
-            
-            $('#selectLead').select2({
-                theme: 'bootstrap-5',
-                placeholder: 'Buscar lead por nombre, teléfono o DNI...',
-                allowClear: true,
-                dropdownParent: $('#modalNuevaTarea'), // Importante para modales
-                ajax: {
-                    url: '<?= base_url('tareas/buscarLeads') ?>',
-                    dataType: 'json',
-                    delay: 250,
-                    data: function (params) {
-                        return {
-                            q: params.term,
-                            page: params.page || 1
-                        };
-                    },
-                    processResults: function (data, params) {
-                        params.page = params.page || 1;
-                        return {
-                            results: data.results,
-                            pagination: {
+<script src="<?= base_url('js/tareas/tareas-index.js') ?>"></script>
+<?= $this->endSection() ?>
                                 more: data.pagination.more
                             }
                         };
@@ -825,20 +795,3 @@ function eliminarSeleccionadas() {
             })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    showToast('success', `${ids.length} tarea(s) eliminadas`);
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'No se pudieron eliminar las tareas',
-                        confirmButtonColor: '#d33'
-                    });
-                }
-            });
-        }
-    });
-}
-</script>
-<?= $this->endSection() ?>
