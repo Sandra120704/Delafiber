@@ -206,9 +206,4 @@ $routes->group('usuarios', ['filter' => 'auth'], function($routes) {
 });
 
 // === NOTIFICACIONES ===
-$routes->get('notificaciones', 'Dashboard::notificaciones', ['filter' => 'auth']);
-$routes->get('dashboard', 'Dashboard::index');
-$routes->get('campanias', 'Campanias::index');
-$routes->get('tareas', 'Tareas::index');
-$routes->get('tareas/buscarLeads', 'Tareas::buscarLeads');
-$routes->get('cotizaciones/buscarLeads', 'Cotizaciones::buscarLeads');
+$routes->get('notificaciones', 'Dashboard\Index::notificaciones', ['filter' => 'auth']);

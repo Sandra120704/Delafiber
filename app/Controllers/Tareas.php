@@ -17,10 +17,7 @@ class Tareas extends BaseController
 
     public function index()
     {
-        if (!session()->get('logged_in')) {
-            return redirect()->to('/auth/login');
-        }
-
+        // AuthFilter ya valida la autenticación
         $idusuario = session()->get('idusuario');
         $rol = session()->get('nombreRol');
         
@@ -165,7 +162,7 @@ class Tareas extends BaseController
 
         $data = [
             'idlead' => $this->request->getPost('idlead') ?: null,
-            'idusuario' => session()->get('user_id'),
+            'idusuario' => session()->get('idusuario'),
             'titulo' => $this->request->getPost('titulo'),
             'descripcion' => $this->request->getPost('descripcion'),
             'tipo_tarea' => $this->request->getPost('tipo_tarea'),
@@ -195,7 +192,7 @@ class Tareas extends BaseController
 
         $tarea = $this->tareaModel->find($id);
         
-        if (!$tarea || $tarea['idusuario'] != session()->get('user_id')) {
+        if (!$tarea || $tarea['idusuario'] != session()->get('idusuario')) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'No autorizado'
@@ -247,7 +244,7 @@ class Tareas extends BaseController
         $json = $this->request->getJSON(true);
         $tarea = $this->tareaModel->find($json['idtarea']);
         
-        if (!$tarea || $tarea['idusuario'] != session()->get('user_id')) {
+        if (!$tarea || $tarea['idusuario'] != session()->get('idusuario')) {
             return $this->response->setJSON(['success' => false]);
         }
 
@@ -314,7 +311,7 @@ class Tareas extends BaseController
         if (!$this->request->isAJAX()) return redirect()->back();
 
         $count = $this->tareaModel
-            ->where('idusuario', session()->get('user_id'))
+            ->where('idusuario', session()->get('idusuario'))
             ->where('estado', 'Pendiente')
             ->where('fecha_vencimiento <=', date('Y-m-d H:i:s', strtotime('+2 hours')))
             ->where('fecha_vencimiento >', date('Y-m-d H:i:s'))
@@ -328,9 +325,7 @@ class Tareas extends BaseController
      */
     public function calendario()
     {
-        if (!session()->get('logged_in')) {
-            return redirect()->to('/auth/login');
-        }
+        // AuthFilter ya valida la autenticación
 
         // Obtener leads con datos de personas usando el modelo
         $leads = $this->leadModel->getLeadsConCliente(100);
@@ -352,7 +347,7 @@ class Tareas extends BaseController
             return $this->response->setJSON(['error' => 'Acceso no autorizado']);
         }
 
-        $idusuario = session()->get('user_id');
+        $idusuario = session()->get('idusuario');
         $start = $this->request->getGet('start');
         $end = $this->request->getGet('end');
 
@@ -404,7 +399,7 @@ class Tareas extends BaseController
         
         $tareaData = [
             'idlead' => $data['idlead'] ?? null,
-            'idusuario' => session()->get('user_id'),
+            'idusuario' => session()->get('idusuario'),
             'titulo' => $data['titulo'],
             'descripcion' => $data['descripcion'] ?? '',
             'tipo_tarea' => $data['tipo_tarea'] ?? 'llamada',
@@ -444,7 +439,7 @@ class Tareas extends BaseController
 
         $tarea = $this->tareaModel->find($idtarea);
         
-        if (!$tarea || $tarea['idusuario'] != session()->get('user_id')) {
+        if (!$tarea || $tarea['idusuario'] != session()->get('idusuario')) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'No autorizado'
@@ -528,7 +523,7 @@ class Tareas extends BaseController
 
         $tarea = $this->tareaModel->find($id);
         
-        if (!$tarea || $tarea['idusuario'] != session()->get('user_id')) {
+        if (!$tarea || $tarea['idusuario'] != session()->get('idusuario')) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'No autorizado'
@@ -563,8 +558,8 @@ class Tareas extends BaseController
         $page = $this->request->getGet('page') ?? 1;
         $perPage = 10;
 
-        // Obtener ID de usuario (puede ser 'idusuario' o 'user_id')
-        $userId = session()->get('idusuario') ?: session()->get('user_id');
+        // Obtener ID de usuario
+        $userId = session()->get('idusuario');
         
         if (!$userId) {
             return $this->response->setJSON(['results' => []]);

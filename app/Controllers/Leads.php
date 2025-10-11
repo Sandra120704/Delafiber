@@ -27,12 +27,8 @@ class Leads extends BaseController
 
     public function __construct()
     {
-        // Verificar que esté logueado
-        if (!session()->get('logged_in')) {
-            // No retornes aquí, solo redirige
-            redirect()->to('/auth')->send();
-            exit;
-        }
+        // AuthFilter ya valida la autenticación
+        helper(['security', 'validation']);
         $this->leadModel = new LeadModel();
         $this->personaModel = new PersonaModel();
         $this->seguimientoModel = new SeguimientoModel();
@@ -47,12 +43,18 @@ class Leads extends BaseController
     // Lista de leads con filtros
     public function index()
     {
-        $userId = session()->get('idusuario') ?: session()->get('user_id');
+        $userId = session()->get('idusuario');
         $rol = session()->get('nombreRol');
         
-        // Todos los usuarios ven todos los leads (coordinación entre turnos)
-        // Solo se filtra por usuario para reportes individuales
-        $userId = null;
+        // Filtrar por usuario según permisos
+        // Admin y Supervisor ven todos, Vendedor solo los suyos
+        if (!es_supervisor()) {
+            // Vendedor solo ve sus leads
+            $userId = session()->get('idusuario');
+        } else {
+            // Admin y Supervisor ven todos
+            $userId = null;
+        }
         
         $filtro_etapa = $this->request->getGet('etapa');
         $filtro_origen = $this->request->getGet('origen');
@@ -117,38 +119,18 @@ class Leads extends BaseController
     
         return view('leads/create', $data);
     }
-// Guardar nuevo lead con validación y transacción
-public function store()
-{
-    
-    $rules = [
-            'nombres' => 'required|min_length[2]|max_length[100]',
-            'apellidos' => 'required|min_length[2]|max_length[100]',
-            'dni' => 'permit_empty|exact_length[8]|numeric',
-            'telefono' => 'required|exact_length[9]|regex_match[/^9[0-9]{8}$/]',
-            'correo' => 'permit_empty|valid_email|max_length[150]',
-            'idorigen' => 'required|numeric',
-            'iddistrito' => 'permit_empty|numeric'
-        ];
-        $messages = [
-            'nombres' => [
-                'required' => 'Los nombres son obligatorios',
-                'min_length' => 'Los nombres deben tener al menos 2 caracteres'
-            ],
-            'apellidos' => [
-                'required' => 'Los apellidos son obligatorios',
-                'min_length' => 'Los apellidos deben tener al menos 2 caracteres'
-            ],
-            'telefono' => [
-                'required' => 'El teléfono es obligatorio',
-                'min_length' => 'El teléfono debe tener 9 dígitos',
-                'max_length' => 'El teléfono debe tener 9 dígitos'
-            ],
-            'idorigen' => [
-                'required' => 'Debes seleccionar el origen del lead'
-            ]
-        ];
-        if (!$this->validate($rules, $messages)) {
+    /**
+     * Guardar nuevo lead con validación y transacción
+     */
+    public function store()
+    {
+        // Verificar permiso
+        requiere_permiso('leads.create', 'No tienes permisos para crear leads');
+        
+        // Combinar reglas de persona y lead
+        $rules = array_merge(reglas_persona(), reglas_lead());
+        
+        if (!$this->validate($rules)) {
             return redirect()->back()
                 ->withInput()
                 ->with('errors', $this->validator->getErrors());
@@ -223,8 +205,19 @@ public function store()
                 $errorMsg = !empty($errors) ? implode(', ', $errors) : 'Error desconocido';
                 throw new \Exception('Error al crear el lead: ' . $errorMsg);
             }
+            
+            // Registrar en auditoría
+            log_auditoria(
+                'Crear Lead',
+                'leads',
+                $leadId,
+                null,
+                ['lead_id' => $leadId, 'persona_id' => $personaId, 'nombre' => $nombreCompleto]
+            );
+            
             $db->transComplete();
             if ($db->transStatus() === false) throw new \Exception('Error en la transacción');
+            
             return redirect()->to('/leads')
                 ->with('success', "Lead '$nombreCompleto' creado exitosamente")
                 ->with('swal_success', true);
@@ -237,14 +230,23 @@ public function store()
         }
     }
 
-    // Ver detalles de un lead
+    /**
+     * Ver detalles de un lead
+     */
     public function view($leadId)
     {
         $userId = session()->get('user_id');
         $lead = $this->leadModel->getLeadCompleto($leadId, $userId);
+        
         if (!$lead) {
             return redirect()->to('/leads')
                 ->with('error', 'Lead no encontrado');
+        }
+        
+        // Verificar permisos de visualización
+        if (!puede_ver_lead($lead)) {
+            return redirect()->to('/leads')
+                ->with('error', 'No tienes permisos para ver este lead');
         }
         
         // Obtener información de la zona si está asignada

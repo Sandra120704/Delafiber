@@ -1,4 +1,4 @@
--- Active: 1743133057434@@127.0.0.1@3306@delafiber
+-- Active: 1755358617783@@127.0.0.1@3306@delafiber
 
 -- Eliminar y crear base de datos
 DROP DATABASE IF EXISTS `delafiber`;

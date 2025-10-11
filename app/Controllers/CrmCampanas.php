@@ -24,21 +24,12 @@ class CrmCampanas extends BaseController
         $this->asignacionModel = new AsignacionZonaModel();
         $this->personaModel = new PersonaModel();
     }
-
-    // ============================================
-    // GESTIÓN DE ZONAS
-    // ============================================
-
     /**
      * Vista principal de mapa de campañas (REEMPLAZA EL MAPA ANTIGUO)
      */
     public function mapaCampanas($idCampana = null)
     {
-        // Verificar autenticación
-        if (!session()->get('logged_in')) {
-            return redirect()->to('/auth/login');
-        }
-
+        // AuthFilter ya valida la autenticación
         $data = [
             'title' => 'Mapa Interactivo - Delafiber CRM',
             'campanias' => $this->campaniaModel->getCampaniasActivas(),
@@ -128,7 +119,6 @@ class CrmCampanas extends BaseController
             'errors' => $this->zonaModel->errors()
         ]);
     }
-
     /**
      * Actualizar zona existente
      */
@@ -183,10 +173,6 @@ class CrmCampanas extends BaseController
         return redirect()->back()->with('error', 'Error al eliminar la zona');
     }
 
-    // ============================================
-    // GESTIÓN DE PROSPECTOS
-    // ============================================
-
     /**
      * Asignar prospecto a zona automáticamente
      */
@@ -214,7 +200,6 @@ class CrmCampanas extends BaseController
             'message' => 'Error al asignar prospecto'
         ]);
     }
-
     /**
      * Obtener prospectos sin zona asignada (COMPATIBLE CON MAPA ANTIGUO)
      */
@@ -321,10 +306,6 @@ class CrmCampanas extends BaseController
         ]);
     }
 
-    // ============================================
-    // GESTIÓN DE INTERACCIONES
-    // ============================================
-
     /**
      * Registrar nueva interacción
      */
@@ -381,10 +362,6 @@ class CrmCampanas extends BaseController
         ]);
     }
 
-    // ============================================
-    // GESTIÓN DE ASIGNACIONES
-    // ============================================
-
     /**
      * Asignar zona a agente
      */
@@ -440,11 +417,6 @@ class CrmCampanas extends BaseController
 
         return view('mapa/mis_zonas', $data);
     }
-
-    // ============================================
-    // API ENDPOINTS PARA TURF.JS
-    // ============================================
-
     /**
      * Obtener zonas para renderizar en mapa
      */
@@ -502,9 +474,6 @@ class CrmCampanas extends BaseController
         ]);
     }
 
-    // ============================================
-    // DASHBOARDS Y REPORTES
-    // ============================================
 
     /**
      * Dashboard principal del CRM

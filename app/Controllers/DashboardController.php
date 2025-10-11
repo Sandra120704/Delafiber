@@ -25,8 +25,8 @@ class DashboardController extends BaseController{
 
     public function index()
     {
-        $userId = session()->get('user_id');
-        $userRole = session()->get('user_role');
+        $userId = session()->get('idusuario');
+        $userRole = session()->get('nombreRol');
         
         $data = [
             'title' => 'Dashboard - Mi día de trabajo',
@@ -50,7 +50,7 @@ class DashboardController extends BaseController{
             'proximos_vencimientos' => $this->tareaModel->getProximosVencimientos($userId, 3),
             
             // Para el usuario actual
-            'user_name' => session()->get('user_name'),
+            'user_name' => session()->get('nombre'),
             'user_role' => $userRole,
         ];
 
@@ -85,7 +85,7 @@ class DashboardController extends BaseController{
 
         $action = $this->request->getPost('action');
         $leadId = $this->request->getPost('lead_id');
-        $userId = session()->get('user_id');
+        $userId = session()->get('idusuario');
 
         switch ($action) {
             case 'llamar':

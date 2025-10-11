@@ -85,10 +85,9 @@ class Auth extends BaseController
                 ->get()
                 ->getRowArray();
             
-            // Crear sesión
+            // Crear sesión (variables estandarizadas)
             $sessionData = [
                 'idusuario' => $user['idusuario'],
-                'user_id' => $user['idusuario'],
                 'nombre' => $user['nombre_completo'],
                 'email' => $user['correo'],
                 'nombreRol' => $rol['nombre'] ?? 'Vendedor',
@@ -134,8 +133,8 @@ class Auth extends BaseController
 
         return $this->response->setJSON([
             'authenticated' => (bool)session()->get('logged_in'),
-            'user_id' => session()->get('user_id'),
-            'user_name' => session()->get('user_name')
+            'idusuario' => session()->get('idusuario'),
+            'nombre' => session()->get('nombre')
         ]);
     }
 
