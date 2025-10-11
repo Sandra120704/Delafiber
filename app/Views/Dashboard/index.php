@@ -259,6 +259,10 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<!-- Dashboard CSS -->
+<link rel="stylesheet" href="<?= base_url('css/dashboard/dashboard.css') ?>">
+<!-- Dashboard JS -->
+<script src="<?= base_url('js/dashboard/dashboard-main.js') ?>"></script>
 <script>
 const base_url = '<?= base_url() ?>';
 

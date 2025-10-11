@@ -3,92 +3,16 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="base-url" content="<?= base_url() ?>">
     <title><?= $title ?></title>
     
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="<?= base_url('assets/css/vendor.bundle.base.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/vertical-layout-light/style.css') ?>">
     
-    <!-- Favicon -->
+    <!-- Login CSS -->
+    <link rel="stylesheet" href="<?= base_url('css/auth/login.css') ?>">
     <link rel="shortcut icon" href="<?= base_url('images/favicon.png') ?>" />
-    
-    <style>
-        .auth-wrapper {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .login-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            overflow: hidden;
-            max-width: 400px;
-            width: 100%;
-        }
-        
-        .login-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 2rem;
-            text-align: center;
-            color: white;
-        }
-        
-        .login-header h3 {
-            margin: 0;
-            font-weight: 300;
-        }
-        
-        .login-body {
-            padding: 2rem;
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        .form-control {
-            border-radius: 25px;
-            padding: 0.75rem 1.25rem;
-            border: 2px solid #e3e6f0;
-            transition: all 0.3s ease;
-        }
-        
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        
-        .btn-login {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 25px;
-            padding: 0.75rem 2rem;
-            color: white;
-            font-weight: 500;
-            width: 100%;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-            color: white;
-        }
-        
-        .company-logo {
-            max-height: 60px;
-            margin-bottom: 1rem;
-        }
-        
-        .alert {
-            border-radius: 10px;
-            border: none;
-        }
-    </style>
 </head>
 
 <body>
@@ -197,41 +121,6 @@
 
     <!-- JavaScript -->
     <script src="<?= base_url('assets/js/vendor.bundle.base.js') ?>"></script>
-    
-    <script>
-        // Auto-focus en el campo usuario
-        document.getElementById('usuario').focus();
-        
-        // Limpiar mensajes después de unos segundos
-        setTimeout(function() {
-            var alerts = document.querySelectorAll('.alert');
-            alerts.forEach(function(alert) {
-                alert.style.opacity = '0';
-                setTimeout(function() {
-                    if (alert.parentNode) {
-                        alert.remove();
-                    }
-                }, 500);
-            });
-        }, 5000);
-        
-        // Validación simple del formulario
-        document.querySelector('form').addEventListener('submit', function(e) {
-            var usuario = document.getElementById('usuario').value.trim();
-            var password = document.getElementById('password').value.trim();
-            
-            if (!usuario || !password) {
-                e.preventDefault();
-                alert('Por favor completa todos los campos');
-                return false;
-            }
-            
-            if (usuario.length < 3 || password.length < 3) {
-                e.preventDefault();
-                alert('Usuario y contraseña deben tener al menos 3 caracteres');
-                return false;
-            }
-        });
-    </script>
+    <script src="<?= base_url('js/auth/login.js') ?>"></script>
 </body>
 </html>
