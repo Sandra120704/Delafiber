@@ -3,10 +3,43 @@
  * Muestra campos adicionales contextuales según el origen seleccionado
  */
 
+console.log('📦 campos-dinamicos-origen.js cargado');
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Inicializando campos dinámicos de origen...');
+    console.log('🌐 DOM está listo');
     initCamposDinamicosOrigen();
 });
+
+/**
+ * Obtener opciones de campañas del select original
+ */
+function obtenerOpcionesCampanias() {
+    const campaniaSelect = document.getElementById('idcampania');
+    console.log('📋 Select de campañas:', campaniaSelect);
+    
+    if (!campaniaSelect) {
+        console.error('❌ No se encontró el select de campañas');
+        return '<option value="">No hay campañas disponibles</option>';
+    }
+    
+    console.log('📊 Total de opciones:', campaniaSelect.options.length);
+    
+    let opciones = '';
+    for (let i = 1; i < campaniaSelect.options.length; i++) {
+        const option = campaniaSelect.options[i];
+        opciones += `<option value="${option.value}">${option.text}</option>`;
+        console.log('  ✓ Opción agregada:', option.text);
+    }
+    
+    if (opciones === '') {
+        console.warn('⚠️ No hay campañas activas');
+        return '<option value="">No hay campañas activas</option>';
+    }
+    
+    console.log('✅ Opciones generadas correctamente');
+    return opciones;
+}
 
 function initCamposDinamicosOrigen() {
     const origenSelect = document.getElementById('idorigen');
@@ -27,6 +60,8 @@ function initCamposDinamicosOrigen() {
         const nombreOrigen = selectedOption.getAttribute('data-nombre');
         
         console.log('🔄 Origen seleccionado:', nombreOrigen);
+        console.log('📝 Valor exacto:', JSON.stringify(nombreOrigen));
+        console.log('📏 Longitud:', nombreOrigen ? nombreOrigen.length : 0);
         
         // Limpiar campos anteriores
         camposDinamicos.innerHTML = '';
@@ -38,19 +73,51 @@ function initCamposDinamicosOrigen() {
         
         // Configuración de campos según origen
         const camposConfig = {
+            'Campaña': {
+                html: `
+                    <div class="form-group campo-dinamico" style="animation: fadeIn 0.3s;">
+                        <label for="idcampania_dinamica">¿Qué campaña? *</label>
+                        <select class="form-control" id="idcampania_dinamica" name="idcampania" required 
+                                onchange="sincronizarCampania(this.value)">
+                            <option value="">Seleccione la campaña</option>
+                            ${obtenerOpcionesCampanias()}
+                        </select>
+                        <small class="text-muted">
+                            <i class="icon-info"></i> Campaña por la que nos conoció
+                        </small>
+                    </div>
+                `
+            },
+            'Campana': {
+                html: `
+                    <div class="form-group campo-dinamico" style="animation: fadeIn 0.3s;">
+                        <label for="idcampania_dinamica">¿Qué campaña? *</label>
+                        <select class="form-control" id="idcampania_dinamica" name="idcampania" required 
+                                onchange="sincronizarCampania(this.value)">
+                            <option value="">Seleccione la campaña</option>
+                            ${obtenerOpcionesCampanias()}
+                        </select>
+                        <small class="text-muted">
+                            <i class="icon-info"></i> Campaña por la que nos conoció
+                        </small>
+                    </div>
+                `
+            },
             'Referido': {
                 html: `
-                    <div class="form-group mt-3 campo-dinamico" style="animation: fadeIn 0.3s;">
+                    <div class="form-group campo-dinamico" style="animation: fadeIn 0.3s;">
                         <label for="referido_por">¿Quién lo refirió? *</label>
                         <input type="text" class="form-control" id="referido_por" name="referido_por" 
                                placeholder="Nombre del cliente que lo recomendó" required>
-                        <small class="text-muted">Nombre de la persona que recomendó nuestro servicio</small>
+                        <small class="text-muted">
+                            <i class="icon-user"></i> Persona que recomendó nuestro servicio
+                        </small>
                     </div>
                 `
             },
             'Facebook': {
                 html: `
-                    <div class="form-group mt-3 campo-dinamico" style="animation: fadeIn 0.3s;">
+                    <div class="form-group campo-dinamico" style="animation: fadeIn 0.3s;">
                         <label for="detalle_facebook">Detalle de Facebook</label>
                         <select class="form-control" id="detalle_facebook" name="detalle_facebook">
                             <option value="">Seleccione</option>
@@ -66,7 +133,7 @@ function initCamposDinamicosOrigen() {
             },
             'WhatsApp': {
                 html: `
-                    <div class="form-group mt-3 campo-dinamico" style="animation: fadeIn 0.3s;">
+                    <div class="form-group campo-dinamico" style="animation: fadeIn 0.3s;">
                         <label for="origen_whatsapp">¿Cómo obtuvo nuestro WhatsApp?</label>
                         <select class="form-control" id="origen_whatsapp" name="origen_whatsapp">
                             <option value="">Seleccione</option>
@@ -81,7 +148,7 @@ function initCamposDinamicosOrigen() {
             },
             'Publicidad': {
                 html: `
-                    <div class="form-group mt-3 campo-dinamico" style="animation: fadeIn 0.3s;">
+                    <div class="form-group campo-dinamico" style="animation: fadeIn 0.3s;">
                         <label for="tipo_publicidad">Tipo de Publicidad</label>
                         <select class="form-control" id="tipo_publicidad" name="tipo_publicidad">
                             <option value="">Seleccione</option>
@@ -102,7 +169,7 @@ function initCamposDinamicosOrigen() {
             },
             'Página Web': {
                 html: `
-                    <div class="form-group mt-3 campo-dinamico" style="animation: fadeIn 0.3s;">
+                    <div class="form-group campo-dinamico" style="animation: fadeIn 0.3s;">
                         <label for="accion_web">¿Qué hizo en la web?</label>
                         <select class="form-control" id="accion_web" name="accion_web">
                             <option value="">Seleccione</option>
@@ -116,7 +183,7 @@ function initCamposDinamicosOrigen() {
             },
             'Llamada Directa': {
                 html: `
-                    <div class="form-group mt-3 campo-dinamico" style="animation: fadeIn 0.3s;">
+                    <div class="form-group campo-dinamico" style="animation: fadeIn 0.3s;">
                         <label for="origen_numero">¿Cómo obtuvo nuestro número?</label>
                         <select class="form-control" id="origen_numero" name="origen_numero">
                             <option value="">Seleccione</option>
@@ -132,11 +199,33 @@ function initCamposDinamicosOrigen() {
         };
         
         // Mostrar campos correspondientes
-        if (camposConfig[nombreOrigen]) {
+        console.log('🔑 Claves disponibles:', Object.keys(camposConfig));
+        console.log('🔍 Buscando configuración para:', nombreOrigen);
+        
+        // Intentar búsqueda directa
+        let config = camposConfig[nombreOrigen];
+        
+        // Si no encuentra, intentar normalizar (quitar tildes y comparar)
+        if (!config) {
+            const nombreNormalizado = nombreOrigen.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            console.log('🔄 Intentando con nombre normalizado:', nombreNormalizado);
+            
+            for (let clave in camposConfig) {
+                const claveNormalizada = clave.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                if (claveNormalizada === nombreNormalizado) {
+                    config = camposConfig[clave];
+                    console.log('✅ Encontrado con normalización:', clave);
+                    break;
+                }
+            }
+        }
+        
+        if (config) {
             console.log('✅ Mostrando campos para:', nombreOrigen);
-            camposDinamicos.innerHTML = camposConfig[nombreOrigen].html;
+            camposDinamicos.innerHTML = config.html;
         } else {
             console.log('⚠️ No hay configuración para:', nombreOrigen);
+            console.log('💡 Intenta con estas claves:', Object.keys(camposConfig).join(', '));
         }
     });
     
@@ -152,6 +241,20 @@ function initCamposDinamicosOrigen() {
         console.warn('No se pudo disparar evento inicial de origen:', err);
     }
 }
+
+/**
+ * Sincronizar valor de campaña dinámica con campo oculto
+ */
+function sincronizarCampania(valor) {
+    const campaniaOculta = document.getElementById('idcampania');
+    if (campaniaOculta) {
+        campaniaOculta.value = valor;
+        console.log('✅ Campaña sincronizada:', valor);
+    }
+}
+
+// Hacer la función global para que pueda ser llamada desde el HTML
+window.sincronizarCampania = sincronizarCampania;
 
 // Agregar estilos de animación
 const style = document.createElement('style');

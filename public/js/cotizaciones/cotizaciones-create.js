@@ -99,43 +99,71 @@ document.getElementById('form-cotizacion')?.addEventListener('submit', function(
 
 // Inicializar Select2 para búsqueda de leads
 $(document).ready(function() {
-    console.log('Inicializando Select2 en cotizaciones');
-    console.log('Select encontrado:', $('#idlead').length);
+    console.log('=== INICIALIZANDO SELECT2 COTIZACIONES ===');
+    console.log('jQuery version:', $.fn.jquery);
+    console.log('Select2 disponible:', typeof $.fn.select2 !== 'undefined');
+    console.log('Select #idlead encontrado:', $('#idlead').length);
+    console.log('Tipo de elemento:', $('#idlead').prop('type'));
     
     // Verificar si Select2 está disponible
     if (typeof $.fn.select2 === 'undefined') {
         console.error('❌ Select2 no está cargado');
+        alert('Error: Select2 no está cargado. Por favor recarga la página.');
         return;
     }
     
     // Solo inicializar si el select existe y no tiene lead preseleccionado
     if ($('#idlead').length && !$('#idlead').is('[type="hidden"]')) {
-        console.log('Inicializando Select2...');
+        console.log('✅ Inicializando Select2...');
         
-        const baseUrl = $('meta[name="base-url"]').attr('content') || '';
+        // Obtener base URL
+        const baseUrl = $('meta[name="base-url"]').attr('content') || window.location.origin;
+        const ajaxUrl = baseUrl + '/cotizaciones/buscarLeads';
+        
+        console.log('Base URL:', baseUrl);
+        console.log('AJAX URL:', ajaxUrl);
         
         $('#idlead').select2({
             theme: 'bootstrap-5',
             placeholder: 'Buscar cliente por nombre, teléfono o DNI...',
             allowClear: true,
+            width: '100%',
             ajax: {
-                url: baseUrl + '/cotizaciones/buscarLeads',
+                url: ajaxUrl,
                 dataType: 'json',
                 delay: 250,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
                 data: function (params) {
+                    console.log('Buscando:', params.term);
                     return {
                         q: params.term,
                         page: params.page || 1
                     };
                 },
                 processResults: function (data, params) {
+                    console.log('Respuesta recibida:', data);
+                    
+                    if (data.error) {
+                        console.error('Error del servidor:', data.error);
+                        return { results: [] };
+                    }
+                    
                     params.page = params.page || 1;
                     return {
-                        results: data.results,
+                        results: data.results || [],
                         pagination: {
-                            more: data.pagination.more
+                            more: data.pagination ? data.pagination.more : false
                         }
                     };
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error AJAX:', {
+                        status: status,
+                        error: error,
+                        response: xhr.responseText
+                    });
                 },
                 cache: true
             },
@@ -151,16 +179,22 @@ $(document).ready(function() {
                     return 'No se encontraron clientes';
                 },
                 errorLoading: function() {
-                    return 'Error al cargar resultados';
+                    return 'Error al cargar resultados. Revisa la consola.';
                 }
             },
             templateResult: function(lead) {
                 if (lead.loading) return lead.text;
                 
+                var dniInfo = lead.dni ? '<small class="text-info">DNI: ' + lead.dni + '</small><br>' : '';
+                var etapaInfo = lead.etapa ? '<small class="text-muted">Etapa: ' + lead.etapa + '</small>' : '';
+                var usuarioInfo = lead.usuario_asignado ? '<small class="text-warning"> | Asignado a: ' + lead.usuario_asignado + '</small>' : '';
+                
                 var $container = $(
                     '<div class="select2-result-lead">' +
                         '<div><strong>' + lead.text + '</strong></div>' +
-                        (lead.etapa ? '<small class="text-muted">Etapa: ' + lead.etapa + '</small>' : '') +
+                        dniInfo +
+                        etapaInfo +
+                        usuarioInfo +
                     '</div>'
                 );
                 return $container;
@@ -170,8 +204,17 @@ $(document).ready(function() {
             }
         });
         
-        console.log('Select2 inicializado correctamente');
+        // Event listeners para depuración
+        $('#idlead').on('select2:open', function() {
+            console.log('Select2 abierto');
+        });
+        
+        $('#idlead').on('select2:select', function(e) {
+            console.log('Lead seleccionado:', e.params.data);
+        });
+        
+        console.log('✅ Select2 inicializado correctamente');
     } else {
-        console.log('Select no encontrado o es hidden');
+        console.log('⚠️ Select no encontrado o es hidden');
     }
 });

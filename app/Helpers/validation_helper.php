@@ -85,9 +85,8 @@ if (!function_exists('reglas_lead')) {
     {
         return [
             'idpersona' => [
-                'rules' => 'required|numeric|is_not_unique[personas.idpersona]',
+                'rules' => 'permit_empty|numeric|is_not_unique[personas.idpersona]',
                 'errors' => [
-                    'required' => 'Debe seleccionar una persona',
                     'numeric' => 'ID de persona inválido',
                     'is_not_unique' => 'La persona seleccionada no existe'
                 ]

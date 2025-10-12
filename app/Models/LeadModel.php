@@ -11,13 +11,19 @@ class LeadModel extends Model
     protected $allowedFields = [
         'idpersona',
         'idusuario',
+        'idusuario_registro',
         'idorigen',
         'idetapa',
         'idcampania',
         'nota_inicial',
         'estado',
         'fecha_conversion',
-        'motivo_descarte'
+        'motivo_descarte',
+        'direccion_servicio',
+        'distrito_servicio',
+        'coordenadas_servicio',
+        'zona_servicio',
+        'tipo_solicitud'
     ];
     protected $useTimestamps = true; 
     protected $createdField = 'created_at';
@@ -36,18 +42,22 @@ class LeadModel extends Model
     public function getLeadsConFiltros($userId, $filtros = [])
     {
         $builder = $this->db->table('leads l')
-            ->select('l.idlead, l.created_at, l.estado,
+            ->select('l.idlead, l.created_at, l.estado, l.idusuario, l.idusuario_registro,
                      CONCAT(p.nombres, " ", p.apellidos) as nombre_completo,
                      p.nombres, p.apellidos, p.telefono, p.correo, p.dni, p.coordenadas,
                      e.nombre as etapa, e.idetapa,
                      o.nombre as origen,
                      c.nombre as campania,
-                     d.nombre as distrito')
+                     d.nombre as distrito,
+                     u_asignado.nombre as usuario_asignado,
+                     u_registro.nombre as usuario_registro')
             ->join('personas p', 'p.idpersona = l.idpersona')
             ->join('etapas e', 'e.idetapa = l.idetapa')
             ->join('origenes o', 'o.idorigen = l.idorigen')
             ->join('campanias c', 'c.idcampania = l.idcampania', 'LEFT')
-            ->join('distritos d', 'd.iddistrito = p.iddistrito', 'LEFT');
+            ->join('distritos d', 'd.iddistrito = p.iddistrito', 'LEFT')
+            ->join('usuarios u_asignado', 'u_asignado.idusuario = l.idusuario', 'LEFT')
+            ->join('usuarios u_registro', 'u_registro.idusuario = l.idusuario_registro', 'LEFT');
 
         // Solo filtrar por usuario si no es null (admin ve todos)
         if ($userId !== null) {

@@ -9,6 +9,7 @@ class ServicioModel extends Model
     protected $allowedFields = [
         'nombre',
         'descripcion',
+        'velocidad',
         'categoria',
         'precio',
         'estado'

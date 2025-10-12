@@ -117,6 +117,10 @@ class Cotizaciones extends BaseController
         $dataCotizacion = [
             'idlead' => $this->request->getPost('idlead'),
             'idusuario' => $userId,
+            'precio_cotizado' => $precioCotizado,
+            'descuento_aplicado' => $descuento,
+            'precio_instalacion' => $precioInstalacion,
+            'vigencia_dias' => $this->request->getPost('vigencia_dias') ?? 30,
             'subtotal' => $subtotal,
             'igv' => $igv,
             'total' => $total,
@@ -233,11 +237,24 @@ class Cotizaciones extends BaseController
             return redirect()->back()->withInput()->with('errors', $validation->getErrors());
         }
 
+        // Calcular totales
+        $precioCotizado = floatval($this->request->getPost('precio_cotizado'));
+        $descuento = floatval($this->request->getPost('descuento_aplicado') ?? 0);
+        $precioInstalacion = floatval($this->request->getPost('precio_instalacion') ?? 0);
+        
+        $descuentoMonto = $precioCotizado * ($descuento / 100);
+        $subtotal = $precioCotizado - $descuentoMonto + $precioInstalacion;
+        $igv = $subtotal * 0.18;
+        $total = $subtotal + $igv;
+
         $data = [
-            'precio_cotizado' => $this->request->getPost('precio_cotizado'),
-            'descuento_aplicado' => $this->request->getPost('descuento_aplicado') ?? 0,
-            'precio_instalacion' => $this->request->getPost('precio_instalacion') ?? 0,
+            'precio_cotizado' => $precioCotizado,
+            'descuento_aplicado' => $descuento,
+            'precio_instalacion' => $precioInstalacion,
             'vigencia_dias' => $this->request->getPost('vigencia_dias') ?? 30,
+            'subtotal' => $subtotal,
+            'igv' => $igv,
+            'total' => $total,
             'observaciones' => $this->request->getPost('observaciones')
         ];
 
@@ -305,10 +322,9 @@ class Cotizaciones extends BaseController
      */
     public function buscarLeads()
     {
-        if (!$this->request->isAJAX()) {
-            return $this->response->setJSON(['results' => []]);
-        }
-
+        // Log para depuración
+        log_message('info', 'buscarLeads() llamado - isAJAX: ' . ($this->request->isAJAX() ? 'SI' : 'NO'));
+        
         $searchTerm = $this->request->getGet('q') ?? '';
         $page = $this->request->getGet('page') ?? 1;
         $perPage = 10;
@@ -316,8 +332,11 @@ class Cotizaciones extends BaseController
         // Obtener ID de usuario
         $userId = session()->get('idusuario') ?: session()->get('user_id');
         
+        log_message('info', 'buscarLeads() - userId: ' . $userId . ', searchTerm: ' . $searchTerm);
+        
         if (!$userId) {
-            return $this->response->setJSON(['results' => []]);
+            log_message('warning', 'buscarLeads() - No hay usuario en sesión');
+            return $this->response->setJSON(['results' => [], 'error' => 'Usuario no autenticado']);
         }
 
         $builder = $this->leadModel
@@ -325,11 +344,14 @@ class Cotizaciones extends BaseController
                      CONCAT(personas.nombres, " ", personas.apellidos) as text,
                      personas.telefono,
                      personas.dni,
-                     etapas.nombre as etapa')
+                     etapas.nombre as etapa,
+                     usuarios.nombre as usuario_asignado')
             ->join('personas', 'leads.idpersona = personas.idpersona')
             ->join('etapas', 'leads.idetapa = etapas.idetapa', 'left')
-            ->where('leads.estado', 'Activo')
-            ->where('leads.idusuario', $userId);
+            ->join('usuarios', 'leads.idusuario = usuarios.idusuario', 'left')
+            ->where('leads.estado', 'Activo');
+            // REMOVIDO: ->where('leads.idusuario', $userId)
+            // Ahora busca en TODOS los leads activos, no solo los del usuario
 
         // Búsqueda
         if (!empty($searchTerm)) {
@@ -341,30 +363,46 @@ class Cotizaciones extends BaseController
                 ->groupEnd();
         }
 
-        $total = $builder->countAllResults(false);
-        
-        $leads = $builder
-            ->orderBy('leads.created_at', 'DESC')
-            ->limit($perPage, ($page - 1) * $perPage)
-            ->get()
-            ->getResultArray();
+        try {
+            $total = $builder->countAllResults(false);
+            
+            $leads = $builder
+                ->orderBy('leads.created_at', 'DESC')
+                ->limit($perPage, ($page - 1) * $perPage)
+                ->get()
+                ->getResultArray();
 
-        // Formatear para Select2
-        $results = array_map(function($lead) {
-            return [
-                'id' => $lead['idlead'],
-                'text' => $lead['text'] . ' - ' . $lead['telefono'],
-                'telefono' => $lead['telefono'],
-                'dni' => $lead['dni'],
-                'etapa' => $lead['etapa']
-            ];
-        }, $leads);
+            log_message('info', 'buscarLeads() - Encontrados: ' . count($leads) . ' leads de ' . $total . ' totales');
 
-        return $this->response->setJSON([
-            'results' => $results,
-            'pagination' => [
-                'more' => ($page * $perPage) < $total
-            ]
-        ]);
+            // Formatear para Select2
+            $results = array_map(function($lead) {
+                $text = $lead['text'] . ' - ' . $lead['telefono'];
+                if (!empty($lead['dni'])) {
+                    $text .= ' (DNI: ' . $lead['dni'] . ')';
+                }
+                
+                return [
+                    'id' => $lead['idlead'],
+                    'text' => $text,
+                    'telefono' => $lead['telefono'],
+                    'dni' => $lead['dni'] ?? '',
+                    'etapa' => $lead['etapa'] ?? '',
+                    'usuario_asignado' => $lead['usuario_asignado'] ?? ''
+                ];
+            }, $leads);
+
+            return $this->response->setJSON([
+                'results' => $results,
+                'pagination' => [
+                    'more' => ($page * $perPage) < $total
+                ]
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'buscarLeads() - Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'results' => [],
+                'error' => 'Error al buscar leads: ' . $e->getMessage()
+            ]);
+        }
     }
 }

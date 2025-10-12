@@ -64,6 +64,25 @@
     color: #4e73df;
 }
 
+/* Estilos personalizados para toast de cobertura */
+.swal-toast-cobertura {
+    font-family: inherit !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    min-width: 320px !important;
+}
+
+.swal-toast-cobertura .swal2-title {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    margin-bottom: 5px !important;
+}
+
+.swal-toast-cobertura .swal2-html-container {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .card-header h5 {
@@ -72,5 +91,9 @@
     
     .btn-group {
         flex-direction: column;
+    }
+    
+    .swal-toast-cobertura {
+        min-width: 280px !important;
     }
 }

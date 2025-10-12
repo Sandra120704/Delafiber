@@ -89,7 +89,81 @@
   });
   </script>
 
+  <!-- Sistema de Notificaciones en Tiempo Real -->
+  <script src="<?= base_url('js/notificaciones/notificaciones-sistema.js') ?>"></script>
+
   <!-- Scripts específicos de cada página -->
   <?= $this->renderSection('scripts') ?>
+  
+  <!-- Estilos CSS para Notificaciones -->
+  <style>
+    /* Notificaciones */
+    .notificacion-item {
+      padding: 12px 16px;
+      transition: background-color 0.2s;
+      border-left: 3px solid transparent;
+    }
+
+    .notificacion-item:hover {
+      background-color: #f8f9fa;
+    }
+
+    .notificacion-item.no-leida {
+      background-color: #e3f2fd;
+      border-left-color: #2196F3;
+    }
+
+    .notificacion-item.leida {
+      opacity: 0.7;
+    }
+
+    .notificacion-nueva {
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(-100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* Toast de notificación */
+    .toast-notificacion {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      width: 350px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 9999;
+      opacity: 0;
+      transform: translateX(400px);
+      transition: all 0.3s ease-out;
+    }
+
+    .toast-notificacion.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .toast-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #dee2e6;
+      display: flex;
+      align-items: center;
+      background-color: #f8f9fa;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .toast-body {
+      padding: 12px 16px;
+    }
+  </style>
 </body>
 </html>

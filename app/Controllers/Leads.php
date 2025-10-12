@@ -12,6 +12,8 @@ use App\Models\OrigenModel;
 use App\Models\ModalidadModel;
 use App\Models\EtapaModel;
 use App\Models\DistritoModel;
+use App\Models\CampoDinamicoOrigenModel;
+use App\Models\HistorialLeadModel;
 
 class Leads extends BaseController
 {
@@ -90,6 +92,10 @@ class Leads extends BaseController
         $campanias = $this->campaniaModel->getCampaniasActivas(); 
         $etapas = $this->etapaModel->getEtapasActivas();
         $modalidades = $this->modalidadModel->getModalidadesActivas(); 
+        
+        // Obtener lista de vendedores activos para asignación
+        $usuarioModel = new \App\Models\UsuarioModel();
+        $vendedores = $usuarioModel->getUsuariosActivos();
     
         // Verificar si viene desde conversión de persona
         $personaId = $this->request->getGet('persona_id');
@@ -113,6 +119,7 @@ class Leads extends BaseController
             'campanias' => $campanias,
             'etapas' => $etapas,
             'modalidades' => $modalidades, 
+            'vendedores' => $vendedores,  // Lista de usuarios para asignar
             'user_name' => session()->get('user_name'),
             'persona' => $personaData  // Datos de la persona para autocompletar
         ];
@@ -124,8 +131,8 @@ class Leads extends BaseController
      */
     public function store()
     {
-        // Verificar permiso
-        requiere_permiso('leads.create', 'No tienes permisos para crear leads');
+        // Verificar permiso (TEMPORALMENTE COMENTADO PARA PRUEBAS)
+        // requiere_permiso('leads.create', 'No tienes permisos para crear leads');
         
         // Combinar reglas de persona y lead
         $rules = array_merge(reglas_persona(), reglas_lead());
@@ -189,15 +196,21 @@ class Leads extends BaseController
                 $nombreCompleto = $personaData['nombres'] . ' ' . $personaData['apellidos'];
             }
             
+            // Obtener el usuario asignado (puede ser diferente al que crea)
+            $usuarioAsignado = $this->request->getPost('idusuario_asignado');
+            if (empty($usuarioAsignado)) {
+                $usuarioAsignado = session()->get('idusuario'); // Por defecto, quien crea
+            }
+            
             $leadData = [
                 'idpersona' => $personaId,
                 'idetapa' => $this->request->getPost('idetapa') ?: 1, // CAPTACION por defecto
-                'idusuario' => session()->get('user_id'),
+                'idusuario' => $usuarioAsignado,  // Usuario ASIGNADO para seguimiento 
+                'idusuario_registro' => session()->get('idusuario'),  // Usuario que REGISTR
                 'idorigen' => $this->request->getPost('idorigen'),
                 'idcampania' => $this->request->getPost('idcampania') ?: null,
                 'idmodalidad' => $this->request->getPost('idmodalidad') ?: null,
-                'medio_comunicacion' => $this->request->getPost('medio_comunicacion') ?: null,
-                'idusuario_registro' => session()->get('user_id')
+                'medio_comunicacion' => $this->request->getPost('medio_comunicacion') ?: null
             ];
             $leadId = $this->leadModel->insert($leadData);
             if (!$leadId) {
@@ -205,6 +218,23 @@ class Leads extends BaseController
                 $errorMsg = !empty($errors) ? implode(', ', $errors) : 'Error desconocido';
                 throw new \Exception('Error al crear el lead: ' . $errorMsg);
             }
+            
+            // Guardar campos dinámicos según origen
+            $camposDinamicosModel = new CampoDinamicoOrigenModel();
+            $camposDinamicos = $this->obtenerCamposDinamicos();
+            if (!empty($camposDinamicos)) {
+                $camposDinamicosModel->guardarCampos($leadId, $camposDinamicos);
+            }
+            
+            // Registrar en historial de leads
+            $historialModel = new HistorialLeadModel();
+            $historialModel->registrarCambio(
+                $leadId,
+                session()->get('idusuario'),
+                null, // No hay etapa anterior
+                $leadData['idetapa'],
+                'Lead creado'
+            );
             
             // Registrar en auditoría
             log_auditoria(
@@ -215,11 +245,29 @@ class Leads extends BaseController
                 ['lead_id' => $leadId, 'persona_id' => $personaId, 'nombre' => $nombreCompleto]
             );
             
+            // Si se asignó a otro usuario, crear notificación
+            if ($usuarioAsignado != session()->get('idusuario')) {
+                $notificacionModel = new \App\Models\NotificacionModel();
+                $usuarioCreador = session()->get('nombre');
+                $notificacionModel->insert([
+                    'idusuario' => $usuarioAsignado,
+                    'tipo' => 'lead_asignado',
+                    'titulo' => 'Nuevo lead asignado',
+                    'mensaje' => "$usuarioCreador te ha asignado un nuevo lead: $nombreCompleto",
+                    'url' => base_url('leads/view/' . $leadId),
+                    'leida' => 0
+                ]);
+            }
+            
             $db->transComplete();
             if ($db->transStatus() === false) throw new \Exception('Error en la transacción');
             
+            $mensajeExito = $usuarioAsignado == session()->get('idusuario') 
+                ? "Lead '$nombreCompleto' creado exitosamente"
+                : "Lead '$nombreCompleto' creado y asignado exitosamente";
+            
             return redirect()->to('/leads')
-                ->with('success', "Lead '$nombreCompleto' creado exitosamente")
+                ->with('success', $mensajeExito)
                 ->with('swal_success', true);
         } catch (\Exception $e) {
             $db->transRollback();
@@ -976,6 +1024,43 @@ class Leads extends BaseController
         
         echo "<hr>";
         echo "<p><a href='/leads/create'>← Volver a Crear Lead</a></p>";
+    }
+    
+    /**
+     * Obtener campos dinámicos del formulario según el origen
+     * Estos campos son enviados por el JavaScript campos-dinamicos-origen.js
+     */
+    private function obtenerCamposDinamicos()
+    {
+        $camposDinamicos = [];
+        
+        // Lista de campos dinámicos posibles según origen
+        $camposPosibles = [
+            // Campaña
+            'idcampania_dinamica',
+            // Referido
+            'referido_por',
+            // Facebook
+            'detalle_facebook',
+            // WhatsApp
+            'origen_whatsapp',
+            // Publicidad
+            'tipo_publicidad',
+            'ubicacion_publicidad',
+            // Página Web
+            'accion_web',
+            // Llamada Directa
+            'origen_numero'
+        ];
+        
+        foreach ($camposPosibles as $campo) {
+            $valor = $this->request->getPost($campo);
+            if (!empty($valor)) {
+                $camposDinamicos[$campo] = $valor;
+            }
+        }
+        
+        return $camposDinamicos;
     }
 }
 

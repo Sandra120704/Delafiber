@@ -1,6 +1,7 @@
 /**
  * JavaScript para el formulario de creación de Leads
  * Maneja búsqueda por DNI, validaciones y verificación de cobertura
+ * ⚠️ Compatible con wizard.js - NO valida el formulario completo
  */
 
 // Función auxiliar para escapar HTML
@@ -18,6 +19,7 @@ function escapeHtml(text) {
 class PersonaManager {
     constructor(baseUrl) {
         this.baseUrl = baseUrl;
+        this.coberturaInicializada = false; // Flag para evitar doble inicialización
         this.initEvents();
     }
 
@@ -26,15 +28,30 @@ class PersonaManager {
         const dniInput = document.getElementById('dni');
         const dniLoading = document.getElementById('dni-loading');
         
-        if (!btnBuscarDni || !dniInput) return;
+        if (!btnBuscarDni || !dniInput) {
+            console.warn('⚠️ Botones de búsqueda no encontrados');
+            return;
+        }
         
-        // Verificar cobertura al seleccionar distrito
-        this.initVerificarCobertura();
+        console.log('✅ Eventos de búsqueda inicializados');
+        
+        // NO inicializar verificación de cobertura aquí
+        // Se inicializará cuando el usuario llegue al Paso 2
 
+        // =========================================
+        // BÚSQUEDA POR DNI
+        // =========================================
         btnBuscarDni.addEventListener('click', () => {
             const dni = dniInput.value.trim();
+            
             if (dni.length !== 8) {
-                Swal.fire('Error', 'El DNI debe tener 8 dígitos', 'error');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'DNI Inválido',
+                    text: 'El DNI debe tener exactamente 8 dígitos',
+                    confirmButtonColor: '#3085d6'
+                });
+                dniInput.focus();
                 return;
             }
 
@@ -43,249 +60,370 @@ class PersonaManager {
 
             // Primero verificar si ya existe en la BD
             fetch(`${this.baseUrl}/personas/verificarDni?dni=${dni}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.existe) {
+                .then(response => response.json())
+                .then(data => {
+                    if (data.existe) {
+                        dniLoading.style.display = 'none';
+                        btnBuscarDni.disabled = false;
+                        
+                        const personaNombreSafe = escapeHtml(data.persona.nombres || '');
+                        const personaApellidosSafe = escapeHtml(data.persona.apellidos || '');
+                        const personaTelefonoSafe = escapeHtml(data.persona.telefono || 'No registrado');
+                        const personaCorreoSafe = escapeHtml(data.persona.correo || 'No registrado');
+
+                        Swal.fire({
+                            icon: 'warning',
+                            title: '⚠️ Persona Ya Registrada',
+                            html: `
+                                <div class="text-start">
+                                    <p><strong>Esta persona ya está en el sistema:</strong></p>
+                                    <ul class="list-unstyled">
+                                        <li>👤 <strong>Nombre:</strong> ${personaNombreSafe} ${personaApellidosSafe}</li>
+                                        <li>📞 <strong>Teléfono:</strong> ${personaTelefonoSafe}</li>
+                                        <li>📧 <strong>Correo:</strong> ${personaCorreoSafe}</li>
+                                    </ul>
+                                    <hr>
+                                    <p class="text-muted small">
+                                        <i class="icon-info"></i> Puedes crear una nueva solicitud de servicio para este cliente
+                                    </p>
+                                </div>
+                            `,
+                            showCancelButton: true,
+                            confirmButtonText: 'Usar estos datos',
+                            cancelButtonText: 'Cancelar',
+                            confirmButtonColor: '#28a745',
+                            cancelButtonColor: '#6c757d'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                this.autocompletarDatos(data.persona);
+                            }
+                        });
+                        return;
+                    }
+
+                    // Si no existe, buscar en RENIEC
+                    this.buscarEnReniec(dni, dniLoading, btnBuscarDni);
+                })
+                .catch(error => {
                     dniLoading.style.display = 'none';
                     btnBuscarDni.disabled = false;
-                    
-                    const personaNombreSafe = escapeHtml(data.persona.nombres || '');
-                    const personaApellidosSafe = escapeHtml(data.persona.apellidos || '');
-                    const personaTelefonoSafe = escapeHtml(data.persona.telefono || 'No registrado');
-                    const personaCorreoSafe = escapeHtml(data.persona.correo || 'No registrado');
-
+                    console.error('❌ Error al verificar DNI:', error);
                     Swal.fire({
-                        icon: 'warning',
-                        title: '⚠️ Persona Ya Registrada',
-                        html: `
-                            <div class="text-start">
-                                <p><strong>Esta persona ya está en el sistema:</strong></p>
-                                <ul class="list-unstyled">
-                                    <li>👤 <strong>Nombre:</strong> ${personaNombreSafe} ${personaApellidosSafe}</li>
-                                    <li>📞 <strong>Teléfono:</strong> ${personaTelefonoSafe}</li>
-                                    <li>📧 <strong>Correo:</strong> ${personaCorreoSafe}</li>
-                                </ul>
-                            </div>
-                        `,
-                        showCancelButton: true,
-                        confirmButtonText: 'Usar estos datos',
-                        cancelButtonText: 'Cancelar',
-                        confirmButtonColor: '#3085d6'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            this.autocompletarDatos(data.persona);
-                        }
+                        icon: 'error',
+                        title: 'Error de Conexión',
+                        text: 'No se pudo conectar al servidor. Intenta de nuevo.',
+                        confirmButtonColor: '#d33'
                     });
-                    return;
-                }
-
-                // Si no existe, buscar en RENIEC
-                this.buscarEnReniec(dni, dniLoading, btnBuscarDni);
-            })
-            .catch(error => {
-                dniLoading.style.display = 'none';
-                btnBuscarDni.disabled = false;
-                console.error('Error:', error);
-                Swal.fire('Error', 'No se pudo conectar al servidor', 'error');
-            });
+                });
         });
 
-        // Validación del formulario
-        const form = document.getElementById('formLead');
-        if (form) {
-            form.addEventListener('submit', this.validarFormulario.bind(this));
-        }
-
-        // Permitir búsqueda con Enter en DNI
+        // =========================================
+        // ENTER SOLO EN DNI (no en otros campos)
+        // =========================================
         dniInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 btnBuscarDni.click();
             }
         });
-    }
 
-    buscarEnReniec(dni, dniLoading, btnBuscarDni) {
-        fetch(`${this.baseUrl}/api/personas/buscar?dni=${dni}`)
-        .then(response => response.json())
-        .then(data => {
-            dniLoading.style.display = 'none';
-            btnBuscarDni.disabled = false;
-            
-            if (data.success && data.persona) {
-                document.getElementById('nombres').value = data.persona.nombres || '';
-                document.getElementById('apellidos').value = data.persona.apellidos || '';
+        // =========================================
+        // VALIDACIÓN EN TIEMPO REAL - TELÉFONO
+        // =========================================
+        const telefonoInput = document.getElementById('telefono');
+        if (telefonoInput) {
+            telefonoInput.addEventListener('input', (e) => {
+                // Solo permitir números
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
                 
-                Swal.fire({
-                    icon: 'success',
-                    title: '✅ Datos de RENIEC',
-                    text: 'Completa los demás campos',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-                
-                document.getElementById('telefono').focus();
-            } else {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'DNI no encontrado',
-                    text: 'Puedes registrar manualmente los datos',
-                    confirmButtonText: 'Entendido'
-                });
-                document.getElementById('nombres').focus();
-            }
-        })
-        .catch(error => {
-            dniLoading.style.display = 'none';
-            btnBuscarDni.disabled = false;
-            console.error('Error:', error);
-            Swal.fire('Error', 'No se pudo conectar al servidor', 'error');
+                // Validar formato mientras escribe
+                const valor = e.target.value;
+                if (valor.length === 9) {
+                    if (valor.startsWith('9')) {
+                        e.target.classList.remove('is-invalid');
+                        e.target.classList.add('is-valid');
+                    } else {
+                        e.target.classList.remove('is-valid');
+                        e.target.classList.add('is-invalid');
+                    }
+                } else {
+                    e.target.classList.remove('is-valid', 'is-invalid');
+                }
+            });
+        }
+
+        // =========================================
+        // VALIDACIÓN EN TIEMPO REAL - DNI
+        // =========================================
+        dniInput.addEventListener('input', (e) => {
+            // Solo permitir números
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
         });
     }
 
+    // =========================================
+    // BUSCAR EN RENIEC
+    // =========================================
+    buscarEnReniec(dni, dniLoading, btnBuscarDni) {
+        fetch(`${this.baseUrl}/api/personas/buscar?dni=${dni}`)
+            .then(response => response.json())
+            .then(data => {
+                dniLoading.style.display = 'none';
+                btnBuscarDni.disabled = false;
+                
+                if (data.success && data.persona) {
+                    document.getElementById('nombres').value = data.persona.nombres || '';
+                    document.getElementById('apellidos').value = data.persona.apellidos || '';
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✅ Datos encontrados en RENIEC',
+                        text: 'Ahora completa teléfono y demás información',
+                        timer: 2500,
+                        showConfirmButton: false,
+                        timerProgressBar: true
+                    });
+                    
+                    // Focus en teléfono después del toast
+                    setTimeout(() => {
+                        document.getElementById('telefono')?.focus();
+                    }, 2600);
+                } else {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'DNI no encontrado en RENIEC',
+                        text: 'Puedes registrar los datos manualmente',
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#3085d6'
+                    });
+                    document.getElementById('nombres')?.focus();
+                }
+            })
+            .catch(error => {
+                dniLoading.style.display = 'none';
+                btnBuscarDni.disabled = false;
+                console.error('❌ Error al consultar RENIEC:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al consultar RENIEC',
+                    text: 'Puedes registrar los datos manualmente',
+                    confirmButtonColor: '#d33'
+                });
+            });
+    }
+
+    // =========================================
+    // AUTOCOMPLETAR DATOS DE PERSONA EXISTENTE
+    // =========================================
     autocompletarDatos(persona) {
         const nombresEl = document.getElementById('nombres');
         const apellidosEl = document.getElementById('apellidos');
         const telefonoEl = document.getElementById('telefono');
         const correoEl = document.getElementById('correo');
-        const distritoEl = document.getElementById('iddistrito');
+        const idpersonaEl = document.getElementById('idpersona');
 
         if (nombresEl) nombresEl.value = escapeHtml(persona.nombres || '');
         if (apellidosEl) apellidosEl.value = escapeHtml(persona.apellidos || '');
         if (telefonoEl) telefonoEl.value = escapeHtml(persona.telefono || '');
         if (correoEl) correoEl.value = escapeHtml(persona.correo || '');
-        if (distritoEl && persona.iddistrito) distritoEl.value = persona.iddistrito;
-
-        // Agregar campo hidden con idpersona
-        let hiddenInput = document.getElementById('idpersona_hidden');
-        if (!hiddenInput) {
-            hiddenInput = document.createElement('input');
-            hiddenInput.type = 'hidden';
-            hiddenInput.name = 'idpersona';
-            hiddenInput.id = 'idpersona_hidden';
-            const form = document.getElementById('formLead');
-            if (form) form.appendChild(hiddenInput);
+        
+        // IMPORTANTE: Guardar ID de persona para no duplicar
+        if (idpersonaEl) {
+            idpersonaEl.value = persona.idpersona;
+            console.log('✅ ID persona guardado:', persona.idpersona);
         }
-        if (hiddenInput) hiddenInput.value = persona.idpersona;
+
+        // Agregar indicador visual
+        const indicador = document.createElement('div');
+        indicador.className = 'alert alert-success mt-3 alert-cliente-existente';
+        indicador.innerHTML = `
+            <i class="icon-check"></i> <strong>Cliente existente cargado</strong><br>
+            <small>Se creará una nueva solicitud de servicio para este cliente</small>
+        `;
+        
+        const cardBody = nombresEl.closest('.card-body');
+        if (cardBody) {
+            // Remover indicador anterior si existe
+            const indicadorAnterior = cardBody.querySelector('.alert-cliente-existente');
+            if (indicadorAnterior) {
+                indicadorAnterior.remove();
+            }
+            
+            cardBody.insertBefore(indicador, cardBody.firstChild);
+        }
 
         Swal.fire({
             icon: 'success',
-            title: 'Datos Cargados',
-            text: 'Ahora completa la información del lead',
+            title: '✅ Cliente Cargado',
+            text: 'Ahora completa la información de la solicitud de servicio',
             timer: 2000,
-            showConfirmButton: false
+            showConfirmButton: false,
+            timerProgressBar: true
         });
     }
-
-    validarFormulario(e) {
-        const telefono = document.getElementById('telefono').value;
-        
-        // Validar teléfono
-        if (telefono.length !== 9 || !telefono.startsWith('9')) {
-            e.preventDefault();
-            Swal.fire('Error', 'El teléfono debe tener 9 dígitos y comenzar con 9', 'error');
-            document.getElementById('telefono').focus();
-            return false;
-        }
-
-        // Deshabilitar botón de guardar
-        const btnGuardar = document.getElementById('btnGuardar');
-        if (btnGuardar) {
-            btnGuardar.disabled = true;
-            btnGuardar.innerHTML = '<i class="icon-refresh rotating"></i> Guardando...';
-        }
-    }
     
-    // Verificar cobertura de zonas en el distrito seleccionado
+    // =========================================
+    // VERIFICAR COBERTURA DE ZONAS
+    // =========================================
     initVerificarCobertura() {
-        const distritoSelect = document.getElementById('iddistrito');
-        const alertCobertura = document.getElementById('alertCobertura');
+        // Evitar doble inicialización
+        if (this.coberturaInicializada) {
+            console.log('⚠️ Verificación de cobertura ya inicializada');
+            return;
+        }
         
-        if (!distritoSelect || !alertCobertura) return;
+        const distritoSelect = document.getElementById('iddistrito');
+        
+        if (!distritoSelect) {
+            console.warn('⚠️ Elemento #iddistrito no encontrado (aún no visible)');
+            return;
+        }
+        
+        console.log('✅ Verificación de cobertura inicializada en Paso 2');
+        console.log('📍 Elemento distrito encontrado:', distritoSelect);
+        console.log('🔗 URL base:', this.baseUrl);
+        this.coberturaInicializada = true;
         
         distritoSelect.addEventListener('change', async () => {
+            console.log('🔔 Evento change disparado en distrito');
             const distrito = distritoSelect.value;
+            console.log('📌 Valor seleccionado:', distrito);
             
             if (!distrito) {
-                alertCobertura.style.display = 'none';
+                console.warn('⚠️ No hay distrito seleccionado, saliendo...');
                 return;
             }
             
+            console.log('🌐 Verificando cobertura para distrito:', distrito);
+            
             try {
-                const response = await fetch(`${this.baseUrl}/leads/verificar-cobertura?distrito=${distrito}`);
+                const url = `${this.baseUrl}/leads/verificar-cobertura?distrito=${distrito}`;
+                console.log('🔗 URL completa:', url);
+                
+                const response = await fetch(url);
+                console.log('📥 Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const result = await response.json();
+                console.log('📡 Resultado cobertura completo:', result);
+                
+                // Verificar si SweetAlert está disponible
+                if (typeof Swal === 'undefined') {
+                    console.error('❌ SweetAlert2 no está cargado!');
+                    alert(`Cobertura: ${result.mensaje || 'Verificación completada'}`);
+                    return;
+                }
                 
                 if (result.success) {
-                    this.mostrarAlertaCobertura(result, alertCobertura);
+                    console.log('✅ Mostrando alerta de cobertura...');
+                    this.mostrarAlertaCobertura(result);
+                } else {
+                    console.warn('⚠️ Success es false:', result);
+                    this.mostrarAlertaCobertura(result);
                 }
             } catch (error) {
-                console.error('Error al verificar cobertura:', error);
-                alertCobertura.className = 'alert alert-danger mt-2';
-                alertCobertura.innerHTML = `
-                    <i class="icon-x-circle"></i> 
-                    Error al verificar cobertura. Por favor, intenta de nuevo.
-                `;
-                alertCobertura.style.display = 'block';
+                console.error('❌ Error al verificar cobertura:', error);
+                console.error('❌ Stack:', error.stack);
+                
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'error',
+                        title: 'Error al verificar cobertura',
+                        text: error.message,
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                } else {
+                    alert('Error al verificar cobertura: ' + error.message);
+                }
             }
         });
     }
 
-    mostrarAlertaCobertura(result, alertCobertura) {
-        if (result.tiene_cobertura) {
-            // Hay cobertura - Mostrar alerta verde
-            alertCobertura.className = 'alert alert-success mt-2';
-            
-            let zonasHtml = '';
-            if (result.zonas && result.zonas.length > 0) {
-                zonasHtml = '<div class="mt-2"><small><strong>Zonas activas:</strong></small><ul class="mb-0 mt-1">';
-                result.zonas.forEach(zona => {
-                    zonasHtml += `<li><small>${escapeHtml(zona.nombre_zona)} (${escapeHtml(zona.campania_nombre)})</small></li>`;
-                });
-                zonasHtml += '</ul></div>';
-            }
-            
-            alertCobertura.innerHTML = `
-                <div class="d-flex align-items-start">
-                    <i class="icon-check-circle mr-2" style="font-size: 1.2rem;"></i>
-                    <div>
-                        <strong>¡Excelente!</strong> ${escapeHtml(result.mensaje)}
-                        <br><small class="text-muted">El lead será asignado automáticamente a una zona al guardar.</small>
-                        ${zonasHtml}
-                    </div>
-                </div>
-            `;
-        } else {
-            // No hay cobertura - Mostrar alerta amarilla
-            alertCobertura.className = 'alert alert-warning mt-2';
-            alertCobertura.innerHTML = `
-                <div class="d-flex align-items-start">
-                    <i class="icon-alert-triangle mr-2" style="font-size: 1.2rem;"></i>
-                    <div>
-                        <strong>Atención:</strong> ${escapeHtml(result.mensaje)}
-                        <br><small class="text-muted">El lead se registrará pero no se asignará a ninguna campaña activa.</small>
-                        <br><small class="text-muted">Puedes crear zonas en el <a href="${this.baseUrl}/crm-campanas/mapa-campanas" target="_blank">mapa de campañas</a>.</small>
-                    </div>
-                </div>
-            `;
+    // =========================================
+    // MOSTRAR ALERTA DE COBERTURA
+    // =========================================
+    mostrarAlertaCobertura(result) {
+        console.log('🎨 mostrarAlertaCobertura llamada con:', result);
+        console.log('🔍 tiene_cobertura:', result.tiene_cobertura);
+        
+        const alertaContainer = document.getElementById('alerta-cobertura-zona');
+        
+        if (!alertaContainer) {
+            console.error('❌ Contenedor #alerta-cobertura-zona no encontrado');
+            return;
         }
         
-        alertCobertura.style.display = 'block';
-        
-        // Animación suave
-        alertCobertura.style.opacity = '0';
-        setTimeout(() => {
-            alertCobertura.style.transition = 'opacity 0.3s';
-            alertCobertura.style.opacity = '1';
-        }, 10);
+        if (result.tiene_cobertura) {
+            console.log('✅ Mostrando alerta de COBERTURA POSITIVA');
+            const totalZonas = result.zonas_activas || 0;
+            
+            // Construir lista de zonas con sus campañas
+            let zonasListaHtml = '';
+            if (result.zonas && result.zonas.length > 0) {
+                zonasListaHtml = result.zonas.map(z => {
+                    return `<li><strong>${escapeHtml(z.nombre_zona)}</strong> (${escapeHtml(z.campania_nombre)})</li>`;
+                }).join('');
+            }
+            
+            // Mostrar mensaje de cobertura positiva
+            alertaContainer.innerHTML = `
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <h6 class="alert-heading mb-2">
+                        <i class="icon-check"></i> ¡Excelente! Tenemos ${totalZonas} zona(s) activa(s) en campañas
+                    </h6>
+                    <p class="mb-2">El lead será asignado automáticamente a una zona al guardar.</p>
+                    <hr>
+                    <p class="mb-1"><strong>Zonas activas:</strong></p>
+                    <ul class="mb-0">
+                        ${zonasListaHtml}
+                    </ul>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            `;
+            alertaContainer.style.display = 'block';
+            console.log('✅ Alerta de cobertura mostrada en contenedor');
+        } else {
+            console.log('⚠️ Mostrando alerta de SIN COBERTURA');
+            const distrito = result.distrito_nombre || 'esta zona';
+            
+            // Mostrar mensaje de sin cobertura
+            alertaContainer.innerHTML = `
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <h6 class="alert-heading mb-2">
+                        <i class="icon-info"></i> Sin zonas activas
+                    </h6>
+                    <p class="mb-0">
+                        <strong>${distrito}</strong> no tiene zonas de campaña activas en este momento.
+                        El lead se registrará normalmente.
+                    </p>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            `;
+            alertaContainer.style.display = 'block';
+            console.log('✅ Alerta sin cobertura mostrada en contenedor');
+        }
     }
 }
 
-// Inicializar cuando el DOM esté listo
+// =========================================
+// INICIALIZAR
+// =========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // La variable BASE_URL debe ser definida en la vista
     if (typeof BASE_URL !== 'undefined') {
         window.personaManager = new PersonaManager(BASE_URL);
+        console.log('✅ PersonaManager inicializado');
     } else {
-        console.error('BASE_URL no está definida');
+        console.error('❌ BASE_URL no está definida');
     }
 });

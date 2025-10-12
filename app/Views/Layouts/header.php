@@ -4,6 +4,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title><?= isset($title) ? $title : 'Delafiber - CRM' ?></title>
 
   <!-- CSS Required -->
@@ -66,51 +69,38 @@
 
         <!-- Notificaciones y Perfil -->
         <ul class="navbar-nav navbar-nav-right">
-          <!-- Notificaciones -->
+          <!-- Notificaciones en Tiempo Real -->
           <li class="nav-item dropdown">
-            <a class="nav-link position-relative" href="#" id="notificationDropdown" 
+            <a class="nav-link position-relative" href="#" id="notificacionesDropdown" 
                data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="ti-bell"></i>
-              <span class="notification-badge"><?= isset($notification_count) ? $notification_count : '0' ?></span>
+              <i class="ti-bell" style="font-size: 20px;"></i>
+              <span class="badge bg-danger position-absolute" id="notificaciones-badge" 
+                    style="display: none; top: 5px; right: 5px; font-size: 10px; padding: 2px 5px;">0</span>
             </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
-              <li><h6 class="dropdown-header">Notificaciones</h6></li>
-              <?php if(isset($notifications) && !empty($notifications)): ?>
-                <?php foreach($notifications as $notification): ?>
-                  <li>
-                    <a class="dropdown-item" href="<?= base_url($notification['url'] ?? '/dashboard') ?>">
-                      <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                          <?php
-                          $iconClass = match($notification['tipo'] ?? 'Sistema') {
-                              'Tarea' => 'ti-clipboard',
-                              'Lead' => 'ti-user',
-                              'Comentario' => 'ti-comment',
-                              default => 'ti-bell'
-                          };
-                          $colorClass = match($notification['tipo'] ?? 'Sistema') {
-                              'Tarea' => 'warning',
-                              'Lead' => 'primary',
-                              'Comentario' => 'info',
-                              default => 'secondary'
-                          };
-                          ?>
-                          <i class="<?= $iconClass ?> text-<?= $colorClass ?>"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                          <h6 class="mb-0"><?= esc($notification['titulo']) ?></h6>
-                          <small class="text-muted"><?= esc($notification['mensaje'] ?? '') ?></small>
-                        </div>
-                      </div>
-                    </a>
-                  </li>
-                <?php endforeach; ?>
-              <?php else: ?>
-                <li><a class="dropdown-item text-center">No hay notificaciones</a></li>
-              <?php endif; ?>
-              <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item text-center" href="<?= base_url('notificaciones') ?>">Ver todas</a></li>
-            </ul>
+            <div class="dropdown-menu dropdown-menu-end p-0" style="width: 380px; max-height: 500px; overflow-y: auto;">
+              <!-- Header -->
+              <div class="dropdown-header d-flex justify-content-between align-items-center bg-light" style="padding: 12px 16px;">
+                <strong><i class="ti-bell me-2"></i>Notificaciones</strong>
+                <button class="btn btn-sm btn-link text-primary p-0" id="btn-marcar-todas-leidas" 
+                        style="text-decoration: none; font-size: 12px;">
+                  Marcar todas como leídas
+                </button>
+              </div>
+              <div class="dropdown-divider m-0"></div>
+              
+              <!-- Lista de notificaciones (se llena con JavaScript) -->
+              <div id="notificaciones-lista" style="max-height: 400px; overflow-y: auto;">
+                <div class="text-center py-4 text-muted">
+                  <i class="ti-bell" style="font-size: 48px; opacity: 0.3;"></i>
+                  <p class="mb-0 mt-2">Cargando notificaciones...</p>
+                </div>
+              </div>
+              
+              <div class="dropdown-divider m-0"></div>
+              <a href="<?= base_url('notificaciones') ?>" class="dropdown-item text-center text-primary py-2">
+                <small><strong>Ver todas las notificaciones</strong></small>
+              </a>
+            </div>
           </li>
 
           <!-- Perfil -->

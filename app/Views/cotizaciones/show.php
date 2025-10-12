@@ -122,10 +122,10 @@
                                                 <tr>
                                                     <td><strong>Precio del Servicio (mensual):</strong></td>
                                                     <td class="text-end">
-                                                        S/ <?= number_format($cotizacion['precio_cotizado'], 2) ?>
+                                                        S/ <?= number_format($cotizacion['precio_cotizado'] ?? 0, 2) ?>
                                                     </td>
                                                 </tr>
-                                                <?php if ($cotizacion['descuento_aplicado'] > 0): ?>
+                                                <?php if (($cotizacion['descuento_aplicado'] ?? 0) > 0): ?>
                                                     <tr class="text-success">
                                                         <td><strong>Descuento aplicado:</strong></td>
                                                         <td class="text-end">
@@ -136,21 +136,21 @@
                                                 <tr>
                                                     <td><strong>Precio de Instalación:</strong></td>
                                                     <td class="text-end">
-                                                        S/ <?= number_format($cotizacion['precio_instalacion'], 2) ?>
+                                                        S/ <?= number_format($cotizacion['precio_instalacion'] ?? 0, 2) ?>
                                                     </td>
                                                 </tr>
                                                 <tr class="border-top">
                                                     <td><strong class="text-primary">Total Primer Mes:</strong></td>
                                                     <td class="text-end">
                                                         <strong class="text-primary fs-5">
-                                                            S/ <?= number_format($cotizacion['precio_cotizado'] + $cotizacion['precio_instalacion'], 2) ?>
+                                                            S/ <?= number_format(($cotizacion['precio_cotizado'] ?? 0) + ($cotizacion['precio_instalacion'] ?? 0), 2) ?>
                                                         </strong>
                                                     </td>
                                                 </tr>
                                                 <tr>
                                                     <td><strong>Mensualidad siguiente:</strong></td>
                                                     <td class="text-end">
-                                                        <strong>S/ <?= number_format($cotizacion['precio_cotizado'], 2) ?></strong>
+                                                        <strong>S/ <?= number_format($cotizacion['precio_cotizado'] ?? 0, 2) ?></strong>
                                                     </td>
                                                 </tr>
                                             </table>
@@ -159,11 +159,11 @@
                                             <div class="card bg-primary text-white">
                                                 <div class="card-body text-center">
                                                     <h3 class="card-title">
-                                                        S/ <?= number_format($cotizacion['precio_cotizado'] + $cotizacion['precio_instalacion'], 2) ?>
+                                                        S/ <?= number_format(($cotizacion['precio_cotizado'] ?? 0) + ($cotizacion['precio_instalacion'] ?? 0), 2) ?>
                                                     </h3>
                                                     <p class="card-text">Total Primer Mes</p>
                                                     <small class="opacity-75">
-                                                        Luego S/ <?= number_format($cotizacion['precio_cotizado'], 2) ?>/mes
+                                                        Luego S/ <?= number_format($cotizacion['precio_cotizado'] ?? 0, 2) ?>/mes
                                                     </small>
                                                 </div>
                                             </div>
@@ -245,14 +245,15 @@
                                     <div class="row mb-2">
                                         <div class="col-sm-5"><strong>Vigencia:</strong></div>
                                         <div class="col-sm-7">
-                                            <?= $cotizacion['vigencia_dias'] ?> días
+                                            <?= $cotizacion['vigencia_dias'] ?? 30 ?> días
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-sm-5"><strong>Vence:</strong></div>
                                         <div class="col-sm-7">
                                             <?php
-                                            $fechaVencimiento = date('Y-m-d', strtotime($cotizacion['created_at'] . ' + ' . $cotizacion['vigencia_dias'] . ' days'));
+                                            $vigenciaDias = $cotizacion['vigencia_dias'] ?? 30;
+                                            $fechaVencimiento = date('Y-m-d', strtotime($cotizacion['created_at'] . ' + ' . $vigenciaDias . ' days'));
                                             $diasRestantes = (strtotime($fechaVencimiento) - time()) / (60 * 60 * 24);
                                             ?>
                                             <?= date('d/m/Y', strtotime($fechaVencimiento)) ?>

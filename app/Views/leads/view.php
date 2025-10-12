@@ -48,6 +48,22 @@ $historial = $historial ?? [];
                 <button class="btn btn-danger" data-toggle="modal" data-target="#modalDescartar">
                     <i class="icon-close"></i> Descartar
                 </button>
+                
+                <!-- Separador -->
+                <span class="mx-2">|</span>
+                
+                <!-- Botones de Asignación y Comunicación -->
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-primary btn-sm" id="btnReasignar">
+                        <i class="ti-reload"></i> Reasignar
+                    </button>
+                    <button type="button" class="btn btn-warning btn-sm" id="btnSolicitarApoyo">
+                        <i class="ti-help-alt"></i> Solicitar Apoyo
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm" id="btnProgramar">
+                        <i class="ti-alarm-clock"></i> Programar
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -490,6 +506,330 @@ $historial = $historial ?? [];
 <!-- Google Maps API -->
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAACo2qyElsl8RwIqW3x0peOA_20f7SEHA&libraries=geometry"></script>
 <script src="<?= base_url('js/leads/leads-view.js') ?>"></script>
+
+<!-- FUNCIONES DE ASIGNACIÓN - INLINE DIRECTO -->
+<script type="text/javascript">
+// ============================================
+// FUNCIONES DE ASIGNACIÓN DE LEADS
+// VERSIÓN: <?= time() ?>
+// ============================================
+console.log('🚀 INICIANDO CARGA DE FUNCIONES - VERSIÓN:', '<?= time() ?>');
+console.log('📍 Ubicación: Inline en view.php');
+console.log('⏰ Timestamp:', new Date().toISOString());
+
+var usuariosDisponibles = [];
+var baseUrl = '<?= base_url() ?>';
+
+// Cargar usuarios disponibles
+fetch(baseUrl + '/lead-asignacion/getUsuariosDisponibles', {
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+})
+.then(response => response.json())
+.then(data => {
+    if (data.success) {
+        usuariosDisponibles = data.usuarios;
+        console.log('✅ Usuarios cargados:', usuariosDisponibles.length);
+    }
+})
+.catch(error => console.error('Error al cargar usuarios:', error));
+
+// Función: Mostrar Modal Reasignar
+window.mostrarModalReasignar = function(idlead) {
+    console.log('🔄 Reasignar Lead ID:', idlead);
+    
+    var opcionesUsuarios = usuariosDisponibles.map(u => 
+        '<option value="' + u.idusuario + '">' + u.nombre + ' - ' + u.turno + ' (' + u.leads_activos + ' leads)</option>'
+    ).join('');
+    
+    var html = '<div class="modal fade" id="modalReasignar" tabindex="-1">' +
+        '<div class="modal-dialog">' +
+        '<div class="modal-content">' +
+        '<div class="modal-header bg-primary text-white">' +
+        '<h5 class="modal-title">Reasignar Lead</h5>' +
+        '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>' +
+        '</div>' +
+        '<div class="modal-body">' +
+        '<form id="formReasignar">' +
+        '<input type="hidden" name="idlead" value="' + idlead + '">' +
+        '<div class="mb-3">' +
+        '<label class="form-label">Asignar a:</label>' +
+        '<select name="nuevo_usuario" class="form-select" required>' +
+        '<option value="">Seleccionar usuario...</option>' +
+        opcionesUsuarios +
+        '</select>' +
+        '</div>' +
+        '<div class="mb-3">' +
+        '<label class="form-label">Motivo:</label>' +
+        '<textarea name="motivo" class="form-control" rows="3"></textarea>' +
+        '</div>' +
+        '</form>' +
+        '</div>' +
+        '<div class="modal-footer">' +
+        '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>' +
+        '<button type="button" class="btn btn-primary" onclick="ejecutarReasignacion()">Reasignar</button>' +
+        '</div>' +
+        '</div></div></div>';
+    
+    $('#modalReasignar').remove();
+    $('body').append(html);
+    $('#modalReasignar').modal('show');
+};
+
+// Función: Ejecutar Reasignación
+window.ejecutarReasignacion = function() {
+    var formData = new FormData(document.getElementById('formReasignar'));
+    
+    if (!formData.get('nuevo_usuario')) {
+        Swal.fire('Error', 'Debes seleccionar un usuario', 'error');
+        return;
+    }
+    
+    Swal.fire({
+        title: 'Reasignando...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+    
+    fetch(baseUrl + '/lead-asignacion/reasignar', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: '¡Éxito!',
+                text: data.message,
+                timer: 2000
+            }).then(() => location.reload());
+        } else {
+            Swal.fire('Error', data.message, 'error');
+        }
+    })
+    .catch(error => {
+        Swal.fire('Error', 'No se pudo completar la reasignación', 'error');
+    });
+};
+
+// Función: Mostrar Modal Solicitar Apoyo
+window.mostrarModalSolicitarApoyo = function(idlead) {
+    console.log('🆘 Solicitar Apoyo Lead ID:', idlead);
+    
+    var opcionesUsuarios = usuariosDisponibles.map(u => 
+        '<option value="' + u.idusuario + '">' + u.nombre + ' - ' + u.turno + '</option>'
+    ).join('');
+    
+    var html = '<div class="modal fade" id="modalSolicitarApoyo" tabindex="-1">' +
+        '<div class="modal-dialog">' +
+        '<div class="modal-content">' +
+        '<div class="modal-header bg-warning">' +
+        '<h5 class="modal-title">Solicitar Apoyo</h5>' +
+        '<button type="button" class="btn-close" data-bs-dismiss="modal"></button>' +
+        '</div>' +
+        '<div class="modal-body">' +
+        '<form id="formSolicitarApoyo">' +
+        '<input type="hidden" name="idlead" value="' + idlead + '">' +
+        '<div class="mb-3">' +
+        '<label class="form-label">Solicitar apoyo de:</label>' +
+        '<select name="usuario_apoyo" class="form-select" required>' +
+        '<option value="">Seleccionar usuario...</option>' +
+        opcionesUsuarios +
+        '</select>' +
+        '</div>' +
+        '<div class="mb-3">' +
+        '<label class="form-label">Mensaje:</label>' +
+        '<textarea name="mensaje" class="form-control" rows="4" required></textarea>' +
+        '</div>' +
+        '<div class="form-check">' +
+        '<input class="form-check-input" type="checkbox" name="urgente" id="urgente">' +
+        '<label class="form-check-label" for="urgente">Marcar como URGENTE</label>' +
+        '</div>' +
+        '</form>' +
+        '</div>' +
+        '<div class="modal-footer">' +
+        '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>' +
+        '<button type="button" class="btn btn-warning" onclick="ejecutarSolicitarApoyo()">Enviar</button>' +
+        '</div>' +
+        '</div></div></div>';
+    
+    $('#modalSolicitarApoyo').remove();
+    $('body').append(html);
+    $('#modalSolicitarApoyo').modal('show');
+};
+
+// Función: Ejecutar Solicitar Apoyo
+window.ejecutarSolicitarApoyo = function() {
+    var formData = new FormData(document.getElementById('formSolicitarApoyo'));
+    
+    fetch(baseUrl + '/lead-asignacion/solicitarApoyo', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Solicitud enviada',
+                timer: 2000
+            });
+            $('#modalSolicitarApoyo').modal('hide');
+        } else {
+            Swal.fire('Error', data.message, 'error');
+        }
+    })
+    .catch(error => {
+        Swal.fire('Error', 'No se pudo enviar la solicitud', 'error');
+    });
+};
+
+// Función: Mostrar Modal Programar Seguimiento
+window.mostrarModalProgramarSeguimiento = function(idlead) {
+    console.log('⏰ Programar Seguimiento Lead ID:', idlead);
+    
+    var hoy = new Date().toISOString().split('T')[0];
+    
+    var html = '<div class="modal fade" id="modalProgramarSeguimiento" tabindex="-1">' +
+        '<div class="modal-dialog">' +
+        '<div class="modal-content">' +
+        '<div class="modal-header bg-success text-white">' +
+        '<h5 class="modal-title">Programar Seguimiento</h5>' +
+        '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>' +
+        '</div>' +
+        '<div class="modal-body">' +
+        '<form id="formProgramarSeguimiento">' +
+        '<input type="hidden" name="idlead" value="' + idlead + '">' +
+        '<div class="row">' +
+        '<div class="col-md-6 mb-3">' +
+        '<label class="form-label">Fecha:</label>' +
+        '<input type="date" name="fecha" class="form-control" required min="' + hoy + '">' +
+        '</div>' +
+        '<div class="col-md-6 mb-3">' +
+        '<label class="form-label">Hora:</label>' +
+        '<input type="time" name="hora" class="form-control" required>' +
+        '</div>' +
+        '</div>' +
+        '<div class="mb-3">' +
+        '<label class="form-label">Tipo:</label>' +
+        '<select name="tipo" class="form-select" required>' +
+        '<option value="Llamada">📞 Llamada</option>' +
+        '<option value="WhatsApp">💬 WhatsApp</option>' +
+        '<option value="Visita">🏠 Visita</option>' +
+        '<option value="Email">📧 Email</option>' +
+        '</select>' +
+        '</div>' +
+        '<div class="mb-3">' +
+        '<label class="form-label">Notas:</label>' +
+        '<textarea name="nota" class="form-control" rows="3" required></textarea>' +
+        '</div>' +
+        '</form>' +
+        '</div>' +
+        '<div class="modal-footer">' +
+        '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>' +
+        '<button type="button" class="btn btn-success" onclick="ejecutarProgramarSeguimiento()">Programar</button>' +
+        '</div>' +
+        '</div></div></div>';
+    
+    $('#modalProgramarSeguimiento').remove();
+    $('body').append(html);
+    $('#modalProgramarSeguimiento').modal('show');
+};
+
+// Función: Ejecutar Programar Seguimiento
+window.ejecutarProgramarSeguimiento = function() {
+    var formData = new FormData(document.getElementById('formProgramarSeguimiento'));
+    
+    fetch(baseUrl + '/lead-asignacion/programarSeguimiento', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Seguimiento programado',
+                timer: 2000
+            });
+            $('#modalProgramarSeguimiento').modal('hide');
+        } else {
+            Swal.fire('Error', data.message, 'error');
+        }
+    })
+    .catch(error => {
+        Swal.fire('Error', 'No se pudo programar el seguimiento', 'error');
+    });
+};
+
+console.log('✅ Funciones de asignación cargadas correctamente');
+
+// ============================================
+// ASIGNAR EVENTOS A LOS BOTONES
+// ============================================
+var leadId = <?= $lead['idlead'] ?>;
+
+document.getElementById('btnReasignar').addEventListener('click', function() {
+    console.log('🔄 Click en Reasignar');
+    mostrarModalReasignar(leadId);
+});
+
+document.getElementById('btnSolicitarApoyo').addEventListener('click', function() {
+    console.log('🆘 Click en Solicitar Apoyo');
+    mostrarModalSolicitarApoyo(leadId);
+});
+
+document.getElementById('btnProgramar').addEventListener('click', function() {
+    console.log('⏰ Click en Programar');
+    mostrarModalProgramarSeguimiento(leadId);
+});
+
+console.log('🎯 Eventos asignados a los botones');
+
+// ============================================
+// VERIFICACIÓN INMEDIATA (sin timeout)
+// ============================================
+console.log('🔍 VERIFICACIÓN INMEDIATA:');
+console.log('  window.mostrarModalReasignar:', typeof window.mostrarModalReasignar);
+console.log('  window.mostrarModalSolicitarApoyo:', typeof window.mostrarModalSolicitarApoyo);
+console.log('  window.mostrarModalProgramarSeguimiento:', typeof window.mostrarModalProgramarSeguimiento);
+
+if (typeof window.mostrarModalReasignar === 'function') {
+    console.log('✅✅✅ TODAS LAS FUNCIONES DISPONIBLES ✅✅✅');
+    console.log('👉 Los botones deben funcionar ahora');
+    
+    // Mostrar mensaje de éxito en la página
+    setTimeout(function() {
+        Swal.fire({
+            icon: 'success',
+            title: '¡Sistema Cargado!',
+            text: 'Los botones de asignación están listos para usar',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }, 500);
+} else {
+    console.error('❌❌❌ ERROR: FUNCIONES NO DISPONIBLES ❌❌❌');
+    console.error('🔄 SOLUCIÓN: Presiona Ctrl+Shift+Delete y limpia el caché');
+    
+    // Mostrar alerta grande
+    Swal.fire({
+        icon: 'error',
+        title: 'Caché del Navegador',
+        html: '<strong>Las funciones no se cargaron correctamente.</strong><br><br>' +
+              'Por favor, limpia el caché:<br>' +
+              '1. Presiona <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Delete</kbd><br>' +
+              '2. Selecciona "Archivos en caché"<br>' +
+              '3. Click en "Borrar datos"<br>' +
+              '4. Recarga esta página',
+        showConfirmButton: true,
+        confirmButtonText: 'Entendido'
+    });
+}
+</script>
 <?= $this->endSection() ?>
 
 <?= $this->include('Layouts/footer') ?>

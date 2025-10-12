@@ -147,6 +147,8 @@ $routes->group('cotizaciones', ['filter' => 'auth'], function($routes) {
     $routes->post('cambiarEstado/(:num)', 'Cotizaciones::cambiarEstado/$1');
     $routes->get('pdf/(:num)', 'Cotizaciones::generarPDF/$1');
     $routes->get('porLead/(:num)', 'Cotizaciones::porLead/$1');
+    $routes->get('buscarLeads', 'Cotizaciones::buscarLeads'); // AJAX: Buscar leads para Select2
+    $routes->get('diagnostico', 'DiagnosticoCotizaciones::testBusqueda'); // DIAGNÓSTICO
 });
 
 // === SERVICIOS ===
@@ -206,4 +208,21 @@ $routes->group('usuarios', ['filter' => 'auth'], function($routes) {
 });
 
 // === NOTIFICACIONES ===
-$routes->get('notificaciones', 'Dashboard\Index::notificaciones', ['filter' => 'auth']);
+$routes->group('notificaciones', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'Notificaciones::index');
+    $routes->get('getNoLeidas', 'Notificaciones::getNoLeidas');
+    $routes->post('marcarLeida/(:num)', 'Notificaciones::marcarLeida/$1');
+    $routes->post('marcarTodasLeidas', 'Notificaciones::marcarTodasLeidas');
+    $routes->delete('eliminar/(:num)', 'Notificaciones::eliminar/$1');
+    $routes->get('poll', 'Notificaciones::poll'); // Polling automático
+});
+
+// === ASIGNACIÓN DE LEADS ===
+$routes->group('lead-asignacion', ['filter' => 'auth'], function($routes) {
+    $routes->post('reasignar', 'LeadAsignacion::reasignar');
+    $routes->post('solicitarApoyo', 'LeadAsignacion::solicitarApoyo');
+    $routes->post('programarSeguimiento', 'LeadAsignacion::programarSeguimiento');
+    $routes->get('getUsuariosDisponibles', 'LeadAsignacion::getUsuariosDisponibles');
+    $routes->get('historialAsignaciones/(:num)', 'LeadAsignacion::historialAsignaciones/$1');
+    $routes->post('transferirMasivo', 'LeadAsignacion::transferirMasivo');
+});

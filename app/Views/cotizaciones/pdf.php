@@ -85,12 +85,13 @@
                 </td>
                 <td class="price">
                     <?php
-                    $precioConDescuento = $cotizacion['precio_cotizado'];
-                    if ($cotizacion['descuento_aplicado'] > 0) {
-                        $precioOriginal = $precioConDescuento / (1 - ($cotizacion['descuento_aplicado'] / 100));
+                    $precioConDescuento = $cotizacion['precio_cotizado'] ?? 0;
+                    $descuentoAplicado = $cotizacion['descuento_aplicado'] ?? 0;
+                    if ($descuentoAplicado > 0) {
+                        $precioOriginal = $precioConDescuento / (1 - ($descuentoAplicado / 100));
                         echo '<s style="color: #999;">S/ ' . number_format($precioOriginal, 2) . '</s><br>';
                         echo '<span style="color: #28a745;">S/ ' . number_format($precioConDescuento, 2) . '</span>';
-                        echo '<br><small style="color: #28a745;">(-' . $cotizacion['descuento_aplicado'] . '% desc.)</small>';
+                        echo '<br><small style="color: #28a745;">(-' . $descuentoAplicado . '% desc.)</small>';
                     } else {
                         echo 'S/ ' . number_format($precioConDescuento, 2);
                     }
@@ -98,25 +99,25 @@
                 </td>
             </tr>
             
-            <?php if ($cotizacion['precio_instalacion'] > 0): ?>
+            <?php if (($cotizacion['precio_instalacion'] ?? 0) > 0): ?>
                 <tr>
                     <td>Instalación</td>
                     <td>Costo único de instalación y configuración</td>
-                    <td class="price">S/ <?= number_format($cotizacion['precio_instalacion'], 2) ?></td>
+                    <td class="price">S/ <?= number_format($cotizacion['precio_instalacion'] ?? 0, 2) ?></td>
                 </tr>
             <?php endif; ?>
             
             <tr class="total-row total-highlight">
                 <td colspan="2"><strong>TOTAL PRIMER MES</strong></td>
                 <td class="price">
-                    <strong>S/ <?= number_format($cotizacion['precio_cotizado'] + $cotizacion['precio_instalacion'], 2) ?></strong>
+                    <strong>S/ <?= number_format(($cotizacion['precio_cotizado'] ?? 0) + ($cotizacion['precio_instalacion'] ?? 0), 2) ?></strong>
                 </td>
             </tr>
             
             <tr class="total-row">
                 <td colspan="2"><strong>Mensualidad siguiente</strong></td>
                 <td class="price">
-                    <strong>S/ <?= number_format($cotizacion['precio_cotizado'], 2) ?></strong>
+                    <strong>S/ <?= number_format($cotizacion['precio_cotizado'] ?? 0, 2) ?></strong>
                 </td>
             </tr>
         </tbody>

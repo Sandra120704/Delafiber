@@ -14,6 +14,7 @@ class CotizacionModel extends Model
     protected $protectFields = true;
     protected $allowedFields = [
         'idlead',
+        'iddireccion',
         'idusuario',
         'numero_cotizacion',
         'subtotal',
@@ -23,8 +24,15 @@ class CotizacionModel extends Model
         'descuento_aplicado',
         'precio_instalacion',
         'vigencia_dias',
+        'fecha_vencimiento',
+        'condiciones_pago',
+        'tiempo_instalacion',
         'observaciones',
+        'direccion_instalacion',
+        'pdf_generado',
+        'enviado_por',
         'estado',
+        'motivo_rechazo',
         'fecha_envio',
         'fecha_respuesta'
     ];

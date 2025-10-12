@@ -310,7 +310,7 @@ if (!function_exists('validar_email_corporativo')) {
     }
 }
 
-if (!function_calls('proteger_ruta_admin')) {
+if (!function_exists('proteger_ruta_admin')) {
     /**
      * Protege una ruta para solo administradores
      * 
