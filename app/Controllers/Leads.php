@@ -30,7 +30,7 @@ class Leads extends BaseController
     public function __construct()
     {
         // AuthFilter ya valida la autenticación
-        helper(['security', 'validation']);
+        helper(['security', 'validation', 'auditoria']);
         $this->leadModel = new LeadModel();
         $this->personaModel = new PersonaModel();
         $this->seguimientoModel = new SeguimientoModel();
@@ -283,7 +283,7 @@ class Leads extends BaseController
      */
     public function view($leadId)
     {
-        $userId = session()->get('user_id');
+        $userId = session()->get('idusuario');
         $lead = $this->leadModel->getLeadCompleto($leadId, $userId);
         
         if (!$lead) {
@@ -363,7 +363,7 @@ class Leads extends BaseController
     // Pipeline visual (vista Kanban)
     public function pipeline()
     {
-        $userId = session()->get('user_id');
+        $userId = session()->get('idusuario');
         $pipeline = $this->leadModel->getPipelineUsuario($userId);
         $data = [
             'title' => 'Pipeline de Ventas - Delafiber CRM',
@@ -413,22 +413,19 @@ class Leads extends BaseController
             // Actualizar etapa
             $this->leadModel->update($idlead, ['idetapa' => $idetapa]);
             
-            // Registrar en historial (opcional - solo si la tabla existe)
+            // Registrar en historial de leads
             try {
-                $db = \Config\Database::connect();
-                if ($db->tableExists('leads_historial')) {
-                    $db->table('leads_historial')->insert([
-                        'idlead' => $idlead,
-                        'idusuario' => session()->get('idusuario'),
-                        'accion' => 'cambio_etapa',
-                        'descripcion' => 'Lead movido de etapa',
-                        'etapa_anterior' => $etapaAnterior,
-                        'etapa_nueva' => $idetapa,
-                        'fecha' => date('Y-m-d H:i:s')
-                    ]);
-                }
+                $historialModel = new HistorialLeadModel();
+                $historialModel->registrarCambio(
+                    $idlead,
+                    session()->get('idusuario'),
+                    $etapaAnterior,
+                    $idetapa,
+                    'Lead movido desde pipeline'
+                );
             } catch (\Exception $e) {
-                // Ignorar error si la tabla no existe
+                // Log del error pero continuar
+                log_message('error', 'Error al registrar historial: ' . $e->getMessage());
             }
             
             return $this->response->setJSON([
@@ -446,7 +443,7 @@ class Leads extends BaseController
 
     public function edit($idlead)
     {
-        $userId = session()->get('user_id');
+        $userId = session()->get('idusuario');
         $lead = $this->leadModel->getLeadCompleto($idlead, $userId);
         
         if (!$lead) {
@@ -577,17 +574,27 @@ class Leads extends BaseController
             return redirect()->back();
         }
 
+        $idlead = $this->request->getPost('idlead');
+        
+        // Validar que el lead existe y pertenece al usuario
+        $lead = $this->leadModel->find($idlead);
+        if (!$lead) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Lead no encontrado'
+            ]);
+        }
+        
         $data = [
-            'idlead' => $this->request->getPost('idlead'),
-            'idusuario' => session()->get('user_id'),
+            'idlead' => $idlead,
+            'idusuario' => session()->get('idusuario'),
             'idmodalidad' => $this->request->getPost('idmodalidad'),
             'nota' => $this->request->getPost('nota'),
             'fecha' => date('Y-m-d H:i:s')
         ];
 
         try {
-            $db = \Config\Database::connect();
-            $db->table('seguimientos')->insert($data);
+            $this->seguimientoModel->insert($data);
             
             return $this->response->setJSON([
                 'success' => true,
@@ -610,20 +617,30 @@ class Leads extends BaseController
             return redirect()->back();
         }
 
+        $idlead = $this->request->getPost('idlead');
+        
+        // Validar que el lead existe
+        $lead = $this->leadModel->find($idlead);
+        if (!$lead) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Lead no encontrado'
+            ]);
+        }
+        
         $data = [
-            'idlead' => $this->request->getPost('idlead'),
-            'idusuario' => session()->get('user_id'),
+            'idlead' => $idlead,
+            'idusuario' => session()->get('idusuario'),
             'titulo' => $this->request->getPost('titulo'),
             'descripcion' => $this->request->getPost('descripcion'),
             'prioridad' => $this->request->getPost('prioridad'),
             'fecha_vencimiento' => $this->request->getPost('fecha_vencimiento'),
             'fecha_inicio' => date('Y-m-d'),
-            'estado' => 'Pendiente'
+            'estado' => 'pendiente'
         ];
 
         try {
-            $db = \Config\Database::connect();
-            $db->table('tareas')->insert($data);
+            $this->tareaModel->insert($data);
             
             return $this->response->setJSON([
                 'success' => true,
