@@ -85,6 +85,12 @@ class Auth extends BaseController
                 ->get()
                 ->getRowArray();
             
+            // Decodificar permisos JSON
+            $permisos = [];
+            if (!empty($rol['permisos'])) {
+                $permisos = json_decode($rol['permisos'], true) ?? [];
+            }
+            
             // Crear sesión (variables estandarizadas)
             $sessionData = [
                 'idusuario' => $user['idusuario'],
@@ -92,7 +98,9 @@ class Auth extends BaseController
                 'email' => $user['correo'],
                 'nombreRol' => $rol['nombre'] ?? 'Vendedor',
                 'idrol' => $rol['idrol'] ?? 3,
+                'rol_nivel' => $rol['nivel'] ?? 3,
                 'nivel' => $rol['nivel'] ?? 3,
+                'permisos' => $permisos,
                 'logged_in' => true
             ];
 

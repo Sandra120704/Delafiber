@@ -8,11 +8,14 @@ class OrigenModel extends Model
 {
     protected $table = 'origenes';
     protected $primaryKey = 'idorigen';
-    protected $allowedFields = ['nombre', 'tipo'];
+    protected $allowedFields = ['nombre', 'descripcion', 'color', 'estado'];
+    protected $useTimestamps = false;
 
     // Obtener orígenes activos
     public function getOrigenesActivos()
     {
-        return $this->orderBy('nombre', 'ASC')->findAll();
+        return $this->where('estado', 'activo')
+            ->orderBy('nombre', 'ASC')
+            ->findAll();
     }
 }

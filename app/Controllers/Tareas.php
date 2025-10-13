@@ -477,7 +477,7 @@ class Tareas extends BaseController
 
         $tarea = $this->tareaModel->find($idtarea);
         
-        if (!$tarea || $tarea['idusuario'] != session()->get('user_id')) {
+        if (!$tarea || $tarea['idusuario'] != session()->get('idusuario')) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'No autorizado'

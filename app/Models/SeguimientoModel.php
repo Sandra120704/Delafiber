@@ -6,8 +6,12 @@ use CodeIgniter\Model;
 
 class SeguimientoModel extends Model
 {
-    protected $table = 'seguimientos';  // ✅ Corregido: plural
+    protected $table = 'seguimientos';
     protected $primaryKey = 'idseguimiento';
+    protected $useAutoIncrement = true;
+    protected $returnType = 'array';
+    protected $useSoftDeletes = false;
+    
     protected $allowedFields = [
         'idlead',
         'idusuario',
@@ -15,9 +19,39 @@ class SeguimientoModel extends Model
         'nota',
         'fecha'
     ];
+    
     protected $useTimestamps = false;
     protected $createdField = 'fecha';
     protected $updatedField = null;
+    
+    // Validaciones
+    protected $validationRules = [
+        'idlead' => 'required|integer',
+        'idusuario' => 'required|integer',
+        'idmodalidad' => 'required|integer',
+        'nota' => 'required|min_length[5]'
+    ];
+    
+    protected $validationMessages = [
+        'idlead' => [
+            'required' => 'El lead es obligatorio',
+            'integer' => 'ID de lead inválido'
+        ],
+        'idusuario' => [
+            'required' => 'El usuario es obligatorio',
+            'integer' => 'ID de usuario inválido'
+        ],
+        'idmodalidad' => [
+            'required' => 'La modalidad es obligatoria',
+            'integer' => 'ID de modalidad inválido'
+        ],
+        'nota' => [
+            'required' => 'La nota es obligatoria',
+            'min_length' => 'La nota debe tener al menos 5 caracteres'
+        ]
+    ];
+    
+    protected $skipValidation = false;
 
 /**
  * Registra un nuevo seguimiento

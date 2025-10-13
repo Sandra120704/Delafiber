@@ -79,15 +79,15 @@ class LeadModel extends Model
             $builder->where('l.idcampania', $filtros['campania']);
         }
         
-        // Filtro por estado
+        // Filtro por estado (normalizado a minúsculas)
         if (isset($filtros['estado'])) {
-            if ($filtros['estado'] === 'Activo' || $filtros['estado'] === '') {
-                $builder->where('l.estado', 'Activo');
+            if ($filtros['estado'] === 'activo' || $filtros['estado'] === '') {
+                $builder->where('LOWER(l.estado)', 'activo');
             } else {
-                $builder->where('l.estado', $filtros['estado']);
+                $builder->where('LOWER(l.estado)', strtolower($filtros['estado']));
             }
         } else {
-            $builder->where('l.estado', 'Activo'); // Por defecto solo activos
+            $builder->where('LOWER(l.estado)', 'activo'); // Por defecto solo activos
         }
         
         // Búsqueda por nombre, teléfono o DNI
@@ -189,7 +189,7 @@ class LeadModel extends Model
             $totalLeads = $this->db->table('leads l')
                 ->where('l.idusuario', $userId)
                 ->where('l.idetapa', $etapa['idetapa'])
-                ->where('l.estado', 'Activo')
+                ->where('l.estado', 'activo')
                 ->countAllResults();
 
             // Obtener algunos leads de muestra
@@ -198,8 +198,8 @@ class LeadModel extends Model
                 ->select('l.idlead, p.nombres, p.apellidos, p.telefono')
                 ->where('l.idusuario', $userId)
                 ->where('l.idetapa', $etapa['idetapa'])
-                ->where('l.estado', 'Activo')
-                ->limit(5)
+                ->where('l.estado', 'activo')
+                ->limit(10)
                 ->get()
                 ->getResultArray();
 
@@ -220,7 +220,7 @@ class LeadModel extends Model
     public function contarLeadsUsuario($userId)
     {
         return $this->where('idusuario', $userId)
-                   ->where('estado', 'Activo')
+                   ->where('estado', 'activo')
                    ->countAllResults();
     }
 
@@ -235,7 +235,7 @@ class LeadModel extends Model
             ->select('l.idlead, p.nombres, p.apellidos, p.telefono,
                      e.nombre as etapa_nombre, l.created_at')
             ->where('l.idusuario', $userId)
-            ->where('l.estado', 'Activo')
+            ->where('l.estado', 'activo')
             ->orderBy('l.created_at', 'DESC')
             ->limit($limite)
             ->get()
@@ -313,7 +313,7 @@ class LeadModel extends Model
     {
         // Actualizar lead a estado "convertido"
         $this->update($leadId, [
-            'estado' => 'Convertido',
+            'estado' => 'convertido',
             'fecha_conversion' => date('Y-m-d H:i:s')
         ]);
 
@@ -327,7 +327,7 @@ class LeadModel extends Model
     {
         // Actualizar lead a estado "descartado"
         return $this->update($leadId, [
-            'estado' => 'Descartado'
+            'estado' => 'descartado'
         ]);
     }
 
@@ -375,7 +375,7 @@ class LeadModel extends Model
             ->join('personas p', 'l.idpersona = p.idpersona')
             ->select('l.idlead, p.nombres, p.apellidos, p.telefono, l.created_at')
             ->where('l.idetapa', $etapaId)
-            ->where('l.estado', 'Activo')
+            ->where('l.estado', 'activo')
             ->orderBy('l.created_at', 'DESC')
             ->get()
             ->getResultArray();
@@ -418,7 +418,7 @@ class LeadModel extends Model
             $builder->where('l.idusuario', $filtros['idusuario']);
         }
         if (array_key_exists('activos', $filtros) && $filtros['activos']) {
-            $builder->where('l.estado', 'Activo');
+            $builder->where('l.estado', 'activo');
         }
 
         return $builder->orderBy('lead_nombre', 'ASC')->get()->getResultArray();
@@ -434,7 +434,7 @@ class LeadModel extends Model
         $builder->join('personas p', 'l.idpersona = p.idpersona', 'left');
         $builder->join('etapas e', 'l.idetapa = e.idetapa', 'left');
         $builder->where('l.idcampania', $idcampania);
-        $builder->where('l.estado', 'Activo');
+        $builder->where('l.estado', 'activo');
         $builder->orderBy('l.created_at', 'DESC');
         if ($limit) {
             $builder->limit($limit);
@@ -481,5 +481,50 @@ class LeadModel extends Model
         }
         
         return $builder->orderBy('l.created_at', 'DESC')->get()->getResultArray();
+    }
+
+    /**
+     * Obtener leads nuevos (creados recientemente)
+     */
+    public function getLeadsNuevos($userId, $dias = 3, $limit = 5)
+    {
+        return $this->db->table('leads l')
+            ->join('personas p', 'l.idpersona = p.idpersona')
+            ->join('etapas e', 'l.idetapa = e.idetapa')
+            ->select('l.idlead, CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre,
+                     p.telefono, e.nombre as etapa, l.created_at')
+            ->where('l.idusuario', $userId)
+            ->where('l.estado', 'activo')
+            ->where('l.created_at >=', date('Y-m-d H:i:s', strtotime("-$dias days")))
+            ->orderBy('l.created_at', 'DESC')
+            ->limit($limit)
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * Obtener leads sin seguimiento reciente
+     */
+    public function getLeadsSinSeguimiento($userId, $dias = 3, $limit = 5)
+    {
+        $fechaLimite = date('Y-m-d H:i:s', strtotime("-$dias days"));
+        
+        return $this->db->table('leads l')
+            ->join('personas p', 'l.idpersona = p.idpersona')
+            ->join('etapas e', 'l.idetapa = e.idetapa')
+            ->select('l.idlead, CONCAT(p.nombres, " ", p.apellidos) as cliente_nombre,
+                     p.telefono, e.nombre as etapa, l.created_at,
+                     DATEDIFF(NOW(), l.updated_at) as dias_sin_actividad')
+            ->where('l.idusuario', $userId)
+            ->where('l.estado', 'activo')
+            ->where('l.idlead NOT IN', function($builder) use ($fechaLimite) {
+                return $builder->select('s.idlead')
+                    ->from('seguimientos s')
+                    ->where('s.fecha >=', $fechaLimite);
+            }, false)
+            ->orderBy('l.updated_at', 'ASC')
+            ->limit($limit)
+            ->get()
+            ->getResultArray();
     }
 }

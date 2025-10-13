@@ -24,7 +24,7 @@ class DashboardModel extends Model
         // Total leads asignados al usuario
         $totalLeads = $builder
             ->where('l.idusuario', $userId)
-            ->where('l.estado', 'Activo') // Solo leads activos
+            ->where('LOWER(l.estado)', 'activo') // Solo leads activos
             ->countAllResults();
 
         // Leads nuevos hoy
@@ -63,7 +63,7 @@ class DashboardModel extends Model
             ->join('etapas e', 'l.idetapa = e.idetapa');
         $leadsCalientes = $builder
             ->where('l.idusuario', $userId)
-            ->where('l.estado', 'Activo')
+            ->where('LOWER(l.estado)', 'activo')
             ->whereIn('e.nombre', ['COTIZACION', 'NEGOCIACION', 'CIERRE'])
             ->countAllResults();
 
@@ -130,7 +130,7 @@ class DashboardModel extends Model
             ->join('etapas e', 'l.idetapa = e.idetapa')
             ->select('l.idlead, p.nombres, p.apellidos, p.telefono, e.nombre as etapa, l.created_at as fecha_registro')
             ->where('l.idusuario', $userId)
-            ->where('l.estado', 'Activo')
+            ->where('LOWER(l.estado)', 'activo')
             ->where('l.created_at <=', date('Y-m-d H:i:s', strtotime('-2 days'))) // Sin contacto por 2 días
             ->orderBy('l.created_at', 'ASC')
             ->limit($limit);
@@ -165,7 +165,7 @@ class DashboardModel extends Model
         $builder = $this->db->table('etapas e')
             ->join('leads l', 'e.idetapa = l.idetapa', 'LEFT')
             ->select('e.nombre as etapa, COUNT(l.idlead) as total')
-            ->where('l.estado', 'Activo') // Solo leads activos
+            ->where('LOWER(l.estado)', 'activo') // Solo leads activos
             ->groupBy('e.idetapa, e.nombre')
             ->orderBy('e.orden');
 
@@ -243,7 +243,7 @@ class DashboardModel extends Model
             ->join('etapas e', 'l.idetapa = e.idetapa')
             ->join('distritos d', 'p.iddistrito = d.iddistrito', 'LEFT')
             ->where('l.idusuario', $idusuario)
-            ->where('l.estado', 'Activo')
+            ->where('LOWER(l.estado)', 'activo')
             ->whereIn('e.nombre', ['COTIZACION', 'NEGOCIACION', 'CIERRE'])
             ->orderBy('l.created_at', 'DESC')
             ->limit($limit)

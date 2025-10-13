@@ -1,5 +1,10 @@
 <?= $this->extend('layouts/base') ?>
 
+<?= $this->section('styles') ?>
+<!-- Calendario CSS -->
+<link rel="stylesheet" href="<?= base_url('css/tareas/calendario.css') ?>">
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 
 <div class="container-fluid">
@@ -144,15 +149,12 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<!-- FullCalendar CSS & JS -->
-<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+<!-- FullCalendar JS -->
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/es.global.min.js'></script>
 
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<!-- Calendario CSS y JS -->
-<link rel="stylesheet" href="<?= base_url('css/tareas/calendario.css') ?>">
+<!-- Calendario JS -->
 <script src="<?= base_url('js/tareas/calendario.js') ?>"></script>
 <?= $this->endSection() ?>

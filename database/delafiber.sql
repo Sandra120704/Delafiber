@@ -1,20 +1,3 @@
--- =====================================================
--- DELAFIBER CRM - BASE DE DATOS REFACTORIZADA
--- Versión: 3.0
--- Fecha: 2025-10-12
--- =====================================================
--- Estructura organizada:
--- 1. CONFIGURACIÓN INICIAL
--- 2. TABLAS (ordenadas por dependencia)
--- 3. VISTAS
--- 4. PROCEDIMIENTOS ALMACENADOS
--- 5. DATOS DE CATÁLOGOS
--- 6. DATOS DE PRUEBA
--- =====================================================
-
--- =====================================================
--- SECCIÓN 1: CONFIGURACIÓN INICIAL
--- =====================================================
 
 DROP DATABASE IF EXISTS `delafiber`;
 CREATE DATABASE `delafiber` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -23,11 +6,6 @@ USE `delafiber`;
 SET FOREIGN_KEY_CHECKS = 0;
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
-
--- =====================================================
--- SECCIÓN 2: DEFINICIÓN DE TABLAS
--- Ordenadas por dependencias (sin ALTER TABLE)
--- =====================================================
 
 -- -----------------------------------------------------
 -- 2.1 TABLAS BASE (sin dependencias externas)
@@ -91,16 +69,43 @@ CREATE TABLE `origenes` (
   PRIMARY KEY (`idorigen`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Tabla: pipelines
+CREATE TABLE IF NOT EXISTS `pipelines` (
+  `idpipeline` INT UNSIGNED AUTO_INCREMENT,
+  `nombre` VARCHAR(100) NOT NULL,
+  `descripcion` TEXT,
+  `estado` VARCHAR(20) DEFAULT 'activo',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`idpipeline`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabla: medios
+CREATE TABLE IF NOT EXISTS `medios` (
+  `idmedio` INT UNSIGNED AUTO_INCREMENT,
+  `nombre` VARCHAR(100) NOT NULL,
+  `descripcion` TEXT,
+  `activo` BOOLEAN DEFAULT TRUE,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`idmedio`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Tabla: etapas
 CREATE TABLE `etapas` (
   `idetapa` INT UNSIGNED AUTO_INCREMENT,
+  `idpipeline` INT UNSIGNED DEFAULT 1 COMMENT 'Pipeline al que pertenece (opcional)',
   `nombre` VARCHAR(50) NOT NULL,
   `descripcion` TEXT,
   `orden` SMALLINT UNSIGNED NOT NULL,
   `color` CHAR(7) DEFAULT '#3498db',
   `estado` VARCHAR(20) DEFAULT 'activo',
   PRIMARY KEY (`idetapa`),
-  KEY `idx_etapa_orden` (`orden`)
+  KEY `idx_etapa_orden` (`orden`),
+  KEY `idx_etapa_pipeline` (`idpipeline`),
+  CONSTRAINT `fk_etapa_pipeline` 
+    FOREIGN KEY (`idpipeline`) 
+    REFERENCES `pipelines` (`idpipeline`) 
+    ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabla: modalidades
@@ -136,6 +141,27 @@ CREATE TABLE `campanias` (
   `estado` VARCHAR(20) DEFAULT 'activa',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`idcampania`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabla: difusiones
+CREATE TABLE IF NOT EXISTS `difusiones` (
+  `iddifusion` INT UNSIGNED AUTO_INCREMENT,
+  `idcampania` INT UNSIGNED NOT NULL,
+  `idmedio` INT UNSIGNED NOT NULL,
+  `presupuesto` DECIMAL(10,2) DEFAULT 0,
+  `leads_generados` INT UNSIGNED DEFAULT 0,
+  `fecha_creacion` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`iddifusion`),
+  KEY `idx_difusion_campania` (`idcampania`),
+  KEY `idx_difusion_medio` (`idmedio`),
+  CONSTRAINT `fk_difusion_campania` 
+    FOREIGN KEY (`idcampania`) 
+    REFERENCES `campanias` (`idcampania`) 
+    ON DELETE CASCADE,
+  CONSTRAINT `fk_difusion_medio` 
+    FOREIGN KEY (`idmedio`) 
+    REFERENCES `medios` (`idmedio`) 
+    ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------
@@ -347,6 +373,7 @@ CREATE TABLE `seguimientos` (
   KEY `idx_seguimiento_usuario` (`idusuario`),
   KEY `idx_seguimiento_modalidad` (`idmodalidad`),
   KEY `idx_seguimiento_fecha` (`fecha`),
+  KEY `idx_seguimientos_lead_fecha` (`idlead`, `fecha`),
   CONSTRAINT `fk_seguimiento_lead` 
     FOREIGN KEY (`idlead`) 
     REFERENCES `leads` (`idlead`) 
@@ -382,6 +409,8 @@ CREATE TABLE `tareas` (
   KEY `idx_tarea_usuario` (`idusuario`),
   KEY `idx_tarea_estado` (`estado`),
   KEY `idx_tarea_fecha` (`fecha_vencimiento`),
+  KEY `idx_tareas_usuario_estado` (`idusuario`, `estado`),
+  KEY `idx_tareas_usuario_fecha` (`idusuario`, `fecha_vencimiento`),
   CONSTRAINT `fk_tarea_lead` 
     FOREIGN KEY (`idlead`) 
     REFERENCES `leads` (`idlead`) 
@@ -530,6 +559,7 @@ CREATE TABLE `historial_leads` (
   PRIMARY KEY (`idhistorial`),
   KEY `idx_historial_lead` (`idlead`),
   KEY `idx_historial_usuario` (`idusuario`),
+  KEY `idx_historial_fecha` (`fecha`),
   CONSTRAINT `fk_historial_lead` 
     FOREIGN KEY (`idlead`) 
     REFERENCES `leads` (`idlead`) 
@@ -573,6 +603,61 @@ CREATE TABLE `campos_dinamicos_origen` (
   CONSTRAINT `fk_campos_dinamicos_lead` 
     FOREIGN KEY (`idlead`) 
     REFERENCES `leads` (`idlead`) 
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabla: tb_interacciones
+CREATE TABLE IF NOT EXISTS `tb_interacciones` (
+  `id_interaccion` INT UNSIGNED AUTO_INCREMENT,
+  `id_prospecto` INT UNSIGNED NOT NULL,
+  `id_campana` INT UNSIGNED NOT NULL,
+  `tipo_interaccion` VARCHAR(50) NOT NULL COMMENT 'Llamada, Visita, Email, WhatsApp, SMS, Reunión',
+  `fecha_interaccion` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `resultado` VARCHAR(50) NOT NULL COMMENT 'Contactado, No Contesta, Interesado, No Interesado, Agendado, Convertido, Rechazado',
+  `notas` TEXT,
+  `proxima_accion` TEXT,
+  `id_usuario` INT UNSIGNED NOT NULL,
+  `duracion_minutos` INT UNSIGNED,
+  `costo` DECIMAL(10,2) DEFAULT 0,
+  `create_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_interaccion`),
+  KEY `idx_interaccion_prospecto` (`id_prospecto`),
+  KEY `idx_interaccion_campana` (`id_campana`),
+  KEY `idx_interaccion_usuario` (`id_usuario`),
+  KEY `idx_interaccion_fecha` (`fecha_interaccion`),
+  CONSTRAINT `fk_interaccion_prospecto` 
+    FOREIGN KEY (`id_prospecto`) 
+    REFERENCES `personas` (`idpersona`) 
+    ON DELETE CASCADE,
+  CONSTRAINT `fk_interaccion_campana` 
+    FOREIGN KEY (`id_campana`) 
+    REFERENCES `campanias` (`idcampania`) 
+    ON DELETE CASCADE,
+  CONSTRAINT `fk_interaccion_usuario` 
+    FOREIGN KEY (`id_usuario`) 
+    REFERENCES `usuarios` (`idusuario`) 
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabla: comentarios_lead
+CREATE TABLE IF NOT EXISTS `comentarios_lead` (
+  `idcomentario` INT UNSIGNED AUTO_INCREMENT,
+  `idlead` INT UNSIGNED NOT NULL,
+  `idusuario` INT UNSIGNED NOT NULL,
+  `comentario` TEXT NOT NULL,
+  `tipo` VARCHAR(50) DEFAULT 'Nota' COMMENT 'Nota, Recordatorio, Alerta',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`idcomentario`),
+  KEY `idx_comentario_lead` (`idlead`),
+  KEY `idx_comentario_usuario` (`idusuario`),
+  KEY `idx_comentario_fecha` (`created_at`),
+  CONSTRAINT `fk_comentario_lead` 
+    FOREIGN KEY (`idlead`) 
+    REFERENCES `leads` (`idlead`) 
+    ON DELETE CASCADE,
+  CONSTRAINT `fk_comentario_usuario` 
+    FOREIGN KEY (`idusuario`) 
+    REFERENCES `usuarios` (`idusuario`) 
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -669,6 +754,7 @@ INNER JOIN etapas e ON l.idetapa = e.idetapa
 WHERE l.estado = 'activo';
 
 -- Vista: v_leads_con_campos_dinamicos
+-- Nota: Versión compatible con MySQL 5.7+
 CREATE OR REPLACE VIEW `v_leads_con_campos_dinamicos` AS
 SELECT 
     l.idlead,
@@ -678,8 +764,8 @@ SELECT
     e.nombre as etapa,
     l.estado,
     l.created_at,
-    -- Campos dinámicos agrupados
-    (SELECT JSON_OBJECTAGG(cd.campo, cd.valor)
+    -- Campos dinámicos como texto concatenado (compatible con MySQL 5.7)
+    (SELECT GROUP_CONCAT(CONCAT(cd.campo, ':', cd.valor) SEPARATOR '|')
      FROM campos_dinamicos_origen cd
      WHERE cd.idlead = l.idlead) as campos_dinamicos
 FROM leads l
@@ -738,8 +824,8 @@ DELIMITER ;
 -- Insertar roles
 INSERT INTO `roles` (`idrol`, `nombre`, `descripcion`, `permisos`, `nivel`) VALUES
 (1, 'Administrador', 'Acceso total al sistema', '["*"]', 1),
-(2, 'Supervisor', 'Gestiona equipo de ventas', '["leads.view_all", "tareas.view_all", "reportes.*", "zonas.*"]', 2),
-(3, 'Vendedor', 'Gestiona sus propios leads', '["leads.view_own", "leads.create", "tareas.view_own", "cotizaciones.*"]', 3);
+(2, 'Supervisor', 'Gestiona equipo de ventas', '["leads.*", "seguimientos.*", "tareas.*", "cotizaciones.*", "reportes.*", "zonas.*"]', 2),
+(3, 'Vendedor', 'Gestiona sus propios leads', '["leads.*", "seguimientos.*", "tareas.*", "cotizaciones.*"]', 3);
 
 -- Insertar departamentos, provincias y distritos de Ica
 INSERT INTO `departamentos` (`iddepartamento`, `nombre`, `codigo`) VALUES
@@ -808,6 +894,18 @@ INSERT INTO `servicios` (`idservicio`, `nombre`, `descripcion`, `velocidad`, `pr
 (5, 'Cable TV HD', 'Paquete HD de cable TV', 'HD', 40.00, 'Cable TV', 'activo'),
 (6, 'Netflix Premium', 'Suscripción Netflix Premium', '4K', 20.00, 'Streaming', 'activo'),
 (7, 'Instalación', 'Costo de instalación', NULL, 50.00, 'Instalación', 'activo');
+
+-- Insertar pipeline por defecto
+INSERT IGNORE INTO `pipelines` (`idpipeline`, `nombre`, `descripcion`, `estado`) VALUES
+(1, 'Pipeline Principal', 'Pipeline de ventas principal del CRM', 'activo');
+
+-- Insertar medios de publicidad
+INSERT IGNORE INTO `medios` (`idmedio`, `nombre`, `descripcion`, `activo`) VALUES
+(1, 'Facebook Ads', 'Publicidad pagada en Facebook', 1),
+(2, 'Google Ads', 'Publicidad en Google', 1),
+(3, 'Volantes', 'Distribución de volantes físicos', 1),
+(4, 'Radio Local', 'Anuncios en radio local', 1),
+(5, 'Banners Publicitarios', 'Banners en ubicaciones estratégicas', 1);
 
 -- =====================================================
 -- SECCIÓN 6: DATOS DE PRUEBA
@@ -944,7 +1042,7 @@ SELECT '✅ BASE DE DATOS DELAFIBER CREADA' as '';
 SELECT '========================================' as '';
 SELECT '' as '';
 SELECT '📊 ESTADÍSTICAS:' as '';
-SELECT '  - Tablas: 23' as '';
+SELECT '  - Tablas: 28 (23 originales + 5 nuevas)' as '';
 SELECT '  - Vistas: 3' as '';
 SELECT '  - Procedimientos: 1' as '';
 SELECT '  - Roles: 3' as '';
@@ -953,6 +1051,8 @@ SELECT '  - Orígenes: 7' as '';
 SELECT '  - Etapas: 6' as '';
 SELECT '  - Modalidades: 6' as '';
 SELECT '  - Servicios: 7' as '';
+SELECT '  - Pipelines: 1' as '';
+SELECT '  - Medios: 5' as '';
 SELECT '  - Campañas: 3' as '';
 SELECT '  - Zonas: 3' as '';
 SELECT '  - Personas: 10' as '';
@@ -960,6 +1060,13 @@ SELECT '  - Leads: 10' as '';
 SELECT '  - Seguimientos: 8' as '';
 SELECT '  - Tareas: 7' as '';
 SELECT '  - Cotizaciones: 4' as '';
+SELECT '' as '';
+SELECT '🆕 TABLAS NUEVAS AGREGADAS:' as '';
+SELECT '  ✓ pipelines - Gestión de pipelines de ventas' as '';
+SELECT '  ✓ medios - Medios de publicidad' as '';
+SELECT '  ✓ difusiones - Relación medios-campañas' as '';
+SELECT '  ✓ tb_interacciones - Registro de interacciones' as '';
+SELECT '  ✓ comentarios_lead - Comentarios en leads' as '';
 SELECT '' as '';
 SELECT '👥 USUARIOS DE PRUEBA:' as '';
 SELECT '========================================' as '';
@@ -970,4 +1077,5 @@ SELECT '📧 juan@delafiber.com | 🔑 password123 | 👤 Vendedor' as '';
 SELECT '📧 ana@delafiber.com | 🔑 password123 | 👤 Vendedor' as '';
 SELECT '' as '';
 SELECT '✅ Base de datos lista para usar' as '';
+SELECT '✅ Todos los modelos sincronizados' as '';
 SELECT '========================================' as ''

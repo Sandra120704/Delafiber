@@ -73,6 +73,8 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
+            // CSRF deshabilitado temporalmente para debugging
+            // 'csrf',
             'auth' => ['except' => [
                 'auth',
                 'auth/login',

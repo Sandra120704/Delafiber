@@ -2,15 +2,32 @@
  * JavaScript para Calendario de Tareas con FullCalendar
  */
 
-const baseUrl = document.querySelector('meta[name="base-url"]')?.getAttribute('content') || '';
+// baseUrl ya está declarado globalmente en otros archivos JS
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Calendario JS cargado');
+    console.log('baseUrl:', baseUrl);
+    console.log('FullCalendar disponible:', typeof FullCalendar !== 'undefined');
+    
     const calendarEl = document.getElementById('calendar');
+    console.log('Elemento calendar encontrado:', calendarEl);
+    
+    if (!calendarEl) {
+        console.error('No se encontró el elemento #calendar');
+        return;
+    }
+    
+    if (typeof FullCalendar === 'undefined') {
+        console.error('FullCalendar no está cargado');
+        return;
+    }
+    
     const modalTarea = new bootstrap.Modal(document.getElementById('modalTarea'));
     const formTarea = document.getElementById('formTarea');
     let tareaEditando = null;
 
     // Inicializar FullCalendar
+    console.log('Inicializando FullCalendar...');
     const calendar = new FullCalendar.Calendar(calendarEl, {
         locale: 'es',
         initialView: 'dayGridMonth',
@@ -69,7 +86,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    console.log('Renderizando calendario...');
     calendar.render();
+    console.log('Calendario renderizado exitosamente');
 
     // Botón nueva tarea
     document.getElementById('btnNuevaTarea')?.addEventListener('click', function() {

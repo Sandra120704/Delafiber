@@ -206,11 +206,11 @@ class Leads extends BaseController
                 'idpersona' => $personaId,
                 'idetapa' => $this->request->getPost('idetapa') ?: 1, // CAPTACION por defecto
                 'idusuario' => $usuarioAsignado,  // Usuario ASIGNADO para seguimiento 
-                'idusuario_registro' => session()->get('idusuario'),  // Usuario que REGISTR
+                'idusuario_registro' => session()->get('idusuario'),  // Usuario que REGISTRÓ
                 'idorigen' => $this->request->getPost('idorigen'),
                 'idcampania' => $this->request->getPost('idcampania') ?: null,
-                'idmodalidad' => $this->request->getPost('idmodalidad') ?: null,
-                'medio_comunicacion' => $this->request->getPost('medio_comunicacion') ?: null
+                'nota_inicial' => $this->request->getPost('nota_inicial') ?: null,
+                'estado' => 'activo'
             ];
             $leadId = $this->leadModel->insert($leadData);
             if (!$leadId) {
@@ -284,15 +284,23 @@ class Leads extends BaseController
     public function view($leadId)
     {
         $userId = session()->get('idusuario');
-        $lead = $this->leadModel->getLeadCompleto($leadId, $userId);
+        $rol = session()->get('nombreRol');
+        
+        // Admin y Supervisor pueden ver todos los leads
+        // Vendedor solo ve los suyos
+        if (es_supervisor()) {
+            $lead = $this->leadModel->getLeadCompleto($leadId, null); // null = ver todos
+        } else {
+            $lead = $this->leadModel->getLeadCompleto($leadId, $userId); // filtrar por usuario
+        }
         
         if (!$lead) {
             return redirect()->to('/leads')
                 ->with('error', 'Lead no encontrado');
         }
         
-        // Verificar permisos de visualización
-        if (!puede_ver_lead($lead)) {
+        // Verificar permisos adicionales si la función existe
+        if (function_exists('puede_ver_lead') && !puede_ver_lead($lead)) {
             return redirect()->to('/leads')
                 ->with('error', 'No tienes permisos para ver este lead');
         }
@@ -317,11 +325,19 @@ class Leads extends BaseController
             }
         }
         
+        // Obtener historial de cambios de etapa (no confundir con seguimientos)
+        $historialModel = new HistorialLeadModel();
+        $historialCambios = $historialModel->getHistorialPorLead($leadId);
+        
+        // Obtener seguimientos (interacciones con el lead)
+        $seguimientos = $this->seguimientoModel->getHistorialLead($leadId);
+        
         $data = [
             'title' => 'Lead: ' . $lead['nombres'] . ' ' . $lead['apellidos'],
             'lead' => $lead,
             'zona' => $zonaInfo,
-            'historial' => $this->leadModel->getHistorialLead($leadId),
+            'historial' => $historialCambios,
+            'seguimientos' => $seguimientos,
             'tareas' => $this->leadModel->getTareasLead($leadId),
             'etapas' => $this->etapaModel->getEtapasActivas(),
             'modalidades' => $this->modalidadModel->getModalidadesActivas(),
@@ -397,6 +413,7 @@ class Leads extends BaseController
         
         $idlead = $this->request->getPost('idlead');
         $idetapa = $this->request->getPost('idetapa');
+        $nota = $this->request->getPost('nota') ?? '';
         
         if (!$idlead || !$idetapa) {
             return $this->response->setJSON([
@@ -406,9 +423,37 @@ class Leads extends BaseController
         }
         
         try {
-            // Obtener etapa anterior
-            $lead = $this->leadModel->find($idlead);
+            // Verificar que el lead existe y pertenece al usuario (o es supervisor)
+            $userId = session()->get('idusuario');
+            $lead = es_supervisor() 
+                ? $this->leadModel->find($idlead)
+                : $this->leadModel->where(['idlead' => $idlead, 'idusuario' => $userId])->first();
+            
+            if (!$lead) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Lead no encontrado o no tienes permisos para modificarlo'
+                ]);
+            }
+            
             $etapaAnterior = $lead['idetapa'] ?? null;
+            
+            // Verificar que la etapa nueva existe
+            $etapaNueva = $this->etapaModel->find($idetapa);
+            if (!$etapaNueva) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'La etapa seleccionada no existe'
+                ]);
+            }
+            
+            // Si es la misma etapa, no hacer nada
+            if ($etapaAnterior == $idetapa) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'El lead ya está en esa etapa'
+                ]);
+            }
             
             // Actualizar etapa
             $this->leadModel->update($idlead, ['idetapa' => $idetapa]);
@@ -416,24 +461,35 @@ class Leads extends BaseController
             // Registrar en historial de leads
             try {
                 $historialModel = new HistorialLeadModel();
+                $motivo = !empty($nota) ? $nota : 'Lead movido desde pipeline';
                 $historialModel->registrarCambio(
                     $idlead,
                     session()->get('idusuario'),
                     $etapaAnterior,
                     $idetapa,
-                    'Lead movido desde pipeline'
+                    $motivo
                 );
             } catch (\Exception $e) {
                 // Log del error pero continuar
                 log_message('error', 'Error al registrar historial: ' . $e->getMessage());
             }
             
+            // Registrar auditoría
+            log_auditoria(
+                'Cambio de Etapa',
+                'leads',
+                $idlead,
+                ['etapa_anterior' => $etapaAnterior, 'etapa_nueva' => $idetapa],
+                ['nota' => $nota]
+            );
+            
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Lead movido exitosamente'
+                'message' => 'Lead movido exitosamente a ' . $etapaNueva['nombre']
             ]);
             
         } catch (\Exception $e) {
+            log_message('error', 'Error en moverEtapa: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Error al mover el lead: ' . $e->getMessage()
@@ -561,122 +617,6 @@ class Leads extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'No se encontró lead con ese DNI'
-            ]);
-        }
-    }
-
-    /**
-     * Agregar seguimiento a un lead
-     */
-    public function agregarSeguimiento()
-    {
-        if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
-
-        $idlead = $this->request->getPost('idlead');
-        
-        // Validar que el lead existe y pertenece al usuario
-        $lead = $this->leadModel->find($idlead);
-        if (!$lead) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Lead no encontrado'
-            ]);
-        }
-        
-        $data = [
-            'idlead' => $idlead,
-            'idusuario' => session()->get('idusuario'),
-            'idmodalidad' => $this->request->getPost('idmodalidad'),
-            'nota' => $this->request->getPost('nota'),
-            'fecha' => date('Y-m-d H:i:s')
-        ];
-
-        try {
-            $this->seguimientoModel->insert($data);
-            
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Seguimiento agregado correctamente'
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al agregar seguimiento: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
-     * Crear tarea desde vista de lead
-     */
-    public function crearTarea()
-    {
-        if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
-
-        $idlead = $this->request->getPost('idlead');
-        
-        // Validar que el lead existe
-        $lead = $this->leadModel->find($idlead);
-        if (!$lead) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Lead no encontrado'
-            ]);
-        }
-        
-        $data = [
-            'idlead' => $idlead,
-            'idusuario' => session()->get('idusuario'),
-            'titulo' => $this->request->getPost('titulo'),
-            'descripcion' => $this->request->getPost('descripcion'),
-            'prioridad' => $this->request->getPost('prioridad'),
-            'fecha_vencimiento' => $this->request->getPost('fecha_vencimiento'),
-            'fecha_inicio' => date('Y-m-d'),
-            'estado' => 'pendiente'
-        ];
-
-        try {
-            $this->tareaModel->insert($data);
-            
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Tarea creada'
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al crear tarea'
-            ]);
-        }
-    }
-
-    /**
-     * Completar tarea desde vista de lead
-     */
-    public function completarTarea()
-    {
-        if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
-
-        $idtarea = $this->request->getPost('idtarea');
-
-        try {
-            $db = \Config\Database::connect();
-            $db->table('tareas')->update(['estado' => 'Completada', 'fecha_completada' => date('Y-m-d H:i:s')], ['idtarea' => $idtarea]);
-            
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Tarea completada'
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error'
             ]);
         }
     }
@@ -1079,5 +1019,288 @@ class Leads extends BaseController
         
         return $camposDinamicos;
     }
+    
+    /**
+     * Agregar seguimiento a un lead - VERSIÓN CORREGIDA
+     */
+    public function agregarSeguimiento()
+    {
+        // Validar que sea petición AJAX
+        if (!$this->request->isAJAX()) {
+            return $this->response
+                ->setStatusCode(400)
+                ->setJSON(['success' => false, 'message' => 'Petición inválida']);
+        }
+        
+        // Obtener datos
+        $idlead = $this->request->getPost('idlead');
+        $idmodalidad = $this->request->getPost('idmodalidad');
+        $nota = $this->request->getPost('nota');
+        
+        // Validación manual
+        if (empty($idlead) || empty($idmodalidad) || empty($nota)) {
+            return $this->response
+                ->setStatusCode(400)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Todos los campos son obligatorios'
+                ]);
+        }
+        
+        // Validar que el lead existe y pertenece al usuario
+        $userId = session()->get('idusuario');
+        $lead = es_supervisor() 
+            ? $this->leadModel->find($idlead)
+            : $this->leadModel->where(['idlead' => $idlead, 'idusuario' => $userId])->first();
+        
+        if (!$lead) {
+            return $this->response
+                ->setStatusCode(403)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Lead no encontrado o no tienes permisos'
+                ]);
+        }
+        
+        // Preparar datos
+        $data = [
+            'idlead' => (int)$idlead,
+            'idusuario' => (int)session()->get('idusuario'),
+            'idmodalidad' => (int)$idmodalidad,
+            'nota' => trim($nota),
+            'fecha' => date('Y-m-d H:i:s')
+        ];
+        
+        try {
+            // Intentar insertar
+            $insertId = $this->seguimientoModel->insert($data);
+            
+            if (!$insertId) {
+                // Obtener errores del modelo
+                $errors = $this->seguimientoModel->errors();
+                $errorMessage = !empty($errors) ? implode(', ', $errors) : 'Error desconocido al guardar';
+                
+                log_message('error', 'Error al insertar seguimiento: ' . json_encode([
+                    'errors' => $errors,
+                    'data' => $data
+                ]));
+                
+                return $this->response
+                    ->setStatusCode(500)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => $errorMessage,
+                        'debug' => $errors
+                    ]);
+            }
+            
+            // Éxito
+            log_message('info', "Seguimiento #{$insertId} agregado al lead #{$idlead}");
+            
+            return $this->response
+                ->setStatusCode(200)
+                ->setJSON([
+                    'success' => true,
+                    'message' => 'Seguimiento agregado correctamente',
+                    'seguimiento_id' => $insertId
+                ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Excepción al agregar seguimiento: ' . $e->getMessage());
+            
+            return $this->response
+                ->setStatusCode(500)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Error al guardar: ' . $e->getMessage()
+                ]);
+        }
+    }
+
+    /**
+     * Crear tarea desde vista de lead - VERSIÓN CORREGIDA
+     */
+    public function crearTarea()
+    {
+        // Validar que sea petición AJAX
+        if (!$this->request->isAJAX()) {
+        return $this->response
+            ->setStatusCode(400)
+            ->setJSON(['success' => false, 'message' => 'Petición inválida']);
+    }
+    
+    // Obtener datos
+    $idlead = $this->request->getPost('idlead');
+    $titulo = $this->request->getPost('titulo');
+    $descripcion = $this->request->getPost('descripcion');
+    $prioridad = $this->request->getPost('prioridad');
+    $fechaVencimiento = $this->request->getPost('fecha_vencimiento');
+    
+    // Validación manual
+    if (empty($idlead) || empty($titulo) || empty($fechaVencimiento)) {
+        return $this->response
+            ->setStatusCode(400)
+            ->setJSON([
+                'success' => false,
+                'message' => 'Título y fecha de vencimiento son obligatorios'
+            ]);
+    }
+    
+    // Validar que el lead existe y pertenece al usuario
+    $userId = session()->get('idusuario');
+    $lead = es_supervisor() 
+        ? $this->leadModel->find($idlead)
+        : $this->leadModel->where(['idlead' => $idlead, 'idusuario' => $userId])->first();
+    
+    if (!$lead) {
+        return $this->response
+            ->setStatusCode(403)
+            ->setJSON([
+                'success' => false,
+                'message' => 'Lead no encontrado o no tienes permisos'
+            ]);
+    }
+    
+    // Preparar datos
+    $data = [
+        'idlead' => (int)$idlead,
+        'idusuario' => (int)session()->get('idusuario'),
+        'titulo' => trim($titulo),
+        'descripcion' => !empty($descripcion) ? trim($descripcion) : null,
+        'prioridad' => !empty($prioridad) ? $prioridad : 'media',
+        'fecha_vencimiento' => $fechaVencimiento,
+        'fecha_inicio' => date('Y-m-d H:i:s'),
+        'estado' => 'pendiente',
+        'tipo_tarea' => 'seguimiento',
+        'visible_para_equipo' => 1,
+        'turno_asignado' => 'ambos'
+    ];
+    
+    try {
+        // Intentar insertar
+        $insertId = $this->tareaModel->insert($data);
+        
+        if (!$insertId) {
+            // Obtener errores del modelo
+            $errors = $this->tareaModel->errors();
+            $errorMessage = !empty($errors) ? implode(', ', $errors) : 'Error desconocido al guardar';
+            
+            log_message('error', 'Error al insertar tarea: ' . json_encode([
+                'errors' => $errors,
+                'data' => $data
+            ]));
+            
+            return $this->response
+                ->setStatusCode(500)
+                ->setJSON([
+                    'success' => false,
+                    'message' => $errorMessage,
+                    'debug' => $errors
+                ]);
+        }
+        
+        // Éxito
+        log_message('info', "Tarea #{$insertId} creada para lead #{$idlead}");
+        
+        return $this->response
+            ->setStatusCode(200)
+            ->setJSON([
+                'success' => true,
+                'message' => 'Tarea creada correctamente',
+                'tarea_id' => $insertId
+            ]);
+        
+    } catch (\Exception $e) {
+        log_message('error', 'Excepción al crear tarea: ' . $e->getMessage());
+        
+        return $this->response
+            ->setStatusCode(500)
+            ->setJSON([
+                'success' => false,
+                'message' => 'Error al guardar: ' . $e->getMessage()
+            ]);
+    }
 }
 
+/**
+ * Completar tarea desde vista de lead - VERSIÓN CORREGIDA
+ */
+public function completarTarea()
+{
+    if (!$this->request->isAJAX()) {
+        return $this->response
+            ->setStatusCode(400)
+            ->setJSON(['success' => false, 'message' => 'Petición inválida']);
+    }
+
+    $idtarea = $this->request->getPost('idtarea');
+    
+    if (empty($idtarea)) {
+        return $this->response
+            ->setStatusCode(400)
+            ->setJSON([
+                'success' => false,
+                'message' => 'ID de tarea no especificado'
+            ]);
+    }
+
+    try {
+        // Verificar que la tarea existe y pertenece al usuario
+        $tarea = $this->tareaModel->find($idtarea);
+        
+        if (!$tarea) {
+            return $this->response
+                ->setStatusCode(404)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Tarea no encontrada'
+                ]);
+        }
+        
+        // Verificar permisos (solo el dueño o supervisor puede completar)
+        $userId = session()->get('idusuario');
+        if (!es_supervisor() && $tarea['idusuario'] != $userId) {
+            return $this->response
+                ->setStatusCode(403)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'No tienes permisos para completar esta tarea'
+                ]);
+        }
+        
+        // Actualizar tarea
+        $updated = $this->tareaModel->update($idtarea, [
+            'estado' => 'completada',
+            'fecha_completada' => date('Y-m-d H:i:s')
+        ]);
+        
+        if (!$updated) {
+            return $this->response
+                ->setStatusCode(500)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Error al actualizar la tarea'
+                ]);
+        }
+        
+        log_message('info', "Tarea #{$idtarea} completada por usuario #{$userId}");
+        
+        return $this->response
+            ->setStatusCode(200)
+            ->setJSON([
+                'success' => true,
+                'message' => 'Tarea marcada como completada'
+            ]);
+        
+    } catch (\Exception $e) {
+        log_message('error', 'Error al completar tarea: ' . $e->getMessage());
+        
+        return $this->response
+            ->setStatusCode(500)
+            ->setJSON([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+    }
+    }
+}

@@ -8,22 +8,56 @@ class TareaModel extends Model
 {
     protected $table = 'tareas';
     protected $primaryKey = 'idtarea';
+    protected $useAutoIncrement = true;
+    protected $returnType = 'array';
+    protected $useSoftDeletes = false;
+    
     protected $allowedFields = [
         'idlead',
         'idusuario',
         'titulo',
         'descripcion',
-        'prioridad',
+        'fecha_inicio',
         'fecha_vencimiento',
-        'fecha_completada',
+        'recordatorio',
+        'tipo_tarea',
+        'prioridad',
         'estado',
+        'resultado',
         'visible_para_equipo',
-        'turno_asignado'
+        'turno_asignado',
+        'fecha_completada'
     ];
     
     protected $useTimestamps = true;
     protected $createdField = 'created_at';
-    protected $updatedField = '';
+    protected $updatedField = false;
+    
+    // Validaciones
+    protected $validationRules = [
+        'idlead' => 'permit_empty|integer',
+        'idusuario' => 'required|integer',
+        'titulo' => 'required|min_length[3]|max_length[200]',
+        'fecha_vencimiento' => 'required|valid_date'
+    ];
+    
+    protected $validationMessages = [
+        'idusuario' => [
+            'required' => 'El usuario es obligatorio',
+            'integer' => 'ID de usuario inválido'
+        ],
+        'titulo' => [
+            'required' => 'El título es obligatorio',
+            'min_length' => 'El título debe tener al menos 3 caracteres',
+            'max_length' => 'El título no puede exceder 200 caracteres'
+        ],
+        'fecha_vencimiento' => [
+            'required' => 'La fecha de vencimiento es obligatoria',
+            'valid_date' => 'Fecha inválida'
+        ]
+    ];
+    
+    protected $skipValidation = false;
     
     /**
      * Obtener tareas con información completa
@@ -168,6 +202,63 @@ class TareaModel extends Model
         }
         
         return false;
+    }
+    
+    /**
+     * Obtener estadísticas de tareas de un usuario
+     */
+    public function getEstadisticas($idusuario)
+    {
+        $db = \Config\Database::connect();
+        
+        $query = $db->query("
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN estado = 'pendiente' OR estado = 'Pendiente' THEN 1 ELSE 0 END) as pendientes,
+                SUM(CASE WHEN estado = 'completada' OR estado = 'Completada' THEN 1 ELSE 0 END) as completadas,
+                SUM(CASE WHEN (estado = 'pendiente' OR estado = 'Pendiente') AND fecha_vencimiento < NOW() THEN 1 ELSE 0 END) as vencidas
+            FROM tareas
+            WHERE idusuario = ?
+        ", [$idusuario]);
+        
+        return $query->getRowArray();
+    }
+
+    /**
+     * Obtener próximos vencimientos de tareas
+     */
+    public function getProximosVencimientos($idusuario, $limit = 5)
+    {
+        $builder = $this->db->table($this->table . ' t');
+        $builder->select('
+            t.*,
+            CONCAT(pl.nombres, " ", pl.apellidos) as lead_nombre,
+            l.idlead
+        ');
+        $builder->join('leads l', 't.idlead = l.idlead', 'left');
+        $builder->join('personas pl', 'l.idpersona = pl.idpersona', 'left');
+        
+        $builder->where('t.idusuario', $idusuario);
+        $builder->where('t.estado !=', 'Completada');
+        $builder->where('t.fecha_vencimiento >=', date('Y-m-d H:i:s'));
+        $builder->orderBy('t.fecha_vencimiento', 'ASC');
+        $builder->limit($limit);
+        
+        return $builder->get()->getResultArray();
+    }
+
+    /**
+     * Obtener próxima tarea de un lead
+     */
+    public function getProximaTarea($idlead)
+    {
+        $builder = $this->db->table($this->table);
+        $builder->where('idlead', $idlead);
+        $builder->where('estado !=', 'Completada');
+        $builder->orderBy('fecha_vencimiento', 'ASC');
+        $builder->limit(1);
+        
+        return $builder->get()->getRowArray();
     }
 }
 
