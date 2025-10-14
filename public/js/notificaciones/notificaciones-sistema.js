@@ -3,7 +3,7 @@
  * Polling cada 30 segundos
  */
 
-const baseUrl = document.querySelector('meta[name="base-url"]')?.content || window.location.origin;
+// baseUrl ya está declarado globalmente en header.php
 let ultimaConsulta = null;
 let pollingInterval = null;
 

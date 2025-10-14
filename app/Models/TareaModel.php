@@ -104,7 +104,7 @@ class TareaModel extends Model
     {
         $filtros = [
             'idusuario' => $idusuario,
-            'estado' => 'Pendiente'
+            'estado' => 'pendiente'
         ];
         
         $tareas = $this->getTareasCompletas($filtros);
@@ -131,7 +131,7 @@ class TareaModel extends Model
         $builder->join('leads l', 't.idlead = l.idlead', 'left');
         $builder->join('personas pl', 'l.idpersona = pl.idpersona', 'left');
         
-        $builder->where('t.estado !=', 'Completada');
+        $builder->where('t.estado !=', 'completada');
         $builder->where('t.fecha_vencimiento <', date('Y-m-d H:i:s'));
         
         if ($idusuario) {
@@ -149,7 +149,7 @@ class TareaModel extends Model
     public function completarTarea($idtarea, $notas_resultado = null)
     {
         $data = [
-            'estado' => 'Completada',
+            'estado' => 'completada',
             'fecha_completada' => date('Y-m-d H:i:s')
         ];
         
@@ -174,7 +174,7 @@ class TareaModel extends Model
         $builder->join('personas pl', 'l.idpersona = pl.idpersona', 'left');
         
         $builder->where('t.idusuario', $idusuario);
-        $builder->where('t.estado !=', 'Completada');
+        $builder->where('t.estado !=', 'completada');
         $builder->where('DATE(t.fecha_vencimiento)', date('Y-m-d'));
         
         $builder->orderBy('t.fecha_vencimiento', 'ASC');
@@ -214,9 +214,9 @@ class TareaModel extends Model
         $query = $db->query("
             SELECT 
                 COUNT(*) as total,
-                SUM(CASE WHEN estado = 'pendiente' OR estado = 'Pendiente' THEN 1 ELSE 0 END) as pendientes,
-                SUM(CASE WHEN estado = 'completada' OR estado = 'Completada' THEN 1 ELSE 0 END) as completadas,
-                SUM(CASE WHEN (estado = 'pendiente' OR estado = 'Pendiente') AND fecha_vencimiento < NOW() THEN 1 ELSE 0 END) as vencidas
+                SUM(CASE WHEN estado = 'pendiente' THEN 1 ELSE 0 END) as pendientes,
+                SUM(CASE WHEN estado = 'completada' THEN 1 ELSE 0 END) as completadas,
+                SUM(CASE WHEN estado = 'pendiente' AND fecha_vencimiento < NOW() THEN 1 ELSE 0 END) as vencidas
             FROM tareas
             WHERE idusuario = ?
         ", [$idusuario]);
@@ -239,7 +239,7 @@ class TareaModel extends Model
         $builder->join('personas pl', 'l.idpersona = pl.idpersona', 'left');
         
         $builder->where('t.idusuario', $idusuario);
-        $builder->where('t.estado !=', 'Completada');
+        $builder->where('t.estado !=', 'completada');
         $builder->where('t.fecha_vencimiento >=', date('Y-m-d H:i:s'));
         $builder->orderBy('t.fecha_vencimiento', 'ASC');
         $builder->limit($limit);
@@ -254,7 +254,7 @@ class TareaModel extends Model
     {
         $builder = $this->db->table($this->table);
         $builder->where('idlead', $idlead);
-        $builder->where('estado !=', 'Completada');
+        $builder->where('estado !=', 'completada');
         $builder->orderBy('fecha_vencimiento', 'ASC');
         $builder->limit(1);
         

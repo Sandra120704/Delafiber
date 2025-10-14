@@ -90,7 +90,7 @@
   </script>
 
   <!-- Sistema de Notificaciones en Tiempo Real -->
-  <script src="<?= base_url('js/notificaciones/notificaciones-sistema.js') ?>"></script>
+  <script src="<?= base_url('js/notificaciones/notificaciones-sistema.js?v=' . time()) ?>"></script>
 
   <!-- Scripts específicos de cada página -->
   <?= $this->renderSection('scripts') ?>

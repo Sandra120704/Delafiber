@@ -86,19 +86,10 @@ class PipelineManager {
         
         if (!this.draggedElement) return;
         
-        const targetEtapa = parseInt(body.closest('.pipeline-column').dataset.etapaId);
-        const sourceEtapa = parseInt(this.sourceEtapa);
-        
-        // Cambiar cursor según si puede mover o no
-        if (targetEtapa < sourceEtapa) {
-            e.dataTransfer.dropEffect = 'none'; // No permitir retroceso
-            body.classList.remove('drag-over');
-            body.classList.add('drag-forbidden');
-        } else {
-            e.dataTransfer.dropEffect = 'move';
-            body.classList.remove('drag-forbidden');
-            body.classList.add('drag-over');
-        }
+        // Permitir mover en cualquier dirección
+        e.dataTransfer.dropEffect = 'move';
+        body.classList.remove('drag-forbidden');
+        body.classList.add('drag-over');
     }
 
     handleDragLeave(body) {
@@ -118,18 +109,6 @@ class PipelineManager {
         const leadId = this.draggedElement.dataset.leadId;
         const leadNombre = this.draggedElement.querySelector('strong').textContent;
         
-        // VALIDAR: Solo permitir avanzar, no retroceder
-        if (targetEtapa < sourceEtapa) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'No se puede retroceder',
-                text: 'Solo puedes mover leads hacia adelante en el proceso, no hacia atrás.',
-                confirmButtonColor: '#f39c12',
-                confirmButtonText: 'Entendido'
-            });
-            return;
-        }
-        
         // Si es la misma etapa, no hacer nada
         if (targetEtapa === sourceEtapa) {
             return;
@@ -139,7 +118,7 @@ class PipelineManager {
         if (this.isDescartadoEtapa(targetNombre)) {
             this.confirmarDescarte(leadNombre, leadId, targetEtapa, body);
         } else {
-            // Mover normalmente a otras etapas (solo hacia adelante)
+            // Mover normalmente a otras etapas (en cualquier dirección)
             body.appendChild(this.draggedElement);
             this.actualizarEtapa(leadId, targetEtapa);
         }

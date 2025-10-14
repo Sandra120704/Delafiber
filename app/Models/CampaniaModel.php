@@ -28,7 +28,7 @@ class CampaniaModel extends Model
         $builder->select('
             c.*,
             COUNT(DISTINCT l.idlead) as total_leads,
-            COUNT(DISTINCT CASE WHEN l.estado = "Convertido" THEN l.idlead END) as leads_convertidos
+            COUNT(DISTINCT CASE WHEN l.estado = "convertido" THEN l.idlead END) as leads_convertidos
         ');
         $builder->join('leads l', 'c.idcampania = l.idcampania', 'left');
         
@@ -50,9 +50,9 @@ class CampaniaModel extends Model
         $builder = $this->db->table('leads l');
         $builder->select('
             COUNT(*) as total_leads,
-            COUNT(CASE WHEN l.estado = "Convertido" THEN 1 END) as convertidos,
-            COUNT(CASE WHEN l.estado = "Descartado" THEN 1 END) as descartados,
-            COUNT(CASE WHEN l.estado = "Activo" THEN 1 END) as activos
+            COUNT(CASE WHEN l.estado = "convertido" THEN 1 END) as convertidos,
+            COUNT(CASE WHEN l.estado = "descartado" THEN 1 END) as descartados,
+            COUNT(CASE WHEN l.estado = "activo" THEN 1 END) as activos
         ');
         $builder->where('l.idcampania', $idcampania);
         
@@ -64,7 +64,7 @@ class CampaniaModel extends Model
      */
     public function getCampaniasActivas()
     {
-        return $this->where('estado', 'Activa')
+        return $this->where('estado', 'activa')
             ->orderBy('nombre', 'ASC')
             ->findAll();
     }
@@ -80,20 +80,20 @@ class CampaniaModel extends Model
         // Activar campañas que ya iniciaron y no han finalizado
         $this->where('fecha_inicio <=', $hoy)
              ->where('fecha_fin >=', $hoy)
-             ->where('estado !=', 'Activa')
-             ->set(['estado' => 'Activa'])
+             ->where('estado !=', 'activa')
+             ->set(['estado' => 'activa'])
              ->update();
         
         // Finalizar campañas cuya fecha de fin ya pasó
         $this->where('fecha_fin <', $hoy)
-             ->where('estado !=', 'Finalizada')
-             ->set(['estado' => 'Finalizada'])
+             ->where('estado !=', 'finalizada')
+             ->set(['estado' => 'finalizada'])
              ->update();
         
         // Inactivar campañas que aún no han iniciado
         $this->where('fecha_inicio >', $hoy)
-             ->where('estado !=', 'Inactiva')
-             ->set(['estado' => 'Inactiva'])
+             ->where('estado !=', 'pausada')
+             ->set(['estado' => 'pausada'])
              ->update();
     }
 }

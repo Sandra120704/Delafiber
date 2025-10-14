@@ -156,5 +156,5 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- Calendario JS -->
-<script src="<?= base_url('js/tareas/calendario.js') ?>"></script>
+<script src="<?= base_url('js/tareas/calendario.js?v=' . time()) ?>"></script>
 <?= $this->endSection() ?>

@@ -27,7 +27,6 @@
   <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
   <!-- Layout CSS -->
-  <link rel="stylesheet" href="<?= base_url('css/layout/sidebar.css') ?>">
   <link rel="stylesheet" href="<?= base_url('css/dashboard/dashboard.css') ?>">
 
   <!-- CSS específico de cada página -->
@@ -37,6 +36,12 @@
   <link rel="shortcut icon" href="<?= base_url('images/favicon.png') ?>" />
   <meta name="csrf-token" content="<?= csrf_hash() ?>">
   <meta name="base-url" content="<?= base_url() ?>">
+  
+  <!-- Variable global baseUrl -->
+  <script>
+    // Declarar baseUrl globalmente ANTES de cargar cualquier otro script
+    var baseUrl = '<?= rtrim(base_url(), '/') ?>';
+  </script>
 </head>
 <body>
   <div class="container-scroller">

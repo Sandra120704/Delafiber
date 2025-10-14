@@ -79,15 +79,11 @@ class LeadModel extends Model
             $builder->where('l.idcampania', $filtros['campania']);
         }
         
-        // Filtro por estado (normalizado a minúsculas)
-        if (isset($filtros['estado'])) {
-            if ($filtros['estado'] === 'activo' || $filtros['estado'] === '') {
-                $builder->where('LOWER(l.estado)', 'activo');
-            } else {
-                $builder->where('LOWER(l.estado)', strtolower($filtros['estado']));
-            }
+        // Filtro por estado (usando valores ENUM)
+        if (isset($filtros['estado']) && !empty($filtros['estado'])) {
+            $builder->where('l.estado', $filtros['estado']);
         } else {
-            $builder->where('LOWER(l.estado)', 'activo'); // Por defecto solo activos
+            $builder->where('l.estado', 'activo'); // Por defecto solo activos
         }
         
         // Búsqueda por nombre, teléfono o DNI

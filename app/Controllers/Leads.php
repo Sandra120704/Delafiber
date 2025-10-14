@@ -14,6 +14,8 @@ use App\Models\EtapaModel;
 use App\Models\DistritoModel;
 use App\Models\CampoDinamicoOrigenModel;
 use App\Models\HistorialLeadModel;
+use Config\LeadEstado;
+use Config\TipoSolicitud;
 
 class Leads extends BaseController
 {
@@ -131,8 +133,8 @@ class Leads extends BaseController
      */
     public function store()
     {
-        // Verificar permiso (TEMPORALMENTE COMENTADO PARA PRUEBAS)
-        // requiere_permiso('leads.create', 'No tienes permisos para crear leads');
+        // Verificar permiso
+        requiere_permiso('leads.create', 'No tienes permisos para crear leads');
         
         // Combinar reglas de persona y lead
         $rules = array_merge(reglas_persona(), reglas_lead());
