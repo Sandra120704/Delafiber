@@ -54,13 +54,13 @@ $historial = $historial ?? [];
                 
                 <!-- Botones de Asignación y Comunicación -->
                 <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-primary btn-sm" id="btnReasignar">
+                    <button type="button" class="btn btn-primary btn-sm btn-reasignar-lead" data-idlead="<?= $lead['idlead'] ?>">
                         <i class="ti-reload"></i> Reasignar
                     </button>
-                    <button type="button" class="btn btn-warning btn-sm" id="btnSolicitarApoyo">
+                    <button type="button" class="btn btn-warning btn-sm btn-solicitar-apoyo" data-idlead="<?= $lead['idlead'] ?>">
                         <i class="ti-help-alt"></i> Solicitar Apoyo
                     </button>
-                    <button type="button" class="btn btn-success btn-sm" id="btnProgramar">
+                    <button type="button" class="btn btn-success btn-sm btn-programar-seguimiento" data-idlead="<?= $lead['idlead'] ?>">
                         <i class="ti-alarm-clock"></i> Programar
                     </button>
                 </div>
@@ -510,66 +510,28 @@ $historial = $historial ?? [];
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<!-- DEBUG: Verificar carga de scripts -->
+<script>
+console.log('🔍 INICIO DE CARGA DE SCRIPTS');
+console.log('📍 Lead ID desde data attribute:', document.querySelector('[data-lead-id]')?.dataset.leadId);
+console.log('📦 jQuery disponible:', typeof jQuery);
+console.log('📦 Swal disponible:', typeof Swal);
+</script>
+
 <!-- Google Maps API -->
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAACo2qyElsl8RwIqW3x0peOA_20f7SEHA&libraries=geometry"></script>
-<script src="<?= base_url('js/leads/leads-view.js') ?>"></script>
 
-<!-- Sistema de Asignación de Leads -->
+<!-- Scripts de Leads -->
+<script src="<?= base_url('js/leads/leads-view.js') ?>"></script>
 <script src="<?= base_url('js/leads/asignacion-leads.js') ?>"></script>
 
-<!-- Inicialización de Botones -->
-<script type="text/javascript">
-console.log('🚀 Inicializando vista de lead...');
-
-// Asignar eventos a los botones cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', function() {
-    var leadId = <?= $lead['idlead'] ?>;
-    
-    // Botón Reasignar
-    var btnReasignar = document.getElementById('btnReasignar');
-    if (btnReasignar) {
-        btnReasignar.addEventListener('click', function() {
-            console.log('🔄 Click en Reasignar');
-            if (typeof window.mostrarModalReasignar === 'function') {
-                mostrarModalReasignar(leadId);
-            } else {
-                console.error('Función mostrarModalReasignar no disponible');
-                alert('Error: Sistema de asignación no cargado. Recarga la página.');
-            }
-        });
-    }
-    
-    // Botón Solicitar Apoyo
-    var btnSolicitarApoyo = document.getElementById('btnSolicitarApoyo');
-    if (btnSolicitarApoyo) {
-        btnSolicitarApoyo.addEventListener('click', function() {
-            console.log('🆘 Click en Solicitar Apoyo');
-            if (typeof window.mostrarModalSolicitarApoyo === 'function') {
-                mostrarModalSolicitarApoyo(leadId);
-            } else {
-                console.error('Función mostrarModalSolicitarApoyo no disponible');
-                alert('Error: Sistema de asignación no cargado. Recarga la página.');
-            }
-        });
-    }
-    
-    // Botón Programar
-    var btnProgramar = document.getElementById('btnProgramar');
-    if (btnProgramar) {
-        btnProgramar.addEventListener('click', function() {
-            console.log('⏰ Click en Programar');
-            if (typeof window.mostrarModalProgramarSeguimiento === 'function') {
-                mostrarModalProgramarSeguimiento(leadId);
-            } else {
-                console.error('Función mostrarModalProgramarSeguimiento no disponible');
-                alert('Error: Sistema de asignación no cargado. Recarga la página.');
-            }
-        });
-    }
-    
-    console.log('✅ Eventos de botones asignados correctamente');
-});
+<!-- DEBUG: Verificar después de cargar scripts -->
+<script>
+console.log('🔍 DESPUÉS DE CARGAR SCRIPTS');
+console.log('📋 formSeguimiento existe:', !!document.getElementById('formSeguimiento'));
+console.log('📋 formTarea existe:', !!document.getElementById('formTarea'));
+console.log('🔘 Botones reasignar:', document.querySelectorAll('.btn-reasignar-lead').length);
+console.log('🔘 Botones solicitar apoyo:', document.querySelectorAll('.btn-solicitar-apoyo').length);
+console.log('🔘 Botones programar:', document.querySelectorAll('.btn-programar-seguimiento').length);
 </script>
 <?= $this->endSection() ?>
-
-<?= $this->include('Layouts/footer') ?>

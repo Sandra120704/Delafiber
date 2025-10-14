@@ -150,21 +150,21 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="tipo_solicitud">Tipo de Instalación *</label>
-                                            <select class="form-control" id="tipo_solicitud" name="tipo_solicitud" required>
-                                                <option value="">Seleccione</option>
-                                                <option value="Casa">🏠 Casa / Hogar</option>
-                                                <option value="Negocio">🏪 Negocio / Empresa</option>
-                                                <option value="Oficina">🏢 Oficina</option>
-                                                <option value="Otro">📍 Otro</option>
+                                            <label for="tipo_solicitud">Tipo de Instalación</label>
+                                            <select class="form-control" id="tipo_solicitud" name="tipo_solicitud">
+                                                <option value="">Seleccione (opcional)</option>
+                                                <option value="Casa">Casa / Hogar</option>
+                                                <option value="Negocio">Negocio / Empresa</option>
+                                                <option value="Oficina">Oficina</option>
+                                                <option value="Otro"> Otro</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="iddistrito">Distrito *</label>
-                                            <select class="form-control" id="iddistrito" name="iddistrito" required>
-                                                <option value="">Seleccione</option>
+                                            <label for="iddistrito">Distrito</label>
+                                            <select class="form-control" id="iddistrito" name="iddistrito">
+                                                <option value="">Seleccione (opcional)</option>
                                                 <?php if (!empty($distritos) && is_array($distritos)): ?>
                                                     <?php foreach ($distritos as $distrito): ?>
                                                         <option value="<?= $distrito['iddistrito'] ?>">
@@ -181,9 +181,9 @@
                                 <div id="alerta-cobertura-zona" style="display: none;"></div>
 
                                 <div class="form-group">
-                                    <label for="direccion">Dirección de Instalación *</label>
-                                    <input type="text" class="form-control" id="direccion" name="direccion" required
-                                           placeholder="Ej: Av. Principal 123, Chincha Alta">
+                                    <label for="direccion">Dirección de Instalación</label>
+                                    <input type="text" class="form-control" id="direccion" name="direccion"
+                                           placeholder="Ej: Av. Principal 123, Chincha Alta (opcional)">
                                 </div>
 
                                 <div class="form-group">
@@ -211,29 +211,13 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <!-- Campos dinámicos aparecerán aquí -->
-                                        <div id="campos-dinamicos-origen"></div>
-                                        
-                                        <!-- Campo de campaña oculto (solo para referencia de opciones) -->
-                                        <div style="display: none;">
-                                            <select class="form-control" id="idcampania" name="idcampania">
-                                                <option value="">Ninguna</option>
-                                                <?php foreach ($campanias as $campania): ?>
-                                                <option value="<?= $campania['idcampania'] ?>">
-                                                    <?= esc($campania['nombre']) ?>
-                                                </option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                    </div>
                                 </div>
 
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="idmodalidad">Medio de Contacto Inicial *</label>
-                                            <select class="form-control" id="idmodalidad" name="idmodalidad" required>
+                                            <label for="idmodalidad">¿Cómo te contactó el cliente?</label>
+                                            <select class="form-control" id="idmodalidad" name="idmodalidad">
                                                 <option value="">Seleccione</option>
                                                 <?php if (isset($modalidades) && is_array($modalidades)): ?>
                                                     <?php foreach ($modalidades as $modalidad): ?>
@@ -247,62 +231,29 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="medio_comunicacion">Detalle del Medio</label>
+                                            <label for="medio_comunicacion">Detalle del Medio (opcional)</label>
                                             <input type="text" class="form-control" id="medio_comunicacion" name="medio_comunicacion"
-                                                   placeholder="Ej: WhatsApp +51 999888777">
+                                                   placeholder="Ej: WhatsApp +51 999888777 (opcional)">
                                         </div>
                                     </div>
                                 </div>
 
                                 <hr>
 
-                                <!-- Asignación -->
-                                <h6 class="mb-3"><i class="icon-user-following"></i> Asignación y Seguimiento</h6>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="idusuario_asignado">Asignar a *</label>
-                                            <select class="form-control" id="idusuario_asignado" name="idusuario_asignado" required>
-                                                <option value="<?= session()->get('idusuario') ?>" selected>
-                                                    👤 Yo mismo (<?= session()->get('nombre') ?>)
-                                                </option>
-                                                <?php if (isset($vendedores) && is_array($vendedores)): ?>
-                                                    <?php foreach ($vendedores as $vendedor): ?>
-                                                        <?php if ($vendedor['idusuario'] != session()->get('idusuario')): ?>
-                                                            <option value="<?= $vendedor['idusuario'] ?>" data-turno="<?= esc($vendedor['turno']) ?>">
-                                                                <?= esc($vendedor['nombre']) ?> - <?= esc($vendedor['nombreRol']) ?>
-                                                                <?php if (!empty($vendedor['turno'])): ?>
-                                                                    (<?= ucfirst($vendedor['turno']) ?>)
-                                                                <?php endif; ?>
-                                                            </option>
-                                                        <?php endif; ?>
-                                                    <?php endforeach; ?>
-                                                <?php endif; ?>
-                                            </select>
-                                            <small class="text-muted">
-                                                💡 Si el cliente prefiere horario específico, asigna según turno
-                                            </small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="idetapa">Etapa Inicial</label>
-                                            <select class="form-control" id="idetapa" name="idetapa">
-                                                <?php foreach ($etapas as $etapa): ?>
-                                                <option value="<?= $etapa['idetapa'] ?>" <?= $etapa['orden'] == 1 ? 'selected' : '' ?>>
-                                                    <?= esc($etapa['nombre']) ?>
-                                                </option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
+                                <!-- Campo oculto: asignación automática al usuario actual -->
+                                <input type="hidden" id="idusuario_asignado" name="idusuario_asignado" value="<?= session()->get('idusuario') ?>">
+                                <input type="hidden" id="idetapa" name="idetapa" value="1">
 
                                 <div class="form-group">
-                                    <label for="nota_inicial">Nota del Primer Contacto</label>
+                                    <label for="nota_inicial">Nota del Primer Contacto (opcional)</label>
                                     <textarea class="form-control" id="nota_inicial" name="nota_inicial" rows="3"
-                                              placeholder="Describe brevemente la conversación inicial..."></textarea>
+                                              placeholder="Describe brevemente la conversación inicial (opcional)..."></textarea>
+                                    <small class="text-muted">💡 Puedes agregar más detalles y asignar tareas después</small>
+                                </div>
+
+                                <div class="alert alert-info">
+                                    <i class="icon-info"></i> <strong>Nota:</strong> Este lead se asignará automáticamente a ti. 
+                                    Podrás crear tareas y asignarlas a otros usuarios después del registro.
                                 </div>
                             </div>
                         </div>

@@ -64,6 +64,12 @@ if (!function_exists('reglas_persona')) {
                     'max_length' => 'La dirección no puede exceder 255 caracteres'
                 ]
             ],
+            'referencias' => [
+                'rules' => 'permit_empty|max_length[500]',
+                'errors' => [
+                    'max_length' => 'Las referencias no pueden exceder 500 caracteres'
+                ]
+            ],
             'iddistrito' => [
                 'rules' => 'permit_empty|numeric|is_not_unique[distritos.iddistrito]',
                 'errors' => [
@@ -129,6 +135,27 @@ if (!function_exists('reglas_lead')) {
                 'rules' => 'permit_empty|in_list[Casa,Negocio,Oficina,Otro]',
                 'errors' => [
                     'in_list' => 'Tipo de solicitud inválido'
+                ]
+            ],
+            'idmodalidad' => [
+                'rules' => 'permit_empty|numeric|is_not_unique[modalidades.idmodalidad]',
+                'errors' => [
+                    'numeric' => 'Modalidad inválida',
+                    'is_not_unique' => 'La modalidad seleccionada no existe'
+                ]
+            ],
+            'medio_comunicacion' => [
+                'rules' => 'permit_empty|max_length[255]',
+                'errors' => [
+                    'max_length' => 'El detalle del medio no puede exceder 255 caracteres'
+                ]
+            ],
+            'idusuario_asignado' => [
+                'rules' => 'required|numeric|is_not_unique[usuarios.idusuario]',
+                'errors' => [
+                    'required' => 'Debe asignar el lead a un usuario',
+                    'numeric' => 'Usuario inválido',
+                    'is_not_unique' => 'El usuario seleccionado no existe'
                 ]
             ]
         ];

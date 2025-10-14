@@ -90,5 +90,3 @@ const BASE_URL = '<?= base_url() ?>';
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="<?= base_url('js/leads/pipeline.js') ?>"></script>
 <?= $this->endSection() ?>
-
-<?= $this->include('Layouts/footer') ?>
