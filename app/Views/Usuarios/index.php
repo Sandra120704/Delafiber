@@ -388,8 +388,6 @@
                 fetch(`${base_url}/usuarios/buscar-dni?dni=${dni}`)
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Respuesta:', data);
-                        
                         if (data.success) {
                             // Autocompletar campos
                             if (data.persona) {

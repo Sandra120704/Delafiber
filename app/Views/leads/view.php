@@ -156,7 +156,7 @@ $historial = $historial ?? [];
                 <!-- Ubicación en Mapa -->
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0">📍 Ubicación en Mapa</h5>
+                        <h5 class="mb-0">Ubicación en Mapa</h5>
                     </div>
                     <div class="card-body">
                         <?php if (!empty($lead['coordenadas'])): ?>
@@ -510,13 +510,6 @@ $historial = $historial ?? [];
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<!-- DEBUG: Verificar carga de scripts -->
-<script>
-console.log('🔍 INICIO DE CARGA DE SCRIPTS');
-console.log('📍 Lead ID desde data attribute:', document.querySelector('[data-lead-id]')?.dataset.leadId);
-console.log('📦 jQuery disponible:', typeof jQuery);
-console.log('📦 Swal disponible:', typeof Swal);
-</script>
 
 <!-- Google Maps API -->
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAACo2qyElsl8RwIqW3x0peOA_20f7SEHA&libraries=geometry"></script>
@@ -525,13 +518,4 @@ console.log('📦 Swal disponible:', typeof Swal);
 <script src="<?= base_url('js/leads/leads-view.js') ?>"></script>
 <script src="<?= base_url('js/leads/asignacion-leads.js') ?>"></script>
 
-<!-- DEBUG: Verificar después de cargar scripts -->
-<script>
-console.log('🔍 DESPUÉS DE CARGAR SCRIPTS');
-console.log('📋 formSeguimiento existe:', !!document.getElementById('formSeguimiento'));
-console.log('📋 formTarea existe:', !!document.getElementById('formTarea'));
-console.log('🔘 Botones reasignar:', document.querySelectorAll('.btn-reasignar-lead').length);
-console.log('🔘 Botones solicitar apoyo:', document.querySelectorAll('.btn-solicitar-apoyo').length);
-console.log('🔘 Botones programar:', document.querySelectorAll('.btn-programar-seguimiento').length);
-</script>
 <?= $this->endSection() ?>

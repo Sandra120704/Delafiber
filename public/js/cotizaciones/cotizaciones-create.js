@@ -99,29 +99,18 @@ document.getElementById('form-cotizacion')?.addEventListener('submit', function(
 
 // Inicializar Select2 para búsqueda de leads
 $(document).ready(function() {
-    console.log('=== INICIALIZANDO SELECT2 COTIZACIONES ===');
-    console.log('jQuery version:', $.fn.jquery);
-    console.log('Select2 disponible:', typeof $.fn.select2 !== 'undefined');
-    console.log('Select #idlead encontrado:', $('#idlead').length);
-    console.log('Tipo de elemento:', $('#idlead').prop('type'));
-    
     // Verificar si Select2 está disponible
     if (typeof $.fn.select2 === 'undefined') {
-        console.error('❌ Select2 no está cargado');
+        console.error('Select2 no está cargado');
         alert('Error: Select2 no está cargado. Por favor recarga la página.');
         return;
     }
     
     // Solo inicializar si el select existe y no tiene lead preseleccionado
     if ($('#idlead').length && !$('#idlead').is('[type="hidden"]')) {
-        console.log('✅ Inicializando Select2...');
-        
         // Obtener base URL
         const baseUrl = $('meta[name="base-url"]').attr('content') || window.location.origin;
         const ajaxUrl = baseUrl + '/cotizaciones/buscarLeads';
-        
-        console.log('Base URL:', baseUrl);
-        console.log('AJAX URL:', ajaxUrl);
         
         $('#idlead').select2({
             theme: 'bootstrap-5',
@@ -136,15 +125,12 @@ $(document).ready(function() {
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 data: function (params) {
-                    console.log('Buscando:', params.term);
                     return {
                         q: params.term,
                         page: params.page || 1
                     };
                 },
                 processResults: function (data, params) {
-                    console.log('Respuesta recibida:', data);
-                    
                     if (data.error) {
                         console.error('Error del servidor:', data.error);
                         return { results: [] };
@@ -203,18 +189,5 @@ $(document).ready(function() {
                 return lead.text || lead.id;
             }
         });
-        
-        // Event listeners para depuración
-        $('#idlead').on('select2:open', function() {
-            console.log('Select2 abierto');
-        });
-        
-        $('#idlead').on('select2:select', function(e) {
-            console.log('Lead seleccionado:', e.params.data);
-        });
-        
-        console.log('✅ Select2 inicializado correctamente');
-    } else {
-        console.log('⚠️ Select no encontrado o es hidden');
     }
 });

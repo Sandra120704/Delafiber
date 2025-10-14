@@ -15,11 +15,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Verificar que los elementos existan
     if (!paso1 || !paso2 || !btnSiguiente || !btnAtras) {
-        console.error('❌ No se encontraron los elementos del wizard');
+           console.error('No se encontraron los elementos del wizard');
         return;
     }
-
-    console.log('✅ Wizard inicializado correctamente');
 
     // Paso actual
     let pasoActual = 1;
@@ -209,15 +207,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         pasoActual = 2;
         
-        console.log('✅ Navegado al Paso 2');
-        
         // IMPORTANTE: Inicializar verificación de cobertura ahora que el elemento es visible
         setTimeout(() => {
             if (window.personaManager && typeof window.personaManager.initVerificarCobertura === 'function') {
-                console.log('🔄 Inicializando verificación de cobertura en Paso 2...');
                 window.personaManager.initVerificarCobertura();
             } else {
-                console.error('❌ PersonaManager no disponible');
+                    console.error('PersonaManager no disponible');
             }
         }, 100); // Pequeño delay para asegurar que el DOM esté renderizado
     }
@@ -243,7 +238,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         pasoActual = 1;
         
-        console.log('✅ Vuelto al Paso 1');
     }
 
     // ==========================================
@@ -295,7 +289,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        console.log('📤 Formulario enviado');
     });
 
     // ==========================================
@@ -315,5 +308,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    console.log('✅ Event listeners configurados');
 });

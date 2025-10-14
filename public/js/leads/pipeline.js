@@ -15,12 +15,8 @@ class PipelineManager {
         const leadCards = document.querySelectorAll('.lead-card');
         const pipelineBodies = document.querySelectorAll('.pipeline-body');
         
-        console.log('Pipeline inicializado');
-        console.log(`Tarjetas encontradas: ${leadCards.length}`);
-        console.log(`Zonas de drop encontradas: ${pipelineBodies.length}`);
-        
         if (leadCards.length === 0) {
-            console.warn('⚠️ No se encontraron tarjetas con clase .lead-card');
+            // No hay tarjetas para inicializar
         }
         
         this.initDragEvents(leadCards);
@@ -45,19 +41,16 @@ class PipelineManager {
             });
             
             card.addEventListener('dragstart', (e) => {
-                console.log(`Arrastrando tarjeta ${index + 1}`);
                 card.style.cursor = 'grabbing';
                 this.handleDragStart(e, card);
             });
             
             card.addEventListener('dragend', () => {
-                console.log(`✅ Fin de arrastre tarjeta ${index + 1}`);
                 card.style.cursor = 'grab';
                 this.handleDragEnd(card);
             });
         });
         
-        console.log(`✅ Eventos drag configurados en ${leadCards.length} tarjetas`);
     }
 
     handleDragStart(e, card) {
@@ -229,7 +222,7 @@ class PipelineManager {
                 timerProgressBar: true
             });
         } else {
-            console.log(`${tipo.toUpperCase()}: ${mensaje}`);
+            // Mostrar mensaje no intrusivo en consola omitido en producción
         }
     }
 }

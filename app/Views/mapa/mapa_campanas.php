@@ -160,7 +160,6 @@
         
         try {
             await inicializarSistema(idCampana, zonas);
-            console.log('Sistema CRM Mapa inicializado correctamente');
         } catch (error) {
             console.error('Error al inicializar sistema:', error);
             alert('Error al cargar el mapa: ' + error.message);

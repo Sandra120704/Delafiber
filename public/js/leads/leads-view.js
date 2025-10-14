@@ -1,9 +1,6 @@
 /**
  * JavaScript para Vista de Lead - VERSIÓN CORREGIDA
  */
-
-console.log('📂 leads-view.js CARGANDO...');
-
 // Namespace para evitar conflictos con otros archivos JS
 const LeadView = {
     baseUrl: '',
@@ -12,17 +9,14 @@ const LeadView = {
 
 // Esperar a que el DOM esté completamente cargado
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ DOM Cargado - Inicializando funcionalidades...');
     
     // Obtener variables del DOM
     LeadView.baseUrl = document.querySelector('meta[name="base-url"]')?.getAttribute('content') || window.location.origin;
     LeadView.leadId = parseInt(document.querySelector('[data-lead-id]')?.dataset.leadId) || 0;
     
-    console.log('🔗 baseUrl:', LeadView.baseUrl);
-    console.log('🆔 leadId:', LeadView.leadId);
     
     if (!LeadView.leadId) {
-        console.error('❌ No se pudo obtener el ID del lead');
+        console.error(' No se pudo obtener el ID del lead');
         return;
     }
     
@@ -37,7 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initFormSeguimiento();
     initFormTarea();
     
-    console.log('✅ Todas las funcionalidades inicializadas');
 });
 
 /**
@@ -104,7 +97,7 @@ function initMiniMap(coordenadas) {
             infoWindow.open(map, marker);
         });
         
-        console.log('✅ Mapa inicializado correctamente');
+    // Mapa inicializado correctamente
         
     } catch (error) {
         console.error('❌ Error al inicializar mapa:', error);
@@ -118,20 +111,20 @@ function initFormCambiarEtapa() {
     const formCambiarEtapa = document.getElementById('formCambiarEtapa');
     
     if (!formCambiarEtapa) {
-        console.warn('⚠️ No se encontró formCambiarEtapa');
+    // Formulario de cambio de etapa no encontrado
         return;
     }
     
     formCambiarEtapa.addEventListener('submit', function(e) {
         e.preventDefault();
-        console.log('📤 Enviando cambio de etapa...');
+    // Enviando cambio de etapa
         
         const formData = new FormData(this);
         formData.append('idlead', LeadView.leadId);
         
         // Mostrar datos que se envían
         for (let [key, value] of formData.entries()) {
-            console.log(`  ${key}: ${value}`);
+            // Campo de formulario
         }
         
         fetch(`${LeadView.baseUrl}/leads/moverEtapa`, {
@@ -140,11 +133,11 @@ function initFormCambiarEtapa() {
             body: formData
         })
         .then(response => {
-            console.log('📥 Status:', response.status);
+            // Status de respuesta
             return response.json();
         })
         .then(data => {
-            console.log('📊 Respuesta:', data);
+            // Respuesta recibida
             
             if (data.success) {
                 mostrarNotificacion('success', data.message || 'Etapa cambiada correctamente');
@@ -159,7 +152,7 @@ function initFormCambiarEtapa() {
         });
     });
     
-    console.log('✅ Formulario de cambio de etapa inicializado');
+    // Formulario de cambio de etapa inicializado
 }
 
 /**
@@ -169,13 +162,13 @@ function initFormSeguimiento() {
     const formSeguimiento = document.getElementById('formSeguimiento');
     
     if (!formSeguimiento) {
-        console.warn('⚠️ No se encontró formSeguimiento');
+    // Formulario de seguimiento no encontrado
         return;
     }
     
     formSeguimiento.addEventListener('submit', function(e) {
         e.preventDefault();
-        console.log('📤 Enviando seguimiento...');
+    // Enviando seguimiento
         
         const formData = new FormData(this);
         
@@ -184,11 +177,11 @@ function initFormSeguimiento() {
         const idmodalidad = formData.get('idmodalidad');
         const nota = formData.get('nota');
         
-        console.log('📋 Datos del formulario:', {
+    /* Datos del formulario: {
             idlead,
             idmodalidad,
             nota: nota ? nota.substring(0, 50) + '...' : '(vacío)'
-        });
+    }); */
         
         // Validación básica en frontend
         if (!idlead || !idmodalidad || !nota || nota.trim() === '') {
@@ -210,14 +203,14 @@ function initFormSeguimiento() {
             body: formData
         })
         .then(response => {
-            console.log('📥 Status:', response.status);
+            // Status de respuesta
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log('📊 Respuesta:', data);
+            // Respuesta recibida
             
             if (data.success) {
                 mostrarNotificacion('success', data.message || 'Seguimiento agregado correctamente');
@@ -252,7 +245,7 @@ function initFormSeguimiento() {
         });
     });
     
-    console.log('✅ Formulario de seguimiento inicializado');
+    // Formulario de seguimiento inicializado
 }
 
 /**
@@ -262,13 +255,13 @@ function initFormTarea() {
     const formTarea = document.getElementById('formTarea');
     
     if (!formTarea) {
-        console.warn('⚠️ No se encontró formTarea');
+    // Formulario de tarea no encontrado
         return;
     }
     
     formTarea.addEventListener('submit', function(e) {
         e.preventDefault();
-        console.log('📤 Enviando tarea...');
+    // Enviando tarea
         
         const formData = new FormData(this);
         
@@ -277,13 +270,13 @@ function initFormTarea() {
         const titulo = formData.get('titulo');
         const fechaVencimiento = formData.get('fecha_vencimiento');
         
-        console.log('📋 Datos del formulario:', {
+    /* Datos del formulario: {
             idlead,
             titulo,
             fechaVencimiento,
             prioridad: formData.get('prioridad'),
             descripcion: formData.get('descripcion')
-        });
+    }); */
         
         // Validación básica en frontend
         if (!idlead || !titulo || !fechaVencimiento) {
@@ -305,14 +298,14 @@ function initFormTarea() {
             body: formData
         })
         .then(response => {
-            console.log('📥 Status:', response.status);
+            // Status de respuesta
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log('📊 Respuesta:', data);
+            // Respuesta recibida
             
             if (data.success) {
                 mostrarNotificacion('success', data.message || 'Tarea creada correctamente');
@@ -335,7 +328,7 @@ function initFormTarea() {
             }
         })
         .catch(error => {
-            console.error('❌ Error:', error);
+            console.error(' Error:', error);
             mostrarNotificacion('error', 'Error de conexión al crear tarea');
         })
         .finally(() => {
@@ -347,7 +340,7 @@ function initFormTarea() {
         });
     });
     
-    console.log('✅ Formulario de tarea inicializado');
+    // Formulario de tarea inicializado
 }
 
 /**
@@ -355,11 +348,11 @@ function initFormTarea() {
  */
 window.completarTarea = function(idtarea) {
     if (!idtarea) {
-        console.error('❌ ID de tarea no especificado');
+        console.error('ID de tarea no especificado');
         return;
     }
     
-    console.log('🔄 Completando tarea:', idtarea);
+    // Completando tarea
     
     const confirmar = typeof Swal !== 'undefined' 
         ? Swal.fire({
@@ -385,11 +378,11 @@ window.completarTarea = function(idtarea) {
                 body: formData
             })
             .then(response => {
-                console.log('📥 Status:', response.status);
+                // Status de respuesta
                 return response.json();
             })
             .then(data => {
-                console.log('📊 Respuesta:', data);
+                // Respuesta recibida
                 
                 if (data.success) {
                     mostrarNotificacion('success', data.message || 'Tarea completada');
@@ -411,7 +404,7 @@ window.completarTarea = function(idtarea) {
  * Usa SweetAlert2 si está disponible, sino alert nativo
  */
 function mostrarNotificacion(tipo, mensaje) {
-    console.log(`🔔 Notificación [${tipo}]:`, mensaje);
+    // Notificación: mostrar en UI sin log de consola
     
     if (typeof Swal !== 'undefined') {
         const iconos = {
@@ -441,5 +434,4 @@ function mostrarNotificacion(tipo, mensaje) {
 window.geocodificarLeadAhora = function() {
     mostrarNotificacion('info', 'Funcionalidad de geocodificación manual próximamente. Por ahora, edita el lead y agrega una dirección.');
 };
-
-console.log('✅ leads-view.js cargado completamente')
+    return;

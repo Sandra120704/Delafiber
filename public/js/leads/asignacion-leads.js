@@ -3,8 +3,6 @@
  * Comunicación entre usuarios
  */
 
-console.log('📂 Archivo asignacion-leads.js CARGADO');
-
 // Variables globales
 var usuariosDisponibles = [];
 var baseUrl = window.location.origin;
@@ -22,11 +20,6 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 (function() {
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('🚀 Sistema de Asignación de Leads cargado');
-        console.log('📦 Bootstrap disponible:', typeof bootstrap !== 'undefined');
-        console.log('📦 jQuery disponible:', typeof $ !== 'undefined');
-        console.log('📦 Swal disponible:', typeof Swal !== 'undefined');
-        
         cargarUsuariosDisponibles();
         inicializarEventos();
     });
@@ -47,7 +40,6 @@ async function cargarUsuariosDisponibles() {
         
         if (data.success) {
             usuariosDisponibles = data.usuarios;
-            console.log('✅ Usuarios disponibles cargados:', usuariosDisponibles.length);
         }
     } catch (error) {
         console.error('Error al cargar usuarios:', error);
@@ -58,52 +50,42 @@ async function cargarUsuariosDisponibles() {
  * Inicializar eventos
  */
 function inicializarEventos() {
-    console.log('🔧 Inicializando eventos de asignación...');
     
     // Botón de reasignar
     const btnsReasignar = document.querySelectorAll('.btn-reasignar-lead');
-    console.log('📌 Botones reasignar encontrados:', btnsReasignar.length);
     btnsReasignar.forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             const idlead = this.dataset.idlead;
-            console.log('🔄 Click en Reasignar, Lead ID:', idlead);
             mostrarModalReasignar(idlead);
         });
     });
 
     // Botón de solicitar apoyo
     const btnsSolicitar = document.querySelectorAll('.btn-solicitar-apoyo');
-    console.log('📌 Botones solicitar apoyo encontrados:', btnsSolicitar.length);
     btnsSolicitar.forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             const idlead = this.dataset.idlead;
-            console.log('🆘 Click en Solicitar Apoyo, Lead ID:', idlead);
             mostrarModalSolicitarApoyo(idlead);
         });
     });
 
     // Botón de programar seguimiento
     const btnsProgramar = document.querySelectorAll('.btn-programar-seguimiento');
-    console.log('📌 Botones programar encontrados:', btnsProgramar.length);
     btnsProgramar.forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             const idlead = this.dataset.idlead;
-            console.log('⏰ Click en Programar, Lead ID:', idlead);
             mostrarModalProgramarSeguimiento(idlead);
         });
     });
-    
-    console.log('✅ Eventos inicializados correctamente');
 }
 
 /**
  * Mostrar modal de reasignación
  */
 window.mostrarModalReasignar = function(idlead) {
-    console.log('✅ mostrarModalReasignar llamada con ID:', idlead);
     const html = `
         <div class="modal fade" id="modalReasignar" tabindex="-1">
             <div class="modal-dialog">
@@ -458,9 +440,3 @@ window.ejecutarProgramarSeguimiento = async function() {
         Swal.fire('Error', 'No se pudo programar el seguimiento', 'error');
     }
 }
-
-// Las funciones ya están disponibles globalmente mediante window.nombreFuncion
-console.log('✅ Funciones globales registradas:');
-console.log('  - mostrarModalReasignar:', typeof window.mostrarModalReasignar);
-console.log('  - mostrarModalSolicitarApoyo:', typeof window.mostrarModalSolicitarApoyo);
-console.log('  - mostrarModalProgramarSeguimiento:', typeof window.mostrarModalProgramarSeguimiento);

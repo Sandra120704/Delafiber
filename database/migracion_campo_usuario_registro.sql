@@ -1,9 +1,4 @@
 -- =====================================================
--- MIGRACIÓN: Agregar campo idusuario_registro a tabla leads
--- Fecha: 2025-10-12
--- Descripción: Separar usuario que registra vs usuario asignado
--- =====================================================
-
 USE `delafiber`;
 
 -- Paso 1: Agregar el nuevo campo

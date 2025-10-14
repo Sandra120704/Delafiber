@@ -3,11 +3,10 @@
  * Muestra campos adicionales contextuales según el origen seleccionado
  */
 
-console.log('📦 campos-dinamicos-origen.js cargado');
+//
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Inicializando campos dinámicos de origen...');
-    console.log('🌐 DOM está listo');
+    // Inicializando campos dinámicos de origen
     initCamposDinamicosOrigen();
 });
 
@@ -16,28 +15,28 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 function obtenerOpcionesCampanias() {
     const campaniaSelect = document.getElementById('idcampania');
-    console.log('📋 Select de campañas:', campaniaSelect);
+    // Referencia a select de campañas
     
     if (!campaniaSelect) {
         console.error('❌ No se encontró el select de campañas');
         return '<option value="">No hay campañas disponibles</option>';
     }
     
-    console.log('📊 Total de opciones:', campaniaSelect.options.length);
+    // Total de opciones en select
     
     let opciones = '';
     for (let i = 1; i < campaniaSelect.options.length; i++) {
         const option = campaniaSelect.options[i];
         opciones += `<option value="${option.value}">${option.text}</option>`;
-        console.log('  ✓ Opción agregada:', option.text);
+    // Opción agregada
     }
     
     if (opciones === '') {
-        console.warn('⚠️ No hay campañas activas');
+    // No hay campañas activas
         return '<option value="">No hay campañas activas</option>';
     }
     
-    console.log('✅ Opciones generadas correctamente');
+    // Opciones generadas correctamente
     return opciones;
 }
 
@@ -45,10 +44,10 @@ function initCamposDinamicosOrigen() {
     const origenSelect = document.getElementById('idorigen');
     const camposDinamicos = document.getElementById('campos-dinamicos-origen');
     
-    console.log('📋 Elementos encontrados:', {
+    /* Elementos encontrados: {
         origenSelect: origenSelect,
         camposDinamicos: camposDinamicos
-    });
+    }); */
     
     if (!origenSelect || !camposDinamicos) {
         console.error('❌ No se encontraron los elementos necesarios');
@@ -59,15 +58,13 @@ function initCamposDinamicosOrigen() {
         const selectedOption = this.options[this.selectedIndex];
         const nombreOrigen = selectedOption.getAttribute('data-nombre');
         
-        console.log('🔄 Origen seleccionado:', nombreOrigen);
-        console.log('📝 Valor exacto:', JSON.stringify(nombreOrigen));
-        console.log('📏 Longitud:', nombreOrigen ? nombreOrigen.length : 0);
+    // Origen seleccionado: nombreOrigen
         
         // Limpiar campos anteriores
         camposDinamicos.innerHTML = '';
         
         if (!nombreOrigen) {
-            console.log('⚠️ No hay origen seleccionado');
+            // No hay origen seleccionado
             return;
         }
         
@@ -199,8 +196,7 @@ function initCamposDinamicosOrigen() {
         };
         
         // Mostrar campos correspondientes
-        console.log('🔑 Claves disponibles:', Object.keys(camposConfig));
-        console.log('🔍 Buscando configuración para:', nombreOrigen);
+    // Buscando configuración para origen
         
         // Intentar búsqueda directa
         let config = camposConfig[nombreOrigen];
@@ -208,28 +204,27 @@ function initCamposDinamicosOrigen() {
         // Si no encuentra, intentar normalizar (quitar tildes y comparar)
         if (!config) {
             const nombreNormalizado = nombreOrigen.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            console.log('🔄 Intentando con nombre normalizado:', nombreNormalizado);
+            // Intentando con nombre normalizado
             
             for (let clave in camposConfig) {
                 const claveNormalizada = clave.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                 if (claveNormalizada === nombreNormalizado) {
                     config = camposConfig[clave];
-                    console.log('✅ Encontrado con normalización:', clave);
+                    // Encontrado con normalización
                     break;
                 }
             }
         }
         
         if (config) {
-            console.log('✅ Mostrando campos para:', nombreOrigen);
+            // Mostrando campos para el origen
             camposDinamicos.innerHTML = config.html;
         } else {
-            console.log('⚠️ No hay configuración para:', nombreOrigen);
-            console.log('💡 Intenta con estas claves:', Object.keys(camposConfig).join(', '));
+            // No hay configuración para el origen
         }
     });
     
-    console.log('✅ Event listener agregado correctamente');
+    // Event listener agregado correctamente
 
     // Si ya hay un origen seleccionado al cargar la página, disparar el handler
     try {

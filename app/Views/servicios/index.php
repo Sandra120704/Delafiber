@@ -224,8 +224,8 @@ function toggleEstado(idservicio, activar) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Error al cambiar el estado del servicio');
+        console.error('Error al cambiar estado del servicio:', error);
+        alert('No se pudo cambiar el estado del servicio. Por favor, inténtelo nuevamente.');
     });
 }
 </script>
