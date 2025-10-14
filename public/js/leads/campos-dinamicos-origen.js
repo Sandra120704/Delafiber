@@ -233,7 +233,7 @@ function initCamposDinamicosOrigen() {
             origenSelect.dispatchEvent(new Event('change'));
         }
     } catch (err) {
-        console.warn('No se pudo disparar evento inicial de origen:', err);
+        // No se pudo disparar evento inicial de origen
     }
 }
 
@@ -243,8 +243,7 @@ function initCamposDinamicosOrigen() {
 function sincronizarCampania(valor) {
     const campaniaOculta = document.getElementById('idcampania');
     if (campaniaOculta) {
-        campaniaOculta.value = valor;
-        console.log('✅ Campaña sincronizada:', valor);
+    campaniaOculta.value = valor;
     }
 }
 

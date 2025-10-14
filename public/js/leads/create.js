@@ -1,7 +1,6 @@
 /**
  * JavaScript para el formulario de creación de Leads
  * Maneja búsqueda por DNI, validaciones y verificación de cobertura
- * ⚠️ Compatible con wizard.js - NO valida el formulario completo
  */
 
 // Función auxiliar para escapar HTML
@@ -29,11 +28,9 @@ class PersonaManager {
         const dniLoading = document.getElementById('dni-loading');
         
         if (!btnBuscarDni || !dniInput) {
-            console.warn('⚠️ Botones de búsqueda no encontrados');
+            // Botones de búsqueda no encontrados
             return;
         }
-        
-        console.log('✅ Eventos de búsqueda inicializados');
         
         // NO inicializar verificación de cobertura aquí
         // Se inicializará cuando el usuario llegue al Paso 2
@@ -230,7 +227,6 @@ class PersonaManager {
         // IMPORTANTE: Guardar ID de persona para no duplicar
         if (idpersonaEl) {
             idpersonaEl.value = persona.idpersona;
-            console.log('✅ ID persona guardado:', persona.idpersona);
         }
 
         // Agregar indicador visual
@@ -268,47 +264,34 @@ class PersonaManager {
     initVerificarCobertura() {
         // Evitar doble inicialización
         if (this.coberturaInicializada) {
-            console.log('⚠️ Verificación de cobertura ya inicializada');
             return;
         }
         
         const distritoSelect = document.getElementById('iddistrito');
         
         if (!distritoSelect) {
-            console.warn('⚠️ Elemento #iddistrito no encontrado (aún no visible)');
             return;
         }
         
-        console.log('✅ Verificación de cobertura inicializada en Paso 2');
-        console.log('📍 Elemento distrito encontrado:', distritoSelect);
-        console.log('🔗 URL base:', this.baseUrl);
         this.coberturaInicializada = true;
         
         distritoSelect.addEventListener('change', async () => {
-            console.log('🔔 Evento change disparado en distrito');
             const distrito = distritoSelect.value;
-            console.log('📌 Valor seleccionado:', distrito);
             
             if (!distrito) {
-                console.warn('⚠️ No hay distrito seleccionado, saliendo...');
                 return;
             }
             
-            console.log('🌐 Verificando cobertura para distrito:', distrito);
-            
             try {
                 const url = `${this.baseUrl}/leads/verificar-cobertura?distrito=${distrito}`;
-                console.log('🔗 URL completa:', url);
                 
                 const response = await fetch(url);
-                console.log('📥 Response status:', response.status);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
                 const result = await response.json();
-                console.log('📡 Resultado cobertura completo:', result);
                 
                 // Verificar si SweetAlert está disponible
                 if (typeof Swal === 'undefined') {
@@ -318,10 +301,8 @@ class PersonaManager {
                 }
                 
                 if (result.success) {
-                    console.log('✅ Mostrando alerta de cobertura...');
                     this.mostrarAlertaCobertura(result);
                 } else {
-                    console.warn('⚠️ Success es false:', result);
                     this.mostrarAlertaCobertura(result);
                 }
             } catch (error) {
@@ -350,8 +331,7 @@ class PersonaManager {
     // MOSTRAR ALERTA DE COBERTURA
     // =========================================
     mostrarAlertaCobertura(result) {
-        console.log('🎨 mostrarAlertaCobertura llamada con:', result);
-        console.log('🔍 tiene_cobertura:', result.tiene_cobertura);
+        // Mostrar alerta de cobertura en UI
         
         const alertaContainer = document.getElementById('alerta-cobertura-zona');
         
@@ -361,7 +341,6 @@ class PersonaManager {
         }
         
         if (result.tiene_cobertura) {
-            console.log('✅ Mostrando alerta de COBERTURA POSITIVA');
             const totalZonas = result.zonas_activas || 0;
             
             // Construir lista de zonas con sus campañas
@@ -390,9 +369,7 @@ class PersonaManager {
                 </div>
             `;
             alertaContainer.style.display = 'block';
-            console.log('✅ Alerta de cobertura mostrada en contenedor');
         } else {
-            console.log('⚠️ Mostrando alerta de SIN COBERTURA');
             const distrito = result.distrito_nombre || 'esta zona';
             
             // Mostrar mensaje de sin cobertura
@@ -411,7 +388,6 @@ class PersonaManager {
                 </div>
             `;
             alertaContainer.style.display = 'block';
-            console.log('✅ Alerta sin cobertura mostrada en contenedor');
         }
     }
 }
@@ -422,8 +398,7 @@ class PersonaManager {
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof BASE_URL !== 'undefined') {
         window.personaManager = new PersonaManager(BASE_URL);
-        console.log('✅ PersonaManager inicializado');
     } else {
-        console.error('❌ BASE_URL no está definida');
+        console.error('BASE_URL no está definida');
     }
 });
