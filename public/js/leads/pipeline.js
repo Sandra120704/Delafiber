@@ -226,7 +226,6 @@ class PipelineManager {
         }
     }
 }
-
 // Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof BASE_URL !== 'undefined') {
