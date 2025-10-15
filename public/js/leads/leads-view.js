@@ -434,4 +434,4 @@ function mostrarNotificacion(tipo, mensaje) {
 window.geocodificarLeadAhora = function() {
     mostrarNotificacion('info', 'Funcionalidad de geocodificación manual próximamente. Por ahora, edita el lead y agrega una dirección.');
 };
-    return;
+    

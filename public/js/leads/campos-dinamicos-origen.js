@@ -72,14 +72,14 @@ function initCamposDinamicosOrigen() {
         const camposConfig = {
             'Campaña': {
                 html: `
-                    <div class="form-group campo-dinamico" style="animation: fadeIn 0.3s;">
+                    <div class="campo-dinamico" style="animation: fadeIn 0.3s;">
                         <label for="idcampania_dinamica">¿Qué campaña? *</label>
                         <select class="form-control" id="idcampania_dinamica" name="idcampania" required 
                                 onchange="sincronizarCampania(this.value)">
                             <option value="">Seleccione la campaña</option>
                             ${obtenerOpcionesCampanias()}
                         </select>
-                        <small class="text-muted">
+                        <small class="text-muted d-block mt-1">
                             <i class="icon-info"></i> Campaña por la que nos conoció
                         </small>
                     </div>
@@ -87,14 +87,14 @@ function initCamposDinamicosOrigen() {
             },
             'Campana': {
                 html: `
-                    <div class="form-group campo-dinamico" style="animation: fadeIn 0.3s;">
+                    <div class="campo-dinamico" style="animation: fadeIn 0.3s;">
                         <label for="idcampania_dinamica">¿Qué campaña? *</label>
                         <select class="form-control" id="idcampania_dinamica" name="idcampania" required 
                                 onchange="sincronizarCampania(this.value)">
                             <option value="">Seleccione la campaña</option>
                             ${obtenerOpcionesCampanias()}
                         </select>
-                        <small class="text-muted">
+                        <small class="text-muted d-block mt-1">
                             <i class="icon-info"></i> Campaña por la que nos conoció
                         </small>
                     </div>
@@ -102,11 +102,11 @@ function initCamposDinamicosOrigen() {
             },
             'Referido': {
                 html: `
-                    <div class="form-group campo-dinamico" style="animation: fadeIn 0.3s;">
+                    <div class="campo-dinamico" style="animation: fadeIn 0.3s;">
                         <label for="referido_por">¿Quién lo refirió? *</label>
                         <input type="text" class="form-control" id="referido_por" name="referido_por" 
                                placeholder="Nombre del cliente que lo recomendó" required>
-                        <small class="text-muted">
+                        <small class="text-muted d-block mt-1">
                             <i class="icon-user"></i> Persona que recomendó nuestro servicio
                         </small>
                     </div>

@@ -95,15 +95,15 @@ class LeadAsignacion extends BaseController
 
             // 3. Crear notificación para el nuevo usuario
             $clienteNombre = $lead['nombres'] . ' ' . $lead['apellidos'];
-            $this->notificacionModel->insert([
-                'idusuario' => $nuevoUsuarioId,
-                'tipo' => 'lead_reasignado',
-                'titulo' => '📋 Lead reasignado a ti',
-                'mensaje' => "{$nombreUsuarioActual} te ha reasignado el lead: {$clienteNombre}. " . 
-                            ($motivo ? "Motivo: {$motivo}" : ""),
-                'url' => base_url('leads/view/' . $idlead),
-                'leida' => 0
-            ]);
+            $mensajeNotif = "{$nombreUsuarioActual} te ha reasignado el lead: {$clienteNombre}." . 
+                            ($motivo ? " Motivo: {$motivo}" : "");
+            $this->notificacionModel->crearNotificacion(
+                $nuevoUsuarioId,
+                'lead_reasignado',
+                '📋 Lead reasignado a ti',
+                $mensajeNotif,
+                base_url('leads/view/' . $idlead)
+            );
 
             // 4. Crear tarea de seguimiento si se solicitó
             if ($crearTarea && $fechaTarea && $horaTarea) {
@@ -123,14 +123,13 @@ class LeadAsignacion extends BaseController
                 ]);
 
                 // Notificación adicional sobre la tarea
-                $this->notificacionModel->insert([
-                    'idusuario' => $nuevoUsuarioId,
-                    'tipo' => 'tarea_asignada',
-                    'titulo' => '⏰ Nueva tarea programada',
-                    'mensaje' => "Tienes una tarea de seguimiento programada para {$fechaTarea} a las {$horaTarea} con {$clienteNombre}",
-                    'url' => base_url('tareas'),
-                    'leida' => 0
-                ]);
+                $this->notificacionModel->crearNotificacion(
+                    $nuevoUsuarioId,
+                    'tarea_asignada',
+                    '⏰ Nueva tarea programada',
+                    "Tienes una tarea de seguimiento programada para {$fechaTarea} a las {$horaTarea} con {$clienteNombre}",
+                    base_url('tareas')
+                );
             }
 
             // 5. Registrar en auditoría
@@ -182,15 +181,16 @@ class LeadAsignacion extends BaseController
             $clienteNombre = $lead['nombres'] . ' ' . $lead['apellidos'];
 
             // Crear notificación de solicitud de apoyo
-            $this->notificacionModel->insert([
-                'idusuario' => $usuarioApoyoId,
-                'tipo' => $urgente ? 'apoyo_urgente' : 'solicitud_apoyo',
-                'titulo' => $urgente ? '🚨 Solicitud de apoyo URGENTE' : '🤝 Solicitud de apoyo',
-                'mensaje' => "{$usuarioActual} solicita tu apoyo con el lead: {$clienteNombre}. " .
-                            "Mensaje: {$mensaje}",
-                'url' => base_url('leads/view/' . $idlead),
-                'leida' => 0
-            ]);
+            $tipo = $urgente ? 'apoyo_urgente' : 'solicitud_apoyo';
+            $titulo = $urgente ? '🚨 Solicitud de apoyo URGENTE' : '🤝 Solicitud de apoyo';
+            $mensajeNotif = "{$usuarioActual} solicita tu apoyo con el lead: {$clienteNombre}. Mensaje: {$mensaje}";
+            $this->notificacionModel->crearNotificacion(
+                $usuarioApoyoId,
+                $tipo,
+                $titulo,
+                $mensajeNotif,
+                base_url('leads/view/' . $idlead)
+            );
 
             // Registrar en seguimientos
             $this->seguimientoModel->insert([
@@ -257,14 +257,13 @@ class LeadAsignacion extends BaseController
             ]);
 
             // Crear notificación programada
-            $this->notificacionModel->insert([
-                'idusuario' => session()->get('idusuario'),
-                'tipo' => 'seguimiento_programado',
-                'titulo' => '📅 Seguimiento programado',
-                'mensaje' => "Tienes un seguimiento programado para {$fecha} a las {$hora} con {$clienteNombre}",
-                'url' => base_url('leads/view/' . $idlead),
-                'leida' => 0
-            ]);
+            $this->notificacionModel->crearNotificacion(
+                session()->get('idusuario'),
+                'seguimiento_programado',
+                'Seguimiento programado',
+                "Tienes un seguimiento programado para {$fecha} a las {$hora} con {$clienteNombre}",
+                base_url('leads/view/' . $idlead)
+            );
 
             return $this->response->setJSON([
                 'success' => true,
@@ -386,14 +385,13 @@ class LeadAsignacion extends BaseController
 
             // Notificación al nuevo usuario
             $nuevoUsuario = $this->usuarioModel->find($nuevoUsuarioId);
-            $this->notificacionModel->insert([
-                'idusuario' => $nuevoUsuarioId,
-                'tipo' => 'transferencia_masiva',
-                'titulo' => '📦 Transferencia masiva de leads',
-                'mensaje' => "Se te han transferido {$transferidos} leads. Motivo: {$motivo}",
-                'url' => base_url('leads'),
-                'leida' => 0
-            ]);
+            $this->notificacionModel->crearNotificacion(
+                $nuevoUsuarioId,
+                'transferencia_masiva',
+                '📦 Transferencia masiva de leads',
+                "Se te han transferido {$transferidos} leads. Motivo: {$motivo}",
+                base_url('leads')
+            );
 
             $db->transComplete();
 

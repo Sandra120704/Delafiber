@@ -251,14 +251,13 @@ class Leads extends BaseController
             if ($usuarioAsignado != session()->get('idusuario')) {
                 $notificacionModel = new \App\Models\NotificacionModel();
                 $usuarioCreador = session()->get('nombre');
-                $notificacionModel->insert([
-                    'idusuario' => $usuarioAsignado,
-                    'tipo' => 'lead_asignado',
-                    'titulo' => 'Nuevo lead asignado',
-                    'mensaje' => "$usuarioCreador te ha asignado un nuevo lead: $nombreCompleto",
-                    'url' => base_url('leads/view/' . $leadId),
-                    'leida' => 0
-                ]);
+                $notificacionModel->crearNotificacion(
+                    $usuarioAsignado,
+                    'lead_asignado',
+                    'Nuevo lead asignado',
+                    "$usuarioCreador te ha asignado un nuevo lead: $nombreCompleto",
+                    base_url('leads/view/' . $leadId)
+                );
             }
             
             $db->transComplete();
@@ -1304,5 +1303,86 @@ public function completarTarea()
                 'message' => 'Error: ' . $e->getMessage()
             ]);
     }
+    }
+
+    /**
+     * Buscar cliente con AJAX para Select2
+     */
+    public function buscarClienteAjax()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Petición inválida'
+            ]);
+        }
+
+        try {
+            $termino = $this->request->getGet('q');
+            $page = $this->request->getGet('page') ?? 1;
+            $perPage = 10;
+            $offset = ($page - 1) * $perPage;
+
+            if (empty($termino) || strlen($termino) < 3) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'clientes' => [],
+                    'total' => 0
+                ]);
+            }
+
+            $db = \Config\Database::connect();
+            
+            // Búsqueda en tabla personas
+            $builder = $db->table('personas p')
+                ->select('
+                    p.idpersona,
+                    p.nombres,
+                    p.apellidos,
+                    p.dni,
+                    p.telefono,
+                    p.correo,
+                    p.direccion,
+                    l.idlead,
+                    CASE WHEN l.idlead IS NOT NULL THEN 1 ELSE 0 END as es_lead
+                ')
+                ->join('leads l', 'p.idpersona = l.idpersona AND l.estado = "Activo"', 'left')
+                ->groupStart()
+                    ->like('p.nombres', $termino)
+                    ->orLike('p.apellidos', $termino)
+                    ->orLike('p.telefono', $termino)
+                    ->orLike('p.dni', $termino)
+                    ->orLike('CONCAT(p.nombres, " ", p.apellidos)', $termino)
+                ->groupEnd()
+                ->orderBy('p.nombres', 'ASC')
+                ->limit($perPage, $offset);
+
+            $clientes = $builder->get()->getResultArray();
+            
+            // Contar total para paginación
+            $builderCount = $db->table('personas p')
+                ->groupStart()
+                    ->like('p.nombres', $termino)
+                    ->orLike('p.apellidos', $termino)
+                    ->orLike('p.telefono', $termino)
+                    ->orLike('p.dni', $termino)
+                    ->orLike('CONCAT(p.nombres, " ", p.apellidos)', $termino)
+                ->groupEnd();
+            
+            $total = $builderCount->countAllResults();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'clientes' => $clientes,
+                'total' => $total
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error en búsqueda de clientes: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al buscar clientes'
+            ]);
+        }
     }
 }

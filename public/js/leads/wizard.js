@@ -95,41 +95,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // VALIDAR PASO 2 (Solicitud de Servicio)
     // ==========================================
     function validarPaso2() {
-        const tipoSolicitud = document.getElementById('tipo_solicitud').value;
-        const distrito = document.getElementById('iddistrito').value;
-        const direccion = document.getElementById('direccion').value.trim();
         const origen = document.getElementById('idorigen').value;
-        const modalidad = document.getElementById('idmodalidad').value;
-        const usuarioAsignado = document.getElementById('idusuario_asignado').value;
 
-        // Validar campos obligatorios básicos
-        if (!tipoSolicitud) {
-            mostrarErrorCampo('Por favor selecciona el tipo de instalación', 'tipo_solicitud');
-            return false;
-        }
-
-        if (!distrito) {
-            mostrarErrorCampo('Por favor selecciona el distrito', 'iddistrito');
-            return false;
-        }
-
-        if (!direccion) {
-            mostrarErrorCampo('Por favor ingresa la dirección de instalación', 'direccion');
-            return false;
-        }
-
+        // Validar solo el campo obligatorio: Origen
         if (!origen) {
-            mostrarErrorCampo('Por favor selecciona cómo nos conoció', 'idorigen');
-            return false;
-        }
-
-        if (!modalidad) {
-            mostrarErrorCampo('Por favor selecciona el medio de contacto', 'idmodalidad');
-            return false;
-        }
-
-        if (!usuarioAsignado) {
-            mostrarErrorCampo('Por favor asigna un responsable', 'idusuario_asignado');
+            mostrarErrorCampo('Por favor selecciona cómo nos conoció (campo obligatorio)', 'idorigen');
             return false;
         }
 

@@ -8,8 +8,8 @@ class NotificacionModel extends Model
 {
     protected $table = 'notificaciones';
     protected $primaryKey = 'idnotificacion';
-    protected $allowedFields = ['idusuario', 'tipo', 'titulo', 'mensaje', 'url', 'leida'];
-    protected $useTimestamps = false;
+    protected $allowedFields = ['idusuario', 'tipo', 'titulo', 'mensaje', 'url', 'leida', 'fecha_leida', 'created_at'];
+    protected $useTimestamps = true;
     protected $createdField = 'created_at';
     protected $updatedField = '';
     
@@ -63,7 +63,8 @@ class NotificacionModel extends Model
             'tipo' => $tipo,
             'titulo' => $titulo,
             'mensaje' => $mensaje,
-            'url' => $url
+            'url' => $url,
+            'created_at' => date('Y-m-d H:i:s')
         ];
         
         return $this->insert($data);

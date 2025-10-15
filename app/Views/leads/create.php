@@ -156,7 +156,7 @@
                                                 <option value="Casa">Casa / Hogar</option>
                                                 <option value="Negocio">Negocio / Empresa</option>
                                                 <option value="Oficina">Oficina</option>
-                                                <option value="Otro"> Otro</option>
+                                                <option value="Otro">Otro</option>
                                             </select>
                                         </div>
                                     </div>
@@ -248,7 +248,7 @@
                                     <label for="nota_inicial">Nota del Primer Contacto (opcional)</label>
                                     <textarea class="form-control" id="nota_inicial" name="nota_inicial" rows="3"
                                               placeholder="Describe brevemente la conversación inicial (opcional)..."></textarea>
-                                    <small class="text-muted">💡 Puedes agregar más detalles y asignar tareas después</small>
+                                    <small class="text-muted"> Puedes agregar más detalles y asignar tareas después</small>
                                 </div>
 
                                 <div class="alert alert-info">
@@ -277,8 +277,6 @@
 
 <script>
 const BASE_URL = '<?= base_url() ?>';
-</script>
-
 </script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="<?= base_url('js/leads/wizard.js') ?>"></script>

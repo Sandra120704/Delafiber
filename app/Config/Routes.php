@@ -40,6 +40,7 @@ $routes->group('leads', ['filter' => 'auth'], function($routes) {
     $routes->post('crearTarea', 'Leads::crearTarea');
     $routes->post('completarTarea', 'Leads::completarTarea');
     $routes->get('verificar-cobertura', 'Leads::verificarCobertura');
+    $routes->get('buscarClienteAjax', 'Leads::buscarClienteAjax'); // Búsqueda con Select2
     $routes->get('exportar', 'Leads::exportar');
 });
 

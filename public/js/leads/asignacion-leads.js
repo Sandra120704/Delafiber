@@ -9,21 +9,16 @@ var baseUrl = window.location.origin;
 
 // Obtener baseUrl del meta tag cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
+    // Obtener baseUrl del meta tag
     var metaBase = document.querySelector('meta[name="base-url"]');
     if (metaBase) {
         baseUrl = metaBase.content;
     }
+    
+    // Inicializar
+    cargarUsuariosDisponibles();
+    inicializarEventos();
 });
-
-/**
- * Inicializar sistema de asignación cuando el DOM esté listo
- */
-(function() {
-    document.addEventListener('DOMContentLoaded', function() {
-        cargarUsuariosDisponibles();
-        inicializarEventos();
-    });
-})();
 
 /**
  * Cargar lista de usuarios disponibles
@@ -49,36 +44,49 @@ async function cargarUsuariosDisponibles() {
 /**
  * Inicializar eventos
  */
+var eventosInicializados = false;
+
 function inicializarEventos() {
+    // Evitar inicializar eventos múltiples veces
+    if (eventosInicializados) return;
+    eventosInicializados = true;
     
-    // Botón de reasignar
-    const btnsReasignar = document.querySelectorAll('.btn-reasignar-lead');
-    btnsReasignar.forEach(btn => {
-        btn.addEventListener('click', function(e) {
+    // Usar delegación de eventos en el body para evitar duplicados
+    document.body.addEventListener('click', function(e) {
+        // Solo procesar si el clic es directamente en un botón, no en inputs/textareas
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+            return; // No hacer nada si es un campo de formulario
+        }
+        
+        // Botón de reasignar
+        const btnReasignar = e.target.closest('.btn-reasignar-lead');
+        if (btnReasignar) {
             e.preventDefault();
-            const idlead = this.dataset.idlead;
+            e.stopPropagation();
+            const idlead = btnReasignar.dataset.idlead;
             mostrarModalReasignar(idlead);
-        });
-    });
+            return;
+        }
 
-    // Botón de solicitar apoyo
-    const btnsSolicitar = document.querySelectorAll('.btn-solicitar-apoyo');
-    btnsSolicitar.forEach(btn => {
-        btn.addEventListener('click', function(e) {
+        // Botón de solicitar apoyo
+        const btnApoyo = e.target.closest('.btn-solicitar-apoyo');
+        if (btnApoyo) {
             e.preventDefault();
-            const idlead = this.dataset.idlead;
+            e.stopPropagation();
+            const idlead = btnApoyo.dataset.idlead;
             mostrarModalSolicitarApoyo(idlead);
-        });
-    });
+            return;
+        }
 
-    // Botón de programar seguimiento
-    const btnsProgramar = document.querySelectorAll('.btn-programar-seguimiento');
-    btnsProgramar.forEach(btn => {
-        btn.addEventListener('click', function(e) {
+        // Botón de programar seguimiento
+        const btnProgramar = e.target.closest('.btn-programar-seguimiento');
+        if (btnProgramar) {
             e.preventDefault();
-            const idlead = this.dataset.idlead;
+            e.stopPropagation();
+            const idlead = btnProgramar.dataset.idlead;
             mostrarModalProgramarSeguimiento(idlead);
-        });
+            return;
+        }
     });
 }
 
@@ -160,13 +168,23 @@ window.mostrarModalReasignar = function(idlead) {
     `;
 
     // Remover modal anterior si existe
-    document.getElementById('modalReasignar')?.remove();
+    const modalExistente = document.getElementById('modalReasignar');
+    if (modalExistente) {
+        $('#modalReasignar').modal('hide');
+        modalExistente.remove();
+    }
+    
+    // Limpiar todos los backdrops residuales
+    $('.modal-backdrop').remove();
+    $('body').removeClass('modal-open').css('padding-right', '');
     
     // Agregar nuevo modal
     document.body.insertAdjacentHTML('beforeend', html);
     
-    // Mostrar modal con jQuery (compatible con Bootstrap 4/5)
-    $('#modalReasignar').modal('show');
+    // Esperar un momento para que la limpieza se complete
+    setTimeout(function() {
+        $('#modalReasignar').modal('show');
+    }, 100);
 
     // Toggle campos de tarea
     document.getElementById('crearTarea').addEventListener('change', function() {
@@ -287,11 +305,23 @@ window.mostrarModalSolicitarApoyo = function(idlead) {
         </div>
     `;
 
-    document.getElementById('modalSolicitarApoyo')?.remove();
+    // Remover modal anterior si existe
+    const modalExistente = document.getElementById('modalSolicitarApoyo');
+    if (modalExistente) {
+        $('#modalSolicitarApoyo').modal('hide');
+        modalExistente.remove();
+    }
+    
+    // Limpiar todos los backdrops residuales
+    $('.modal-backdrop').remove();
+    $('body').removeClass('modal-open').css('padding-right', '');
+    
     document.body.insertAdjacentHTML('beforeend', html);
     
-    // Mostrar modal con jQuery
-    $('#modalSolicitarApoyo').modal('show');
+    // Esperar un momento para que la limpieza se complete
+    setTimeout(function() {
+        $('#modalSolicitarApoyo').modal('show');
+    }, 100);
 }
 
 /**
@@ -399,11 +429,23 @@ window.mostrarModalProgramarSeguimiento = function(idlead) {
         </div>
     `;
 
-    document.getElementById('modalProgramarSeguimiento')?.remove();
+    // Remover modal anterior si existe
+    const modalExistente = document.getElementById('modalProgramarSeguimiento');
+    if (modalExistente) {
+        $('#modalProgramarSeguimiento').modal('hide');
+        modalExistente.remove();
+    }
+    
+    // Limpiar todos los backdrops residuales
+    $('.modal-backdrop').remove();
+    $('body').removeClass('modal-open').css('padding-right', '');
+    
     document.body.insertAdjacentHTML('beforeend', html);
     
-    // Mostrar modal con jQuery
-    $('#modalProgramarSeguimiento').modal('show');
+    // Esperar un momento para que la limpieza se complete
+    setTimeout(function() {
+        $('#modalProgramarSeguimiento').modal('show');
+    }, 100);
 }
 
 /**

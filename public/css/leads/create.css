@@ -83,6 +83,78 @@
     padding: 0 !important;
 }
 
+/* Estilos para Select2 de búsqueda de clientes */
+.select2-result-cliente {
+    padding: 8px 0;
+}
+
+.cliente-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+}
+
+.cliente-info {
+    flex: 1;
+}
+
+.cliente-nombre {
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.cliente-detalles {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.cliente-detalles span {
+    margin-right: 12px;
+}
+
+.cliente-direccion {
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+/* Mejorar apariencia de Select2 */
+.select2-container--bootstrap-5 .select2-selection {
+    min-height: 45px;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+    line-height: 43px;
+    padding-left: 12px;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown {
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+}
+
+.select2-container--bootstrap-5 .select2-results__option--highlighted {
+    background-color: #4e73df !important;
+    color: white;
+}
+
+/* Badge en resultados */
+.badge-warning {
+    background-color: #f6c23e;
+    color: #1f2d3d;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .card-header h5 {
@@ -95,5 +167,15 @@
     
     .swal-toast-cobertura {
         min-width: 280px !important;
+    }
+    
+    .cliente-avatar {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+    }
+    
+    .cliente-nombre {
+        font-size: 13px;
     }
 }
