@@ -3,6 +3,17 @@
  * Archivo: public/js/config/sweetalert-config.js
  */
 
+// Configuración global de SweetAlert2 para centrado vertical
+const SwalDefaults = Swal.mixin({
+    customClass: {
+        popup: 'swal2-center',
+        container: 'swal2-container-center'
+    }
+});
+
+// Sobrescribir Swal.fire con la configuración por defecto
+window.Swal = SwalDefaults;
+
 $(document).ready(function() {
     // Función para cerrar sesión con SweetAlert2
     window.cerrarSesion = function() {

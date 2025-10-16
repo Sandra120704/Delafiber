@@ -3,7 +3,10 @@
  * Archivo: public/js/tareas/tareas-index.js
  */
 
-const baseUrl = document.querySelector('meta[name="base-url"]')?.getAttribute('content') || '';
+// Usar baseUrl global si existe, si no, obtenerlo del meta tag
+if (typeof baseUrl === 'undefined') {
+    var baseUrl = document.querySelector('meta[name="base-url"]')?.getAttribute('content') || '';
+}
 
 // Inicializar Select2 cuando se abre el modal
 $(document).ready(function() {
@@ -22,7 +25,7 @@ $(document).ready(function() {
             });
         } else {
             // Fallback al método anterior
-            console.log('⚠️ Componente no disponible, usando Select2 básico');
+            console.log('Componente no disponible, usando Select2 básico');
             if (!$('#selectLead').hasClass('select2-hidden-accessible')) {
                 $('#selectLead').select2({
                     theme: 'bootstrap-5',
@@ -30,7 +33,7 @@ $(document).ready(function() {
                     allowClear: true,
                     dropdownParent: $('#modalNuevaTarea'),
                     ajax: {
-                        url: baseUrl + '/leads/buscar',
+                        url: baseUrl + '/leads/buscarClienteAjax',
                         dataType: 'json',
                         delay: 300,
                         data: function (params) {
@@ -170,11 +173,15 @@ window.reprogramarTarea = function(idtarea) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('success', 'Tarea reprogramada exitosamente');
+                    showToast('success', data.message || 'Tarea reprogramada exitosamente');
                     setTimeout(() => location.reload(), 1000);
                 } else {
-                    showToast('error', 'Error al reprogramar');
+                    showToast('error', data.message || 'Error al reprogramar');
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('error', 'Error de conexión al reprogramar');
             });
         }
     });
@@ -288,4 +295,89 @@ window.eliminarSeleccionadas = function() {
             });
         }
     });
+};
+
+/**
+ * Completar tarea
+ */
+window.completarTarea = function(idtarea) {
+    Swal.fire({
+        title: '¿Completar tarea?',
+        text: '¿Deseas marcar esta tarea como completada?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, completar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`${baseUrl}/tareas/completar/${idtarea}`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Completada!',
+                        text: 'Tarea marcada como completada',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'No se pudo completar la tarea'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Ocurrió un error al completar la tarea'
+                });
+            });
+        }
+    });
+};
+
+/**
+ * Ver detalle de tarea
+ */
+window.verDetalle = function(idtarea) {
+    // Redirigir a la vista de detalle o abrir modal
+    window.location.href = `${baseUrl}/tareas/detalle/${idtarea}`;
+};
+
+/**
+ * Contactar lead
+ */
+window.contactarLead = function(telefono, tipo) {
+    if (!telefono) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Sin teléfono',
+            text: 'Este lead no tiene teléfono registrado'
+        });
+        return;
+    }
+    
+    if (tipo === 'whatsapp') {
+        // Abrir WhatsApp
+        const url = `https://wa.me/51${telefono.replace(/\D/g, '')}`;
+        window.open(url, '_blank');
+    } else if (tipo === 'llamada') {
+        // Abrir marcador telefónico
+        window.location.href = `tel:${telefono}`;
+    }
 };

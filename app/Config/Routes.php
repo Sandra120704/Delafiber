@@ -149,7 +149,7 @@ $routes->group('cotizaciones', ['filter' => 'auth'], function($routes) {
     $routes->get('pdf/(:num)', 'Cotizaciones::generarPDF/$1');
     $routes->get('porLead/(:num)', 'Cotizaciones::porLead/$1');
     $routes->get('buscarLeads', 'Cotizaciones::buscarLeads'); // AJAX: Buscar leads para Select2
-    $routes->get('diagnostico', 'DiagnosticoCotizaciones::testBusqueda'); // DIAGNÓSTICO
+    $routes->get('diagnostico', 'DiagnosticoCotizaciones::testBusqueda'); // DIAGNÓSTICO de prueba
 });
 
 // === SERVICIOS ===

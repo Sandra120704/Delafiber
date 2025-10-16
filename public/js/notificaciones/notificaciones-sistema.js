@@ -99,9 +99,9 @@ function mostrarNotificacionesEnDropdown(notificaciones) {
 
     if (notificaciones.length === 0) {
         container.innerHTML = `
-            <div class="dropdown-item text-center text-muted py-4">
-                <i class="mdi mdi-bell-off mdi-24px"></i>
-                <p class="mb-0 mt-2">No tienes notificaciones</p>
+            <div class="text-center text-muted py-3">
+                <i class="ti-bell" style="font-size: 32px; opacity: 0.3;"></i>
+                <p class="mb-0 mt-2" style="font-size: 13px;">No tienes notificaciones</p>
             </div>
         `;
         return;
@@ -109,19 +109,19 @@ function mostrarNotificacionesEnDropdown(notificaciones) {
 
     container.innerHTML = notificaciones.map(n => `
         <a href="${n.url || '#'}" class="dropdown-item notificacion-item ${n.leida ? 'leida' : 'no-leida'}" 
-           data-id="${n.idnotificacion}" onclick="marcarComoLeida(${n.idnotificacion})">
+           data-id="${n.idnotificacion}" onclick="marcarComoLeida(${n.idnotificacion})" style="padding: 10px 14px;">
             <div class="d-flex align-items-start">
-                <div class="flex-shrink-0">
+                <div class="flex-shrink-0" style="font-size: 20px;">
                     ${getIconoNotificacion(n.tipo)}
                 </div>
-                <div class="flex-grow-1 ms-3">
-                    <h6 class="mb-1">${n.titulo}</h6>
-                    <p class="mb-1 text-muted small">${n.mensaje}</p>
-                    <small class="text-muted">${formatearFecha(n.created_at)}</small>
+                <div class="flex-grow-1 ms-2">
+                    <h6 class="mb-1" style="font-size: 13px; font-weight: 600;">${n.titulo}</h6>
+                    <p class="mb-1 text-muted" style="font-size: 12px; line-height: 1.3;">${n.mensaje}</p>
+                    <small class="text-muted" style="font-size: 11px;">${formatearFecha(n.created_at)}</small>
                 </div>
             </div>
         </a>
-        <div class="dropdown-divider"></div>
+        <div class="dropdown-divider m-0"></div>
     `).join('');
 }
 
@@ -134,19 +134,19 @@ function mostrarNotificacionesNuevas(nuevas) {
 
     const html = nuevas.map(n => `
         <a href="${n.url || '#'}" class="dropdown-item notificacion-item no-leida notificacion-nueva" 
-           data-id="${n.idnotificacion}" onclick="marcarComoLeida(${n.idnotificacion})">
+           data-id="${n.idnotificacion}" onclick="marcarComoLeida(${n.idnotificacion})" style="padding: 10px 14px;">
             <div class="d-flex align-items-start">
-                <div class="flex-shrink-0">
+                <div class="flex-shrink-0" style="font-size: 20px;">
                     ${getIconoNotificacion(n.tipo)}
                 </div>
-                <div class="flex-grow-1 ms-3">
-                    <h6 class="mb-1">${n.titulo}</h6>
-                    <p class="mb-1 text-muted small">${n.mensaje}</p>
-                    <small class="text-muted">${formatearFecha(n.created_at)}</small>
+                <div class="flex-grow-1 ms-2">
+                    <h6 class="mb-1" style="font-size: 13px; font-weight: 600;">${n.titulo}</h6>
+                    <p class="mb-1 text-muted" style="font-size: 12px; line-height: 1.3;">${n.mensaje}</p>
+                    <small class="text-muted" style="font-size: 11px;">${formatearFecha(n.created_at)}</small>
                 </div>
             </div>
         </a>
-        <div class="dropdown-divider"></div>
+        <div class="dropdown-divider m-0"></div>
     `).join('');
 
     container.insertAdjacentHTML('afterbegin', html);

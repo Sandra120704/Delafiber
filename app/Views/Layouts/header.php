@@ -21,6 +21,9 @@
 
   <!-- SweetAlert2 CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  
+  <!-- SweetAlert2 Custom CSS - Centrado vertical global -->
+  <link rel="stylesheet" href="<?= base_url('css/components/sweetalert-custom.css?v=' . time()) ?>">
 
   <!-- Select2 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -85,28 +88,28 @@
               <span class="badge bg-danger position-absolute" id="notificaciones-badge" 
                     style="display: none; top: 5px; right: 5px; font-size: 10px; padding: 2px 5px;">0</span>
             </a>
-            <div class="dropdown-menu dropdown-menu-end p-0" style="width: 380px; max-height: 500px; overflow-y: auto;">
+            <div class="dropdown-menu dropdown-menu-end p-0" style="width: 350px;">
               <!-- Header -->
-              <div class="dropdown-header d-flex justify-content-between align-items-center bg-light" style="padding: 12px 16px;">
-                <strong><i class="ti-bell me-2"></i>Notificaciones</strong>
+              <div class="dropdown-header d-flex justify-content-between align-items-center bg-light" style="padding: 10px 14px;">
+                <strong style="font-size: 14px;"><i class="ti-bell me-2"></i>Notificaciones</strong>
                 <button class="btn btn-sm btn-link text-primary p-0" id="btn-marcar-todas-leidas" 
-                        style="text-decoration: none; font-size: 12px;">
-                  Marcar todas como leídas
+                        style="text-decoration: none; font-size: 11px;">
+                  Marcar como leídas
                 </button>
               </div>
               <div class="dropdown-divider m-0"></div>
               
               <!-- Lista de notificaciones (se llena con JavaScript) -->
-              <div id="notificaciones-lista" style="max-height: 400px; overflow-y: auto;">
-                <div class="text-center py-4 text-muted">
-                  <i class="ti-bell" style="font-size: 48px; opacity: 0.3;"></i>
-                  <p class="mb-0 mt-2">Cargando notificaciones...</p>
+              <div id="notificaciones-lista" style="max-height: 300px; overflow-y: auto; min-height: 120px;">
+                <div class="text-center py-3 text-muted">
+                  <i class="ti-bell" style="font-size: 36px; opacity: 0.3;"></i>
+                  <p class="mb-0 mt-2" style="font-size: 13px;">Cargando notificaciones...</p>
                 </div>
               </div>
               
               <div class="dropdown-divider m-0"></div>
-              <a href="<?= base_url('notificaciones') ?>" class="dropdown-item text-center text-primary py-2">
-                <small><strong>Ver todas las notificaciones</strong></small>
+              <a href="<?= base_url('notificaciones') ?>" class="dropdown-item text-center text-primary py-2" style="font-size: 12px;">
+                <strong>Ver todas las notificaciones</strong>
               </a>
             </div>
           </li>

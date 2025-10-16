@@ -1,5 +1,9 @@
 <?= $this->extend('Layouts/base') ?>
 
+<?= $this->section('styles') ?>
+<link rel="stylesheet" href="<?= base_url('css/tareas/tareas-index.css?v=' . time()) ?>">
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 
 <?php
@@ -81,8 +85,27 @@ $error = $error ?? null;
     <div class="col-md-12">
         <div class="card">
             <div class="card-body">
+                <!-- Hint informativo -->
+                <div class="alert alert-info alert-dismissible fade show mb-4" role="alert" style="border-left: 4px solid #0dcaf0;">
+                    <div class="d-flex align-items-start">
+                        <i class="ti-info-circle me-2" style="font-size: 24px;"></i>
+                        <div class="flex-grow-1">
+                            <h6 class="alert-heading mb-2">💡 Consejo para nuevos usuarios</h6>
+                            <p class="mb-0">
+                                <strong>¿Cuándo usar esta vista?</strong> Aquí puedes gestionar todas tus tareas (personales y de clientes).
+                                <br>
+                                <strong>Tip:</strong> Para seguimientos de clientes específicos, créalos directamente desde el perfil del lead para mayor rapidez.
+                            </p>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                </div>
+
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h4 class="card-title mb-0">Mis Tareas</h4>
+                    <div>
+                        <h4 class="card-title mb-0">Mi Agenda de Tareas</h4>
+                        <small class="text-muted">Organiza tu día y gestiona tus pendientes</small>
+                    </div>
                     <div>
                         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevaTarea">
                             <i class="ti-plus"></i> Nueva Tarea
@@ -487,14 +510,23 @@ $error = $error ?? null;
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label class="form-label">Fecha y Hora *</label>
-                                <input type="datetime-local" class="form-control" name="fecha_vencimiento" required>
+                                <input type="datetime-local" 
+                                       class="form-control" 
+                                       name="fecha_vencimiento" 
+                                       id="fechaVencimiento"
+                                       required>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
-                                <label class="form-label">Lead Asociado</label>
+                                <label class="form-label">
+                                    Cliente (Opcional)
+                                    <i class="ti-info-circle text-info" 
+                                       data-bs-toggle="tooltip" 
+                                       title="Asocia esta tarea a un cliente específico. Déjalo vacío si es una tarea personal o administrativa."></i>
+                                </label>
                                 <select class="form-select" name="idlead" id="selectLead">
-                                    <option value="">Seleccionar lead...</option>
+                                    <option value="">Sin cliente (tarea personal)</option>
                                 </select>
                                 <small class="form-text text-muted">
                                     <i class="ti-search"></i> Escribe para buscar por nombre, teléfono o DNI
@@ -555,6 +587,28 @@ $error = $error ?? null;
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="<?= base_url('js/tareas/tareas-index.js') ?>"></script>
+<script src="<?= base_url('js/tareas/tareas-index.js?v=' . time()) ?>"></script>
+<script>
+// Inicializar fecha por defecto al abrir el modal
+document.getElementById('modalNuevaTarea').addEventListener('show.bs.modal', function () {
+    // Establecer fecha y hora actual + 1 hora como valor por defecto
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+    now.setMinutes(0);
+    const dateString = now.toISOString().slice(0, 16);
+    document.getElementById('fechaVencimiento').value = dateString;
+    
+    // Inicializar tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+// Limpiar formulario al cerrar modal
+document.getElementById('modalNuevaTarea').addEventListener('hidden.bs.modal', function () {
+    document.querySelector('#modalNuevaTarea form').reset();
+});
+</script>
 <?= $this->endSection() ?>
    

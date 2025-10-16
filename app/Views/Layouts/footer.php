@@ -102,7 +102,6 @@
   <style>
     /* Notificaciones */
     .notificacion-item {
-      padding: 12px 16px;
       transition: background-color 0.2s;
       border-left: 3px solid transparent;
     }
@@ -126,11 +125,11 @@
 
     @keyframes slideIn {
       from {
-        transform: translateX(-100%);
+        transform: translateY(-20px);
         opacity: 0;
       }
       to {
-        transform: translateX(0);
+        transform: translateY(0);
         opacity: 1;
       }
     }

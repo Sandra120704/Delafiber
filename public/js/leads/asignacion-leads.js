@@ -367,14 +367,14 @@ window.mostrarModalSolicitarApoyo = function(idlead) {
         $modal.on('shown.bs.modal', function() {
             // Inicializar Select2 para búsqueda de usuarios
             if (typeof inicializarBuscadorUsuarios === 'function') {
-                console.log('✅ Inicializando buscador de usuarios en modal apoyo');
+                console.log('Inicializando buscador de usuarios en modal apoyo');
                 inicializarBuscadorUsuarios('#selectUsuarioApoyo', {
                     placeholder: 'Escribe para buscar usuario...',
                     dropdownParent: $modal,
                     allowClear: true
                 });
             } else {
-                console.warn('⚠️ Función inicializarBuscadorUsuarios no disponible');
+                console.warn('Función inicializarBuscadorUsuarios no disponible');
             }
         });
     }, 100);

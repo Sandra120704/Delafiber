@@ -245,14 +245,28 @@ class Tareas extends BaseController
         $tarea = $this->tareaModel->find($json['idtarea']);
         
         if (!$tarea || $tarea['idusuario'] != session()->get('idusuario')) {
-            return $this->response->setJSON(['success' => false]);
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No autorizado o tarea no encontrada'
+            ]);
         }
 
-        $this->tareaModel->update($json['idtarea'], [
-            'fecha_vencimiento' => $json['nueva_fecha']
-        ]);
-        
-        return $this->response->setJSON(['success' => true]);
+        try {
+            $this->tareaModel->update($json['idtarea'], [
+                'fecha_vencimiento' => $json['nueva_fecha']
+            ]);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Tarea reprogramada exitosamente'
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error al reprogramar tarea: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al reprogramar la tarea'
+            ]);
+        }
     }
 
     public function completarMultiples()
@@ -263,7 +277,7 @@ class Tareas extends BaseController
         
         foreach ($ids as $id) {
             $tarea = $this->tareaModel->find($id);
-            if ($tarea && $tarea['idusuario'] == session()->get('user_id')) {
+            if ($tarea && $tarea['idusuario'] == session()->get('idusuario')) {
                 $this->tareaModel->update($id, [
                     'estado' => 'completada',
                     'fecha_completada' => date('Y-m-d H:i:s')
@@ -282,7 +296,7 @@ class Tareas extends BaseController
         
         foreach ($ids as $id) {
             $tarea = $this->tareaModel->find($id);
-            if ($tarea && $tarea['idusuario'] == session()->get('user_id')) {
+            if ($tarea && $tarea['idusuario'] == session()->get('idusuario')) {
                 $this->tareaModel->delete($id);
             }
         }
