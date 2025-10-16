@@ -154,7 +154,15 @@ class Leads extends BaseController
                 // Usar persona existente
                 $persona = $this->personaModel->find($personaId);
                 if (!$persona) throw new \Exception('Persona no encontrada');
-                $nombreCompleto = $persona['nombres'] . ' ' . $persona['apellidos'];
+                // Normalizar a array si el modelo devuelve un objeto o builder
+                if (is_object($persona)) {
+                    if (method_exists($persona, 'toArray')) {
+                        $persona = $persona->toArray();
+                    } else {
+                        $persona = (array)$persona;
+                    }
+                }
+                $nombreCompleto = ($persona['nombres'] ?? '') . ' ' . ($persona['apellidos'] ?? '');
             } else {
                 // Crear nueva persona
                 $iddistrito = $this->request->getPost('iddistrito');
@@ -484,9 +492,27 @@ class Leads extends BaseController
                 ['nota' => $nota]
             );
             
+            // Obtener nombre de la etapa de forma segura (puede venir como array, objeto Eloquent/Model o builder)
+            $etapaNombre = '';
+            if (is_array($etapaNueva)) {
+                $etapaNombre = $etapaNueva['nombre'] ?? '';
+            } elseif (is_object($etapaNueva)) {
+                if (isset($etapaNueva->nombre)) {
+                    $etapaNombre = $etapaNueva->nombre;
+                } elseif (method_exists($etapaNueva, 'toArray')) {
+                    $tmp = $etapaNueva->toArray();
+                    $etapaNombre = $tmp['nombre'] ?? '';
+                } elseif (method_exists($etapaNueva, 'getAttribute')) {
+                    $etapaNombre = $etapaNueva->getAttribute('nombre') ?? '';
+                }
+            }
+            
+            // Mensaje de respuesta con fallback si no se obtuvo el nombre
+            $mensajeEtapa = $etapaNombre !== '' ? $etapaNombre : 'la etapa seleccionada';
+            
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Lead movido exitosamente a ' . $etapaNueva['nombre']
+                'message' => 'Lead movido exitosamente a ' . $mensajeEtapa
             ]);
             
         } catch (\Exception $e) {
@@ -783,6 +809,15 @@ class Leads extends BaseController
                     'mensaje' => 'Distrito no encontrado'
                 ]);
             }
+
+            // Normalizar $distrito a array si el modelo devuelve un objeto
+            if (is_object($distrito)) {
+                if (method_exists($distrito, 'toArray')) {
+                    $distrito = $distrito->toArray();
+                } else {
+                    $distrito = (array)$distrito;
+                }
+            }
             
             // Contar zonas activas que cubren este distrito
             // Nota: Esto es una aproximación. Para mayor precisión,
@@ -1026,8 +1061,12 @@ class Leads extends BaseController
      */
     public function agregarSeguimiento()
     {
+        // Log de inicio
+        log_message('info', '=== INICIO agregarSeguimiento ===');
+        
         // Validar que sea petición AJAX
         if (!$this->request->isAJAX()) {
+            log_message('error', 'Petición no es AJAX');
             return $this->response
                 ->setStatusCode(400)
                 ->setJSON(['success' => false, 'message' => 'Petición inválida']);
@@ -1038,13 +1077,26 @@ class Leads extends BaseController
         $idmodalidad = $this->request->getPost('idmodalidad');
         $nota = $this->request->getPost('nota');
         
+        // Log de datos recibidos
+        log_message('info', 'Datos recibidos: ' . json_encode([
+            'idlead' => $idlead,
+            'idmodalidad' => $idmodalidad,
+            'nota_length' => strlen($nota ?? '')
+        ]));
+        
         // Validación manual
         if (empty($idlead) || empty($idmodalidad) || empty($nota)) {
+            log_message('error', 'Validación fallida: campos vacíos');
             return $this->response
                 ->setStatusCode(400)
                 ->setJSON([
                     'success' => false,
-                    'message' => 'Todos los campos son obligatorios'
+                    'message' => 'Todos los campos son obligatorios',
+                    'debug' => [
+                        'idlead' => empty($idlead) ? 'vacío' : 'ok',
+                        'idmodalidad' => empty($idmodalidad) ? 'vacío' : 'ok',
+                        'nota' => empty($nota) ? 'vacío' : 'ok'
+                    ]
                 ]);
         }
         
@@ -1123,29 +1175,47 @@ class Leads extends BaseController
      */
     public function crearTarea()
     {
+        // Log de inicio
+        log_message('info', '=== INICIO crearTarea ===');
+        
         // Validar que sea petición AJAX
         if (!$this->request->isAJAX()) {
-        return $this->response
-            ->setStatusCode(400)
-            ->setJSON(['success' => false, 'message' => 'Petición inválida']);
-    }
-    
-    // Obtener datos
-    $idlead = $this->request->getPost('idlead');
-    $titulo = $this->request->getPost('titulo');
-    $descripcion = $this->request->getPost('descripcion');
-    $prioridad = $this->request->getPost('prioridad');
-    $fechaVencimiento = $this->request->getPost('fecha_vencimiento');
-    
-    // Validación manual
-    if (empty($idlead) || empty($titulo) || empty($fechaVencimiento)) {
-        return $this->response
-            ->setStatusCode(400)
-            ->setJSON([
-                'success' => false,
-                'message' => 'Título y fecha de vencimiento son obligatorios'
-            ]);
-    }
+            log_message('error', 'Petición no es AJAX');
+            return $this->response
+                ->setStatusCode(400)
+                ->setJSON(['success' => false, 'message' => 'Petición inválida']);
+        }
+        
+        // Obtener datos
+        $idlead = $this->request->getPost('idlead');
+        $titulo = $this->request->getPost('titulo');
+        $descripcion = $this->request->getPost('descripcion');
+        $prioridad = $this->request->getPost('prioridad');
+        $fechaVencimiento = $this->request->getPost('fecha_vencimiento');
+        
+        // Log de datos recibidos
+        log_message('info', 'Datos recibidos: ' . json_encode([
+            'idlead' => $idlead,
+            'titulo' => $titulo,
+            'prioridad' => $prioridad,
+            'fecha_vencimiento' => $fechaVencimiento
+        ]));
+        
+        // Validación manual
+        if (empty($idlead) || empty($titulo) || empty($fechaVencimiento)) {
+            log_message('error', 'Validación fallida: campos vacíos');
+            return $this->response
+                ->setStatusCode(400)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Título y fecha de vencimiento son obligatorios',
+                    'debug' => [
+                        'idlead' => empty($idlead) ? 'vacío' : 'ok',
+                        'titulo' => empty($titulo) ? 'vacío' : 'ok',
+                        'fecha_vencimiento' => empty($fechaVencimiento) ? 'vacío' : 'ok'
+                    ]
+                ]);
+        }
     
     // Validar que el lead existe y pertenece al usuario
     $userId = session()->get('idusuario');
@@ -1246,8 +1316,22 @@ public function completarTarea()
     }
 
     try {
-        // Verificar que la tarea existe y pertenece al usuario
-        $tarea = $this->tareaModel->find($idtarea);
+        // Verificar que la tarea existe y pertenezca al usuario
+        // Forzar la respuesta como array para evitar errores al tratar objetos/modelos
+        $tarea = $this->tareaModel->asArray()->find($idtarea);
+        
+        // Fallback: si por algún motivo no devuelve array, intentar convertir el objeto
+        if (!$tarea) {
+            // Intentar obtener el registro en su forma original y convertir a array si es objeto
+            $rawTarea = $this->tareaModel->find($idtarea);
+            if ($rawTarea && is_object($rawTarea)) {
+                if (method_exists($rawTarea, 'toArray')) {
+                    $tarea = $rawTarea->toArray();
+                } else {
+                    $tarea = (array)$rawTarea;
+                }
+            }
+        }
         
         if (!$tarea) {
             return $this->response
@@ -1303,6 +1387,90 @@ public function completarTarea()
                 'message' => 'Error: ' . $e->getMessage()
             ]);
     }
+    }
+
+    /**
+     * Buscar leads con AJAX para Select2
+     */
+    public function buscar()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Petición inválida'
+            ]);
+        }
+
+        try {
+            $termino = $this->request->getGet('q');
+            $page = $this->request->getGet('page') ?? 1;
+            $perPage = 20;
+            $offset = ($page - 1) * $perPage;
+
+            // Si el término es muy corto, retornar vacío
+            if (empty($termino) || strlen($termino) < 2) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'leads' => [],
+                    'total' => 0
+                ]);
+            }
+
+            $db = \Config\Database::connect();
+            
+            // Búsqueda de leads activos
+            $builder = $db->table('leads l')
+                ->select('
+                    l.idlead,
+                    l.estado,
+                    CONCAT(p.nombres, " ", p.apellidos) as nombre_completo,
+                    p.telefono,
+                    p.dni,
+                    p.correo,
+                    e.nombre as etapa
+                ')
+                ->join('personas p', 'p.idpersona = l.idpersona')
+                ->join('etapas e', 'e.idetapa = l.idetapa', 'left')
+                ->where('l.estado', 'activo')
+                ->groupStart()
+                    ->like('p.nombres', $termino)
+                    ->orLike('p.apellidos', $termino)
+                    ->orLike('p.telefono', $termino)
+                    ->orLike('p.dni', $termino)
+                    ->orLike('CONCAT(p.nombres, " ", p.apellidos)', $termino)
+                ->groupEnd()
+                ->orderBy('p.nombres', 'ASC')
+                ->limit($perPage, $offset);
+
+            $leads = $builder->get()->getResultArray();
+            
+            // Contar total para paginación
+            $builderCount = $db->table('leads l')
+                ->join('personas p', 'p.idpersona = l.idpersona')
+                ->where('l.estado', 'activo')
+                ->groupStart()
+                    ->like('p.nombres', $termino)
+                    ->orLike('p.apellidos', $termino)
+                    ->orLike('p.telefono', $termino)
+                    ->orLike('p.dni', $termino)
+                    ->orLike('CONCAT(p.nombres, " ", p.apellidos)', $termino)
+                ->groupEnd();
+            
+            $total = $builderCount->countAllResults();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'leads' => $leads,
+                'total' => $total
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error en búsqueda de leads: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al buscar leads'
+            ]);
+        }
     }
 
     /**

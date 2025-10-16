@@ -120,7 +120,7 @@ class Reportes extends BaseController
         $conversiones = $db->table('leads')
             ->where('created_at >=', $fechaInicio)
             ->where('created_at <=', $fechaFin . ' 23:59:59')
-            ->where('estado', 'Convertido')
+            ->where('estado', 'convertido')
             ->countAllResults();
 
         // Tasa de conversión
@@ -220,7 +220,7 @@ class Reportes extends BaseController
             SELECT 
                 DATE_FORMAT(created_at, '{$formatoFecha}') as fecha,
                 COUNT(*) as leads,
-                SUM(CASE WHEN estado = 'Convertido' THEN 1 ELSE 0 END) as conversiones
+                SUM(CASE WHEN estado = 'convertido' THEN 1 ELSE 0 END) as conversiones
             FROM leads
             WHERE created_at >= ? AND created_at <= ?
             GROUP BY DATE_FORMAT(created_at, '{$formatoFecha}')
@@ -242,15 +242,15 @@ class Reportes extends BaseController
             SELECT 
                 u.nombre as nombre,
                 COUNT(l.idlead) as total_leads,
-                SUM(CASE WHEN l.estado = 'Convertido' THEN 1 ELSE 0 END) as conversiones,
-                ROUND(SUM(CASE WHEN l.estado = 'Convertido' THEN 1 ELSE 0 END) * 100.0 / COUNT(l.idlead), 1) as tasa_conversion,
+                SUM(CASE WHEN l.estado = 'convertido' THEN 1 ELSE 0 END) as conversiones,
+                ROUND(SUM(CASE WHEN l.estado = 'convertido' THEN 1 ELSE 0 END) * 100.0 / COUNT(l.idlead), 1) as tasa_conversion,
                 0 as ingresos,
                 0 as ticket_promedio
             FROM usuarios u
             LEFT JOIN leads l ON l.idusuario = u.idusuario 
                 AND l.created_at >= ? 
                 AND l.created_at <= ?
-            WHERE u.estado = 'Activo'
+            WHERE u.estado = 'activo'
             GROUP BY u.idusuario, u.nombre
             HAVING total_leads > 0
             ORDER BY conversiones DESC
@@ -273,15 +273,15 @@ class Reportes extends BaseController
                 c.estado as tipo,
                 c.presupuesto,
                 COUNT(l.idlead) as total_leads,
-                SUM(CASE WHEN l.estado = 'Convertido' THEN 1 ELSE 0 END) as conversiones,
-                ROUND(SUM(CASE WHEN l.estado = 'Convertido' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(l.idlead), 0), 1) as tasa_conversion,
+                SUM(CASE WHEN l.estado = 'convertido' THEN 1 ELSE 0 END) as conversiones,
+                ROUND(SUM(CASE WHEN l.estado = 'convertido' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(l.idlead), 0), 1) as tasa_conversion,
                 ROUND(c.presupuesto / NULLIF(COUNT(l.idlead), 0), 2) as costo_por_lead,
                 0 as roi
             FROM campanias c
             LEFT JOIN leads l ON l.idcampania = c.idcampania 
                 AND l.created_at >= ? 
                 AND l.created_at <= ?
-            WHERE c.estado = 'Activa'
+            WHERE c.estado = 'activa'
             GROUP BY c.idcampania
             HAVING total_leads > 0
             ORDER BY conversiones DESC

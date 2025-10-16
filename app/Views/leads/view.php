@@ -371,31 +371,65 @@ $historial = $historial ?? [];
 <div class="modal fade" id="modalSeguimiento" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Agregar Seguimiento</h5>
-                <button type="button" class="close" data-dismiss="modal">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="icon-message-circle"></i> Agregar Seguimiento
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
             </div>
             <form id="formSeguimiento">
                 <div class="modal-body">
                     <input type="hidden" name="idlead" value="<?= $lead['idlead'] ?>">
-                    <div class="form-group">
-                        <label>Tipo de Comunicación</label>
-                        <select class="form-control" name="idmodalidad" required>
-                            <?php foreach ($modalidades as $mod): ?>
-                            <option value="<?= $mod['idmodalidad'] ?>"><?= esc($mod['nombre']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                    
+                    <div class="alert alert-info">
+                        <i class="icon-info"></i> <strong>Registra la interacción</strong> que tuviste con este lead
                     </div>
+                    
                     <div class="form-group">
-                        <label>Nota</label>
-                        <textarea class="form-control" name="nota" rows="4" required></textarea>
+                        <label class="font-weight-bold">
+                            <i class="icon-phone"></i> Tipo de Comunicación *
+                        </label>
+                        <select class="form-control" name="idmodalidad" id="selectModalidad" required>
+                            <option value="">-- Selecciona el tipo --</option>
+                            <?php if (!empty($modalidades)): ?>
+                                <?php foreach ($modalidades as $mod): ?>
+                                <option value="<?= $mod['idmodalidad'] ?>">
+                                    <?= esc($mod['nombre']) ?>
+                                </option>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <option value="">No hay modalidades disponibles</option>
+                            <?php endif; ?>
+                        </select>
+                        <small class="form-text text-muted">
+                            ¿Cómo contactaste al cliente? (Llamada, WhatsApp, Email, etc.)
+                        </small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="font-weight-bold">
+                            <i class="icon-edit"></i> Nota del Seguimiento *
+                        </label>
+                        <textarea class="form-control" 
+                                  name="nota" 
+                                  id="textareaNota"
+                                  rows="4" 
+                                  required
+                                  placeholder="Describe qué se habló, acuerdos tomados, próximos pasos, etc.&#10;&#10;Ejemplo: Cliente interesado en plan de 100 Mbps. Solicita visita técnica para el viernes. Enviar cotización por WhatsApp."></textarea>
+                        <small class="form-text text-muted">
+                            <span id="contadorCaracteres">0</span> caracteres
+                        </small>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="icon-x"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="btnGuardarSeguimiento">
+                        <i class="icon-save"></i> Guardar Seguimiento
+                    </button>
                 </div>
             </form>
         </div>

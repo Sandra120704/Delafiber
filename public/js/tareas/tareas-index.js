@@ -7,88 +7,82 @@ const baseUrl = document.querySelector('meta[name="base-url"]')?.getAttribute('c
 
 // Inicializar Select2 cuando se abre el modal
 $(document).ready(function() {
-    console.log('✅ Select2 inicializando...');
+    console.log('✅ Inicializando módulo de tareas...');
     
     // Inicializar cuando se muestra el modal
     $('#modalNuevaTarea').on('shown.bs.modal', function () {
-        console.log('✅ Modal abierto');
+        console.log('✅ Modal de nueva tarea abierto');
         
-        if (!$('#selectLead').hasClass('select2-hidden-accessible')) {
-            console.log('✅ Inicializando Select2 en #selectLead');
-            
-            $('#selectLead').select2({
-                theme: 'bootstrap-5',
+        // Usar el componente de búsqueda de leads si está disponible
+        if (typeof inicializarBuscadorLeads === 'function') {
+            console.log('✅ Inicializando buscador de leads con componente');
+            inicializarBuscadorLeads('#selectLead', {
                 placeholder: 'Buscar lead por nombre, teléfono o DNI...',
-                allowClear: true,
-                dropdownParent: $('#modalNuevaTarea'),
-                ajax: {
-                    url: baseUrl + '/tareas/buscarLeads',
-                    dataType: 'json',
-                    delay: 250,
-                    data: function (params) {
-                        return {
-                            q: params.term,
-                            page: params.page || 1
-                        };
-                    },
-                    processResults: function (data, params) {
-                        params.page = params.page || 1;
-                        return {
-                            results: data.results,
-                            pagination: {
-                                more: data.pagination.more
-                            }
-                        };
-                    },
-                    cache: true
-                },
-                minimumInputLength: 2,
-                language: {
-                    inputTooShort: function() {
-                        return 'Escribe al menos 2 caracteres para buscar';
-                    },
-                    searching: function() {
-                        return 'Buscando leads...';
-                    },
-                    noResults: function() {
-                        return 'No se encontraron leads';
-                    },
-                    errorLoading: function() {
-                        return 'Error al cargar resultados';
-                    }
-                },
-                templateResult: formatLead,
-                templateSelection: formatLeadSelection
+                dropdownParent: $('#modalNuevaTarea')
             });
+        } else {
+            // Fallback al método anterior
+            console.log('⚠️ Componente no disponible, usando Select2 básico');
+            if (!$('#selectLead').hasClass('select2-hidden-accessible')) {
+                $('#selectLead').select2({
+                    theme: 'bootstrap-5',
+                    placeholder: 'Buscar lead por nombre, teléfono o DNI...',
+                    allowClear: true,
+                    dropdownParent: $('#modalNuevaTarea'),
+                    ajax: {
+                        url: baseUrl + '/leads/buscar',
+                        dataType: 'json',
+                        delay: 300,
+                        data: function (params) {
+                            return {
+                                q: params.term,
+                                page: params.page || 1
+                            };
+                        },
+                        processResults: function (data, params) {
+                            params.page = params.page || 1;
+                            return {
+                                results: data.leads.map(lead => ({
+                                    id: lead.idlead,
+                                    text: `${lead.nombre_completo} - ${lead.telefono}`,
+                                    lead: lead
+                                })),
+                                pagination: {
+                                    more: (params.page * 20) < data.total
+                                }
+                            };
+                        },
+                        cache: true
+                    },
+                    minimumInputLength: 2,
+                    language: {
+                        inputTooShort: function() {
+                            return 'Escribe al menos 2 caracteres para buscar';
+                        },
+                        searching: function() {
+                            return 'Buscando leads...';
+                        },
+                        noResults: function() {
+                            return 'No se encontraron leads';
+                        },
+                        errorLoading: function() {
+                            return 'Error al cargar resultados';
+                        }
+                    }
+                });
+            }
         }
     });
     
     // Limpiar Select2 cuando se cierra el modal
     $('#modalNuevaTarea').on('hidden.bs.modal', function () {
-        $('#selectLead').val(null).trigger('change');
+        if (typeof destruirBuscador === 'function') {
+            destruirBuscador('#selectLead');
+        } else {
+            $('#selectLead').val(null).trigger('change');
+        }
     });
 });
-
-// Formato para mostrar en el dropdown
-function formatLead(lead) {
-    if (lead.loading) {
-        return lead.text;
-    }
-    
-    var $container = $(
-        '<div class="select2-result-lead">' +
-            '<div class="lead-name">' + lead.text + '</div>' +
-            (lead.etapa ? '<small class="text-muted">Etapa: ' + lead.etapa + '</small>' : '') +
-        '</div>'
-    );
-    
-    return $container;
-}
-
-// Formato para mostrar cuando está seleccionado
-function formatLeadSelection(lead) {
-    return lead.text || lead.id;
-}
 
 window.completarTarea = function(idtarea) {
     document.getElementById('idtarea_completar').value = idtarea;

@@ -7,10 +7,6 @@ SET FOREIGN_KEY_CHECKS = 0;
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
--- -----------------------------------------------------
--- 2.1 TABLAS BASE (sin dependencias externas)
--- -----------------------------------------------------
-
 -- Tabla: roles
 CREATE TABLE `roles` (
   `idrol` INT UNSIGNED AUTO_INCREMENT,
@@ -134,6 +130,7 @@ CREATE TABLE `servicios` (
 CREATE TABLE `campanias` (
   `idcampania` INT UNSIGNED AUTO_INCREMENT,
   `nombre` VARCHAR(100) NOT NULL,
+  `tipo` VARCHAR(50) DEFAULT NULL,
   `descripcion` TEXT,
   `fecha_inicio` DATE,
   `fecha_fin` DATE,
@@ -523,9 +520,6 @@ CREATE TABLE `eventos_calendario` (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- -----------------------------------------------------
--- 2.4 TABLAS DE AUDITORÍA E HISTORIAL
--- -----------------------------------------------------
 
 -- Tabla: auditoria
 CREATE TABLE `auditoria` (
@@ -662,9 +656,6 @@ CREATE TABLE IF NOT EXISTS `comentarios_lead` (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =====================================================
--- SECCIÓN 3: VISTAS
--- =====================================================
 
 -- Vista: v_usuarios_permisos
 CREATE OR REPLACE VIEW `v_usuarios_permisos` AS
@@ -774,9 +765,6 @@ INNER JOIN personas p ON l.idpersona = p.idpersona
 INNER JOIN origenes o ON l.idorigen = o.idorigen
 INNER JOIN etapas e ON l.idetapa = e.idetapa;
 
--- =====================================================
--- SECCIÓN 4: PROCEDIMIENTOS ALMACENADOS
--- =====================================================
 
 DELIMITER $
 
@@ -818,9 +806,6 @@ END$
 
 DELIMITER ;
 
--- =====================================================
--- SECCIÓN 5: DATOS DE CATÁLOGOS
--- =====================================================
 
 -- Insertar roles
 INSERT INTO `roles` (`idrol`, `nombre`, `descripcion`, `permisos`, `nivel`) VALUES
@@ -922,10 +907,10 @@ INSERT INTO `usuarios` (`idusuario`, `nombre`, `email`, `password`, `idrol`, `tu
 (5, 'Ana Torres', 'ana@delafiber.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'completo', '987654324', 'activo');
 
 -- Insertar campañas de prueba
-INSERT INTO `campanias` (`idcampania`, `nombre`, `descripcion`, `fecha_inicio`, `fecha_fin`, `presupuesto`, `estado`) VALUES
-(1, 'Campaña Verano 2025', 'Promoción de internet para temporada de verano', '2025-10-01', '2025-12-31', 15000.00, 'activa'),
-(2, 'Campaña Fiestas Patrias', 'Ofertas especiales por fiestas patrias', '2025-10-08', '2025-11-30', 10000.00, 'activa'),
-(3, 'Campaña Navidad 2025', 'Promociones navideñas', '2025-12-01', '2025-12-31', 20000.00, 'activa');
+INSERT INTO `campanias` (`idcampania`, `nombre`, `tipo`, `descripcion`, `fecha_inicio`, `fecha_fin`, `presupuesto`, `estado`) VALUES
+(1, 'Campaña Verano 2025', 'Marketing Digital', 'Promoción de internet para temporada de verano', '2025-10-01', '2025-12-31', 15000.00, 'activa'),
+(2, 'Campaña Fiestas Patrias', 'Publicidad', 'Ofertas especiales por fiestas patrias', '2025-10-08', '2025-11-30', 10000.00, 'activa'),
+(3, 'Campaña Navidad 2025', 'Redes Sociales', 'Promociones navideñas', '2025-12-01', '2025-12-31', 20000.00, 'activa');
 
 -- Insertar zonas de campaña
 INSERT INTO `tb_zonas_campana` (`id_zona`, `id_campana`, `nombre_zona`, `descripcion`, `poligono`, `color`, `prioridad`, `estado`) VALUES
@@ -1029,54 +1014,5 @@ INSERT INTO `auditoria` (`idusuario`, `accion`, `tabla_afectada`, `registro_id`,
 (3, 'UPDATE_LEAD', 'leads', 1, '{"idetapa":2}', '192.168.1.100'),
 (3, 'CREATE_COTIZACION', 'cotizaciones', 1, '{"idlead":2,"total":94.40}', '192.168.1.100');
 
--- =====================================================
--- FINALIZACIÓN
--- =====================================================
-
+-- Reactivar verificación de claves foráneas
 SET FOREIGN_KEY_CHECKS = 1;
-
--- =====================================================
--- RESUMEN DE LA BASE DE DATOS
--- =====================================================
-SELECT '========================================' as '';
-SELECT '✅ BASE DE DATOS DELAFIBER CREADA' as '';
-SELECT '========================================' as '';
-SELECT '' as '';
-SELECT '📊 ESTADÍSTICAS:' as '';
-SELECT '  - Tablas: 28 (23 originales + 5 nuevas)' as '';
-SELECT '  - Vistas: 3' as '';
-SELECT '  - Procedimientos: 1' as '';
-SELECT '  - Roles: 3' as '';
-SELECT '  - Usuarios: 5' as '';
-SELECT '  - Orígenes: 7' as '';
-SELECT '  - Etapas: 6' as '';
-SELECT '  - Modalidades: 6' as '';
-SELECT '  - Servicios: 7' as '';
-SELECT '  - Pipelines: 1' as '';
-SELECT '  - Medios: 5' as '';
-SELECT '  - Campañas: 3' as '';
-SELECT '  - Zonas: 3' as '';
-SELECT '  - Personas: 10' as '';
-SELECT '  - Leads: 10' as '';
-SELECT '  - Seguimientos: 8' as '';
-SELECT '  - Tareas: 7' as '';
-SELECT '  - Cotizaciones: 4' as '';
-SELECT '' as '';
-SELECT '🆕 TABLAS NUEVAS AGREGADAS:' as '';
-SELECT '  ✓ pipelines - Gestión de pipelines de ventas' as '';
-SELECT '  ✓ medios - Medios de publicidad' as '';
-SELECT '  ✓ difusiones - Relación medios-campañas' as '';
-SELECT '  ✓ tb_interacciones - Registro de interacciones' as '';
-SELECT '  ✓ comentarios_lead - Comentarios en leads' as '';
-SELECT '' as '';
-SELECT '👥 USUARIOS DE PRUEBA:' as '';
-SELECT '========================================' as '';
-SELECT '📧 admin@delafiber.com | 🔑 password123 | 👤 Administrador' as '';
-SELECT '📧 carlos@delafiber.com | 🔑 password123 | 👤 Supervisor' as '';
-SELECT '📧 maria@delafiber.com | 🔑 password123 | 👤 Vendedor' as '';
-SELECT '📧 juan@delafiber.com | 🔑 password123 | 👤 Vendedor' as '';
-SELECT '📧 ana@delafiber.com | 🔑 password123 | 👤 Vendedor' as '';
-SELECT '' as '';
-SELECT '✅ Base de datos lista para usar' as '';
-SELECT '✅ Todos los modelos sincronizados' as '';
-SELECT '========================================' as ''

@@ -126,9 +126,10 @@
                     <div class="mb-3" id="estadoContainer" style="display: none;">
                         <label for="estado" class="form-label">Estado</label>
                         <select class="form-select" id="estado" name="estado">
-                            <option value="Pendiente">Pendiente</option>
-                            <option value="En progreso">En progreso</option>
-                            <option value="Completada">Completada</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="en_proceso">En Proceso</option>
+                            <option value="completada">Completada</option>
+                            <option value="cancelada">Cancelada</option>
                         </select>
                     </div>
                 </form>

@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
             prioridad: document.getElementById('prioridad').value,
             fecha_vencimiento: document.getElementById('fecha_vencimiento').value,
             idlead: document.getElementById('idlead').value || null,
-            estado: document.getElementById('estado').value || 'Pendiente'
+            estado: document.getElementById('estado').value || 'pendiente'
         };
 
         const url = idtarea 

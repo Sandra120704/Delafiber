@@ -8,7 +8,8 @@ class CampaniaModel extends Model
     protected $table = 'campanias';
     protected $primaryKey = 'idcampania';
     protected $allowedFields = [
-        'nombre', 
+        'nombre',
+        'tipo',
         'descripcion', 
         'fecha_inicio', 
         'fecha_fin', 

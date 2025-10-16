@@ -32,6 +32,9 @@
 
   <!-- Select2 JS -->
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  
+  <!-- Componente Select Buscador JS -->
+  <script src="<?= base_url('js/components/select-buscador.js') ?>"></script>
 
   <!-- Custom js for this page-->
   <script src="<?= base_url('js/dashboard.js') ?>"></script>

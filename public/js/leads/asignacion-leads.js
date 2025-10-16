@@ -109,16 +109,23 @@ window.mostrarModalReasignar = function(idlead) {
                             <input type="hidden" name="idlead" value="${idlead}">
                             
                             <div class="mb-3">
-                                <label class="form-label">Asignar a:</label>
-                                <select name="nuevo_usuario" class="form-select" required>
-                                    <option value="">Seleccionar usuario...</option>
+                                <label class="form-label">
+                                    <i class="mdi mdi-magnify"></i> Buscar y asignar usuario:
+                                </label>
+                                <select name="nuevo_usuario" id="selectUsuarioReasignar" class="form-select" required>
+                                    <option value="">Buscar usuario...</option>
                                     ${usuariosDisponibles.map(u => `
-                                        <option value="${u.idusuario}">
-                                            ${u.nombre} - ${u.turno} 
-                                            (${u.leads_activos} leads, ${u.tareas_pendientes} tareas)
+                                        <option value="${u.idusuario}" 
+                                                data-turno="${u.turno}"
+                                                data-leads="${u.leads_activos}"
+                                                data-tareas="${u.tareas_pendientes}">
+                                            ${u.nombre}
                                         </option>
                                     `).join('')}
                                 </select>
+                                <small class="form-text text-muted mt-1">
+                                    <i class="mdi mdi-information"></i> Escribe para buscar por nombre
+                                </small>
                             </div>
 
                             <div class="mb-3">
@@ -183,12 +190,35 @@ window.mostrarModalReasignar = function(idlead) {
     
     // Esperar un momento para que la limpieza se complete
     setTimeout(function() {
-        $('#modalReasignar').modal('show');
+        const $modal = $('#modalReasignar');
+        $modal.modal('show');
+        
+        // Esperar a que el modal esté completamente visible
+        $modal.on('shown.bs.modal', function() {
+            // Inicializar Select2 para búsqueda de usuarios
+            if (typeof inicializarBuscadorUsuarios === 'function') {
+                console.log('Inicializando buscador de usuarios en modal reasignar');
+                inicializarBuscadorUsuarios('#selectUsuarioReasignar', {
+                    placeholder: 'Escribe para buscar usuario...',
+                    dropdownParent: $modal,
+                    allowClear: true
+                });
+            } else {
+                console.warn('Función inicializarBuscadorUsuarios no disponible');
+            }
+        });
     }, 100);
 
     // Toggle campos de tarea
     document.getElementById('crearTarea').addEventListener('change', function() {
         document.getElementById('camposTarea').style.display = this.checked ? 'block' : 'none';
+    });
+    
+    // Limpiar Select2 al cerrar modal
+    $('#modalReasignar').on('hidden.bs.modal', function() {
+        if (typeof destruirBuscador === 'function') {
+            destruirBuscador('#selectUsuarioReasignar');
+        }
     });
 }
 
@@ -264,13 +294,23 @@ window.mostrarModalSolicitarApoyo = function(idlead) {
                             <input type="hidden" name="idlead" value="${idlead}">
                             
                             <div class="mb-3">
-                                <label class="form-label">Solicitar apoyo de:</label>
-                                <select name="usuario_apoyo" class="form-select" required>
-                                    <option value="">Seleccionar usuario...</option>
+                                <label class="form-label">
+                                    <i class="mdi mdi-magnify"></i> Buscar usuario para solicitar apoyo:
+                                </label>
+                                <select name="usuario_apoyo" id="selectUsuarioApoyo" class="form-select" required>
+                                    <option value="">Buscar usuario...</option>
                                     ${usuariosDisponibles.map(u => `
-                                        <option value="${u.idusuario}">${u.nombre} - ${u.turno}</option>
+                                        <option value="${u.idusuario}"
+                                                data-turno="${u.turno}"
+                                                data-leads="${u.leads_activos}"
+                                                data-tareas="${u.tareas_pendientes}">
+                                            ${u.nombre}
+                                        </option>
                                     `).join('')}
                                 </select>
+                                <small class="form-text text-muted mt-1">
+                                    <i class="mdi mdi-information"></i> Escribe para buscar por nombre
+                                </small>
                             </div>
 
                             <div class="mb-3">
@@ -320,8 +360,31 @@ window.mostrarModalSolicitarApoyo = function(idlead) {
     
     // Esperar un momento para que la limpieza se complete
     setTimeout(function() {
-        $('#modalSolicitarApoyo').modal('show');
+        const $modal = $('#modalSolicitarApoyo');
+        $modal.modal('show');
+        
+        // Esperar a que el modal esté completamente visible
+        $modal.on('shown.bs.modal', function() {
+            // Inicializar Select2 para búsqueda de usuarios
+            if (typeof inicializarBuscadorUsuarios === 'function') {
+                console.log('✅ Inicializando buscador de usuarios en modal apoyo');
+                inicializarBuscadorUsuarios('#selectUsuarioApoyo', {
+                    placeholder: 'Escribe para buscar usuario...',
+                    dropdownParent: $modal,
+                    allowClear: true
+                });
+            } else {
+                console.warn('⚠️ Función inicializarBuscadorUsuarios no disponible');
+            }
+        });
     }, 100);
+    
+    // Limpiar Select2 al cerrar modal
+    $('#modalSolicitarApoyo').on('hidden.bs.modal', function() {
+        if (typeof destruirBuscador === 'function') {
+            destruirBuscador('#selectUsuarioApoyo');
+        }
+    });
 }
 
 /**

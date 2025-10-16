@@ -74,6 +74,7 @@ class Campanias extends BaseController
         // Preparar datos
         $data = [
             'nombre' => $this->request->getPost('nombre'),
+            'tipo' => $this->request->getPost('tipo'),
             'descripcion' => $this->request->getPost('descripcion'),
             'fecha_inicio' => $this->request->getPost('fecha_inicio'),
             'fecha_fin' => $this->request->getPost('fecha_fin'),
@@ -141,6 +142,7 @@ class Campanias extends BaseController
         // Preparar datos
         $data = [
             'nombre' => $this->request->getPost('nombre'),
+            'tipo' => $this->request->getPost('tipo'),
             'descripcion' => $this->request->getPost('descripcion'),
             'fecha_inicio' => $this->request->getPost('fecha_inicio'),
             'fecha_fin' => $this->request->getPost('fecha_fin'),

@@ -462,7 +462,7 @@ function mostrarInfoZona(zona, position) {
             <p style="margin: 5px 0; font-size: 13px;">
                 <strong>Agentes:</strong> ${zona.agentes_asignados || 0}
             </p>
-            <div style="margin-top: 10px; display: flex; gap: 5px;">
+            <div style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
                 <a href="/crm-campanas/zona-detalle/${zona.id_zona}" 
                    class="btn btn-sm btn-primary" 
                    style="font-size: 12px;">
@@ -472,6 +472,11 @@ function mostrarInfoZona(zona, position) {
                    class="btn btn-sm btn-warning" 
                    style="font-size: 12px;">
                     <i class="icon-edit"></i> Editar
+                </button>
+                <button onclick="MapaCampanas.eliminarZona(${zona.id_zona}, '${zona.nombre_zona}')" 
+                   class="btn btn-sm btn-danger" 
+                   style="font-size: 12px;">
+                    <i class="icon-trash"></i> Eliminar
                 </button>
             </div>
         </div>
@@ -980,6 +985,91 @@ function cancelarEdicionZona(zonaItem) {
 }
 
 // ============================================
+// 19. ELIMINAR ZONA DE LA BASE DE DATOS
+// ============================================
+export async function eliminarZona(idZona, nombreZona) {
+    // Confirmar eliminación
+    const confirmacion = await Swal.fire({
+        title: '¿Eliminar zona?',
+        text: `¿Estás seguro de eliminar la zona "${nombreZona}"? Esta acción no se puede deshacer.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    });
+
+    if (!confirmacion.isConfirmed) {
+        return;
+    }
+
+    try {
+        // Mostrar loading
+        Swal.fire({
+            title: 'Eliminando zona...',
+            text: 'Por favor espera',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Llamar al endpoint de eliminación
+        const response = await fetch(`/crm-campanas/eliminar-zona/${idZona}`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al eliminar la zona');
+        }
+
+        // Cerrar infoWindow
+        if (infoWindow) {
+            infoWindow.close();
+        }
+
+        // Eliminar polígono del mapa
+        const zonaIndex = zonasPoligonos.findIndex(z => z.id_zona === idZona);
+        if (zonaIndex !== -1) {
+            zonasPoligonos[zonaIndex].polygon.setMap(null);
+            zonasPoligonos.splice(zonaIndex, 1);
+        }
+
+        // Eliminar de zonasData
+        const dataIndex = zonasData.findIndex(z => z.id_zona === idZona);
+        if (dataIndex !== -1) {
+            zonasData.splice(dataIndex, 1);
+        }
+
+        // Mostrar éxito
+        await Swal.fire({
+            icon: 'success',
+            title: 'Zona eliminada',
+            text: 'La zona ha sido eliminada exitosamente',
+            timer: 2000,
+            showConfirmButton: false
+        });
+
+        // Recargar página para actualizar estadísticas
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+
+    } catch (error) {
+        console.error('Error al eliminar zona:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo eliminar la zona. Por favor intenta de nuevo.'
+        });
+    }
+}
+
+// ============================================
 // EXPORTAR FUNCIONES PÚBLICAS
 // ============================================
 window.MapaCampanas = {
@@ -992,7 +1082,8 @@ window.MapaCampanas = {
     cargarProspectos: cargarProspectosEnMapa,
     guardarZona: guardarZonaCampana,
     borrarZona: borrarZonaActual,
-    editarZona: habilitarEdicionZona
+    editarZona: habilitarEdicionZona,
+    eliminarZona: eliminarZona
 };
 
 console.log('Módulo MapaCampanas.js cargado');

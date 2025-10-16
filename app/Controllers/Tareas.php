@@ -169,7 +169,7 @@ class Tareas extends BaseController
             'prioridad' => $this->request->getPost('prioridad'),
             'fecha_vencimiento' => $this->request->getPost('fecha_vencimiento'),
             'fecha_inicio' => date('Y-m-d'),
-            'estado' => 'Pendiente'
+            'estado' => 'pendiente'
         ];
 
         try {
@@ -200,9 +200,9 @@ class Tareas extends BaseController
         }
 
         $data = [
-            'estado' => 'Completada',
+            'estado' => 'completada',
             'fecha_completada' => date('Y-m-d H:i:s'),
-            'notas_resultado' => $this->request->getPost('notas_resultado')
+            'resultado' => $this->request->getPost('notas_resultado')
         ];
 
         try {
@@ -219,7 +219,7 @@ class Tareas extends BaseController
                     'prioridad' => 'media',
                     'fecha_vencimiento' => $this->request->getPost('fecha_seguimiento'),
                     'fecha_inicio' => date('Y-m-d'),
-                    'estado' => 'Pendiente'
+                    'estado' => 'pendiente'
                 ];
                 $this->tareaModel->insert($nuevaTarea);
             }
@@ -265,7 +265,7 @@ class Tareas extends BaseController
             $tarea = $this->tareaModel->find($id);
             if ($tarea && $tarea['idusuario'] == session()->get('user_id')) {
                 $this->tareaModel->update($id, [
-                    'estado' => 'Completada',
+                    'estado' => 'completada',
                     'fecha_completada' => date('Y-m-d H:i:s')
                 ]);
             }
@@ -312,7 +312,7 @@ class Tareas extends BaseController
 
         $count = $this->tareaModel
             ->where('idusuario', session()->get('idusuario'))
-            ->where('estado', 'Pendiente')
+            ->where('tareas.estado', 'pendiente')
             ->where('fecha_vencimiento <=', date('Y-m-d H:i:s', strtotime('+2 hours')))
             ->where('fecha_vencimiento >', date('Y-m-d H:i:s'))
             ->countAllResults();
@@ -406,7 +406,7 @@ class Tareas extends BaseController
             'prioridad' => $data['prioridad'] ?? 'media',
             'fecha_vencimiento' => $data['fecha_vencimiento'],
             'fecha_inicio' => date('Y-m-d'),
-            'estado' => 'Pendiente'
+            'estado' => 'pendiente'
         ];
 
         try {
@@ -618,7 +618,7 @@ class Tareas extends BaseController
      */
     private function getColorPorEstado($estado, $prioridad)
     {
-        if ($estado === 'Completada') {
+        if ($estado === 'completada') {
             return ['bg' => '#28a745', 'border' => '#1e7e34'];
         }
 

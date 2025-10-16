@@ -31,7 +31,7 @@ class TareaModel extends Model
     
     protected $useTimestamps = true;
     protected $createdField = 'created_at';
-    protected $updatedField = false;
+    protected $updatedField = '';
     
     // Validaciones
     protected $validationRules = [
@@ -146,15 +146,15 @@ class TareaModel extends Model
     /**
      * Marcar tarea como completada
      */
-    public function completarTarea($idtarea, $notas_resultado = null)
+    public function completarTarea($idtarea, $resultado = null)
     {
         $data = [
             'estado' => 'completada',
             'fecha_completada' => date('Y-m-d H:i:s')
         ];
         
-        if ($notas_resultado) {
-            $data['notas_resultado'] = $notas_resultado;
+        if ($resultado) {
+            $data['resultado'] = $resultado;
         }
         
         return $this->update($idtarea, $data);

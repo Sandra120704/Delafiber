@@ -280,7 +280,7 @@ class CotizacionModel extends Model
      */
     public function cambiarEstado($idcotizacion, $nuevoEstado)
     {
-        $estadosValidos = ['Borrador', 'Enviada', 'Aceptada', 'Rechazada'];
+        $estadosValidos = ['borrador', 'enviada', 'aceptada', 'rechazada'];
         
         if (!in_array($nuevoEstado, $estadosValidos)) {
             return false;
@@ -289,9 +289,9 @@ class CotizacionModel extends Model
         $updateData = ['estado' => $nuevoEstado];
         
         // Registrar fecha según el estado
-        if ($nuevoEstado === 'Enviada') {
+        if ($nuevoEstado === 'enviada') {
             $updateData['fecha_envio'] = date('Y-m-d H:i:s');
-        } elseif (in_array($nuevoEstado, ['Aceptada', 'Rechazada'])) {
+        } elseif (in_array($nuevoEstado, ['aceptada', 'rechazada'])) {
             $updateData['fecha_respuesta'] = date('Y-m-d H:i:s');
         }
 
@@ -303,7 +303,7 @@ class CotizacionModel extends Model
      */
     public function getCotizacionesPendientes($userId = null)
     {
-        $builder = $this->where('estado', 'Borrador');
+        $builder = $this->where('estado', 'borrador');
         
         if ($userId) {
             $builder->where('idusuario', $userId);
@@ -318,7 +318,7 @@ class CotizacionModel extends Model
     public function getCotizacionesEnviadas($idlead)
     {
         return $this->where('idlead', $idlead)
-            ->where('estado', 'Enviada')
+            ->where('estado', 'enviada')
             ->orderBy('created_at', 'DESC')
             ->findAll();
     }
@@ -337,12 +337,12 @@ class CotizacionModel extends Model
 
         return $builder->select('
             COUNT(*) as total_cotizaciones,
-            SUM(CASE WHEN estado = "Borrador" THEN 1 ELSE 0 END) as borradores,
-            SUM(CASE WHEN estado = "Enviada" THEN 1 ELSE 0 END) as enviadas,
-            SUM(CASE WHEN estado = "Aceptada" THEN 1 ELSE 0 END) as aceptadas,
-            SUM(CASE WHEN estado = "Rechazada" THEN 1 ELSE 0 END) as rechazadas,
+            SUM(CASE WHEN estado = "borrador" THEN 1 ELSE 0 END) as borradores,
+            SUM(CASE WHEN estado = "enviada" THEN 1 ELSE 0 END) as enviadas,
+            SUM(CASE WHEN estado = "aceptada" THEN 1 ELSE 0 END) as aceptadas,
+            SUM(CASE WHEN estado = "rechazada" THEN 1 ELSE 0 END) as rechazadas,
             AVG(total) as precio_promedio,
-            SUM(CASE WHEN estado = "Aceptada" THEN total ELSE 0 END) as valor_aceptado
+            SUM(CASE WHEN estado = "aceptada" THEN total ELSE 0 END) as valor_aceptado
         ')
         ->get()
         ->getRowArray();
@@ -357,8 +357,8 @@ class CotizacionModel extends Model
         
         $resultado = $this->select('
             COUNT(*) as total,
-            SUM(CASE WHEN estado = "Aceptada" THEN 1 ELSE 0 END) as aceptadas,
-            ROUND((SUM(CASE WHEN estado = "Aceptada" THEN 1 ELSE 0 END) / COUNT(*)) * 100, 2) as tasa_conversion
+            SUM(CASE WHEN estado = "aceptada" THEN 1 ELSE 0 END) as aceptadas,
+            ROUND((SUM(CASE WHEN estado = "aceptada" THEN 1 ELSE 0 END) / COUNT(*)) * 100, 2) as tasa_conversion
         ')
         ->where('created_at >=', $fechaInicio)
         ->first();

@@ -11,7 +11,9 @@ const LeadView = {
 document.addEventListener('DOMContentLoaded', function() {
     
     // Obtener variables del DOM
-    LeadView.baseUrl = document.querySelector('meta[name="base-url"]')?.getAttribute('content') || window.location.origin;
+    let baseUrl = document.querySelector('meta[name="base-url"]')?.getAttribute('content') || window.location.origin;
+    // Eliminar barra final si existe
+    LeadView.baseUrl = baseUrl.replace(/\/$/, '');
     LeadView.leadId = parseInt(document.querySelector('[data-lead-id]')?.dataset.leadId) || 0;
     
     
@@ -162,13 +164,46 @@ function initFormSeguimiento() {
     const formSeguimiento = document.getElementById('formSeguimiento');
     
     if (!formSeguimiento) {
-    // Formulario de seguimiento no encontrado
+        console.warn('⚠️ Formulario de seguimiento no encontrado');
         return;
     }
     
-    formSeguimiento.addEventListener('submit', function(e) {
+    // Flag para evitar envíos duplicados
+    let isSubmitting = false;
+    
+    // Contador de caracteres para el textarea
+    const textareaNota = document.getElementById('textareaNota');
+    const contadorCaracteres = document.getElementById('contadorCaracteres');
+    
+    if (textareaNota && contadorCaracteres) {
+        textareaNota.addEventListener('input', function() {
+            contadorCaracteres.textContent = this.value.length;
+        });
+    }
+    
+    // Limpiar formulario al abrir modal
+    $('#modalSeguimiento').on('show.bs.modal', function() {
+        formSeguimiento.reset();
+        isSubmitting = false; // Reset flag
+        if (contadorCaracteres) {
+            contadorCaracteres.textContent = '0';
+        }
+    });
+    
+    // Remover listeners anteriores para evitar duplicados
+    const newForm = formSeguimiento.cloneNode(true);
+    formSeguimiento.parentNode.replaceChild(newForm, formSeguimiento);
+    
+    // Agregar listener al nuevo formulario
+    document.getElementById('formSeguimiento').addEventListener('submit', function(e) {
         e.preventDefault();
-    // Enviando seguimiento
+        e.stopPropagation();
+        
+        // Evitar envíos duplicados
+        if (isSubmitting) {
+            console.warn('⚠️ Ya se está enviando el formulario');
+            return;
+        }
         
         const formData = new FormData(this);
         
@@ -189,6 +224,9 @@ function initFormSeguimiento() {
             return;
         }
         
+        // Marcar como enviando
+        isSubmitting = true;
+        
         // Deshabilitar botón para evitar doble envío
         const btnSubmit = this.querySelector('button[type="submit"]');
         const textoOriginal = btnSubmit ? btnSubmit.innerHTML : '';
@@ -196,6 +234,12 @@ function initFormSeguimiento() {
             btnSubmit.disabled = true;
             btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
         }
+        
+        console.log('📤 Enviando seguimiento...', {
+            idlead,
+            idmodalidad,
+            nota: nota.substring(0, 50) + '...'
+        });
         
         fetch(`${LeadView.baseUrl}/leads/agregarSeguimiento`, {
             method: 'POST',
@@ -233,11 +277,12 @@ function initFormSeguimiento() {
             }
         })
         .catch(error => {
-            console.error('❌ Error:', error);
-            mostrarNotificacion('error', 'Error de conexión al guardar seguimiento');
+            console.error('❌ Error al guardar seguimiento:', error);
+            mostrarNotificacion('error', 'Error de conexión: ' + error.message);
         })
         .finally(() => {
-            // Rehabilitar botón
+            // Rehabilitar botón y resetear flag
+            isSubmitting = false;
             if (btnSubmit) {
                 btnSubmit.disabled = false;
                 btnSubmit.innerHTML = textoOriginal;
@@ -245,7 +290,7 @@ function initFormSeguimiento() {
         });
     });
     
-    // Formulario de seguimiento inicializado
+    console.log('✅ Formulario de seguimiento inicializado');
 }
 
 /**
