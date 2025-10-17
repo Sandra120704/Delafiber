@@ -113,25 +113,32 @@ function formatearUsuario(usuario) {
     }
 
     const $usuario = $(usuario.element);
-    const nombre = $usuario.text();
+    const textoCompleto = $usuario.text();
+    const nombre = textoCompleto.split(' - ')[0].trim();
     const turno = $usuario.data('turno') || '';
     const leadsActivos = $usuario.data('leads') || 0;
     const tareasPendientes = $usuario.data('tareas') || 0;
+    
+    // Colores según turno
+    const colorTurno = turno.toLowerCase().includes('mañana') ? 'warning' : 
+                       turno.toLowerCase().includes('tarde') ? 'info' : 
+                       turno.toLowerCase().includes('noche') ? 'dark' : 'secondary';
 
     const $container = $(`
-        <div class="select2-usuario-item">
+        <div class="select2-usuario-item py-1">
             <div class="d-flex align-items-center">
-                <div class="avatar-sm me-2">
-                    <div class="avatar-title rounded-circle bg-primary text-white">
+                <div class="flex-shrink-0 me-2">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                         style="width: 32px; height: 32px; font-size: 14px; font-weight: bold;">
                         ${nombre.charAt(0).toUpperCase()}
                     </div>
                 </div>
                 <div class="flex-grow-1">
-                    <div class="fw-bold">${nombre}</div>
-                    <div class="text-muted small">
-                        <span class="badge bg-info me-1">${turno}</span>
-                        <span class="me-2">📊 ${leadsActivos} leads</span>
-                        <span>✓ ${tareasPendientes} tareas</span>
+                    <div class="fw-semibold mb-0" style="font-size: 14px;">${nombre}</div>
+                    <div class="text-muted" style="font-size: 11px;">
+                        <span class="badge bg-${colorTurno}" style="font-size: 10px; padding: 2px 6px;">${turno}</span>
+                        <span class="ms-2"><i class="mdi mdi-account-group"></i> ${leadsActivos}</span>
+                        <span class="ms-2"><i class="mdi mdi-checkbox-marked-circle-outline"></i> ${tareasPendientes}</span>
                     </div>
                 </div>
             </div>
@@ -150,7 +157,10 @@ function formatearSeleccionUsuario(usuario) {
     }
     
     const $usuario = $(usuario.element);
-    const nombre = $usuario.text();
+    const textoCompleto = $usuario.text();
+    
+    // Extraer solo el nombre (antes del primer " - ")
+    const nombre = textoCompleto.split(' - ')[0].trim();
     return nombre;
 }
 

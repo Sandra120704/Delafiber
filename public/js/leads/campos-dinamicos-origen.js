@@ -11,33 +11,20 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
- * Obtener opciones de campañas del select original
+ * Obtener opciones de campañas desde el servidor o datos globales
  */
 function obtenerOpcionesCampanias() {
-    const campaniaSelect = document.getElementById('idcampania');
-    // Referencia a select de campañas
-    
-    if (!campaniaSelect) {
-        console.error('❌ No se encontró el select de campañas');
-        return '<option value="">No hay campañas disponibles</option>';
+    // Intentar obtener campañas desde variable global si existe
+    if (typeof campanias !== 'undefined' && Array.isArray(campanias)) {
+        let opciones = '';
+        campanias.forEach(campania => {
+            opciones += `<option value="${campania.idcampania}">${campania.nombre}</option>`;
+        });
+        return opciones || '<option value="">No hay campañas activas</option>';
     }
     
-    // Total de opciones en select
-    
-    let opciones = '';
-    for (let i = 1; i < campaniaSelect.options.length; i++) {
-        const option = campaniaSelect.options[i];
-        opciones += `<option value="${option.value}">${option.text}</option>`;
-    // Opción agregada
-    }
-    
-    if (opciones === '') {
-    // No hay campañas activas
-        return '<option value="">No hay campañas activas</option>';
-    }
-    
-    // Opciones generadas correctamente
-    return opciones;
+    // Si no hay variable global, retornar mensaje
+    return '<option value="">No hay campañas disponibles</option>';
 }
 
 function initCamposDinamicosOrigen() {

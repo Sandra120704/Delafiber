@@ -656,6 +656,22 @@ CREATE TABLE IF NOT EXISTS `comentarios_lead` (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `campos_dinamicos_origen` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `idlead` INT(11) UNSIGNED NOT NULL,
+  `campo` VARCHAR(100) NOT NULL COMMENT 'Nombre del campo dinámico (ej: referido_por, tipo_publicidad)',
+  `valor` TEXT NULL COMMENT 'Valor del campo dinámico',
+  `created_at` DATETIME NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_idlead` (`idlead`),
+  INDEX `idx_campo` (`campo`),
+  INDEX `idx_idlead_campo` (`idlead`, `campo`),
+  CONSTRAINT `fk_campos_dinamicos_lead`
+    FOREIGN KEY (`idlead`)
+    REFERENCES `leads` (`idlead`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Vista: v_usuarios_permisos
 CREATE OR REPLACE VIEW `v_usuarios_permisos` AS

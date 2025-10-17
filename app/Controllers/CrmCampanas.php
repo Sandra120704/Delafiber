@@ -85,7 +85,7 @@ class CrmCampanas extends BaseController
         }
 
         $session = session();
-        $idUsuario = $session->get('user_id');
+        $idUsuario = $session->get('idusuario');
 
         if (!$idUsuario) {
             return $this->response->setJSON(['success' => false, 'message' => 'Usuario no autenticado']);
@@ -129,7 +129,7 @@ class CrmCampanas extends BaseController
         }
 
         $session = session();
-        $idUsuario = $session->get('user_id');
+        $idUsuario = $session->get('idusuario');
 
         $datos = [
             'nombre_zona' => $this->request->getPost('nombre_zona'),
@@ -164,7 +164,7 @@ class CrmCampanas extends BaseController
     public function eliminarZona($idZona)
     {
         $session = session();
-        $idUsuario = $session->get('user_id');
+        $idUsuario = $session->get('idusuario');
 
         if ($this->zonaModel->desactivarZona($idZona, $idUsuario)) {
             return redirect()->back()->with('success', 'Zona eliminada exitosamente');
@@ -316,7 +316,7 @@ class CrmCampanas extends BaseController
         }
 
         $session = session();
-        $idUsuario = $session->get('user_id');
+        $idUsuario = $session->get('idusuario');
 
         $datos = [
             'id_prospecto' => $this->request->getPost('id_prospecto'),
@@ -407,7 +407,7 @@ class CrmCampanas extends BaseController
     public function misZonas()
     {
         $session = session();
-        $idUsuario = $session->get('user_id');
+        $idUsuario = $session->get('idusuario');
 
         $data = [
             'title' => 'Mis Zonas Asignadas',
@@ -481,8 +481,8 @@ class CrmCampanas extends BaseController
     public function dashboard()
     {
         $session = session();
-        $idUsuario = $session->get('user_id');
-        $rol = $session->get('rol');
+        $idUsuario = $session->get('idusuario');
+        $rol = $session->get('nombreRol');
 
         $data = [
             'title' => 'Dashboard CRM',

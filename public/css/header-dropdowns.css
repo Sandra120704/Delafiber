@@ -1,0 +1,53 @@
+/**
+ * Estilos para los dropdowns del header (Notificaciones y Usuario)
+ * Asegura que se vean bien alineados y con buen espaciado
+ */
+
+/* Espaciado de dropdowns */
+.navbar-nav .dropdown-menu {
+    margin-top: 0.5rem !important;
+    border: none !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Dropdown de notificaciones */
+#notificacionesDropdown + .dropdown-menu {
+    width: 380px;
+    border-radius: 0.5rem;
+}
+
+/* Dropdown de usuario */
+#profileDropdown + .dropdown-menu {
+    min-width: 240px;
+    border-radius: 0.5rem;
+}
+
+/* Animación suave al abrir */
+.dropdown-menu {
+    animation: fadeInDown 0.2s ease-out;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mejora del badge de notificaciones */
+#notificaciones-badge {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}

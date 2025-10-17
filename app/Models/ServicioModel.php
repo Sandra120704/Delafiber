@@ -23,7 +23,7 @@ class ServicioModel extends Model
      */
     public function getServiciosActivos()
     {
-        return $this->where('estado', 'Activo')
+        return $this->where('estado', 'activo')
             ->orderBy('precio', 'ASC')
             ->findAll();
     }
@@ -43,7 +43,7 @@ class ServicioModel extends Model
         ');
         $builder->join('cotizacion_detalle cd', 's.idservicio = cd.idservicio', 'left');
         $builder->join('cotizaciones c', 'cd.idcotizacion = c.idcotizacion', 'left');
-        $builder->where('s.estado', 'Activo');
+        $builder->where('s.estado', 'activo');
         $builder->groupBy('s.idservicio');
         $builder->orderBy('s.precio', 'ASC');
         
@@ -60,7 +60,7 @@ class ServicioModel extends Model
         $builder->select('s.*, COUNT(DISTINCT c.idcotizacion) as total_cotizaciones')
             ->join('cotizacion_detalle cd', 's.idservicio = cd.idservicio', 'left')
             ->join('cotizaciones c', 'cd.idcotizacion = c.idcotizacion', 'left')
-            ->where('s.estado', 'Activo')
+            ->where('s.estado', 'activo')
             ->groupBy('s.idservicio')
             ->orderBy('total_cotizaciones', 'DESC')
             ->limit($limit);
@@ -83,7 +83,7 @@ class ServicioModel extends Model
         ');
         $builder->join('cotizacion_detalle cd', 's.idservicio = cd.idservicio', 'left');
         $builder->join('cotizaciones c', 'cd.idcotizacion = c.idcotizacion', 'left');
-        $builder->where('s.estado', 'Activo');
+        $builder->where('s.estado', 'activo');
         $builder->groupBy('s.idservicio');
         $builder->having('total_cotizaciones >', 0);
         $builder->orderBy('tasa_conversion', 'DESC');
@@ -96,7 +96,7 @@ class ServicioModel extends Model
      */
     public function buscarPorCategoria($categoria)
     {
-        return $this->where('estado', 'Activo')
+        return $this->where('estado', 'activo')
             ->where('categoria', $categoria)
             ->findAll();
     }
@@ -115,7 +115,7 @@ class ServicioModel extends Model
         ');
         $builder->join('cotizacion_detalle cd', 's.idservicio = cd.idservicio', 'left');
         $builder->join('cotizaciones c', 'cd.idcotizacion = c.idcotizacion', 'left');
-        $builder->where('s.estado', 'Activo');
+        $builder->where('s.estado', 'activo');
         $builder->groupBy('s.idservicio');
         $builder->orderBy('cotizaciones_aceptadas', 'DESC');
         $builder->limit($limit);

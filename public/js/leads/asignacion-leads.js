@@ -113,19 +113,26 @@ window.mostrarModalReasignar = function(idlead) {
                                     <i class="mdi mdi-magnify"></i> Buscar y asignar usuario:
                                 </label>
                                 <select name="nuevo_usuario" id="selectUsuarioReasignar" class="form-select" required>
-                                    <option value="">Buscar usuario...</option>
+                                    <option value="">Escribe para buscar usuario...</option>
                                     ${usuariosDisponibles.map(u => `
                                         <option value="${u.idusuario}" 
                                                 data-turno="${u.turno}"
                                                 data-leads="${u.leads_activos}"
                                                 data-tareas="${u.tareas_pendientes}">
-                                            ${u.nombre}
+                                            ${u.nombre} - ${u.turno} | ${u.leads_activos} leads | ${u.tareas_pendientes} tareas
                                         </option>
                                     `).join('')}
                                 </select>
-                                <small class="form-text text-muted mt-1">
-                                    <i class="mdi mdi-information"></i> Escribe para buscar por nombre
-                                </small>
+                                <div id="infoUsuarioSeleccionado" class="mt-2" style="display:none;">
+                                    <div class="alert alert-info mb-0">
+                                        <strong><i class="mdi mdi-account"></i> <span id="nombreUsuario"></span></strong><br>
+                                        <small>
+                                            <i class="mdi mdi-clock"></i> Turno: <span id="turnoUsuario"></span> | 
+                                            <i class="mdi mdi-account-group"></i> Leads activos: <span id="leadsUsuario"></span> | 
+                                            <i class="mdi mdi-checkbox-marked-circle"></i> Tareas pendientes: <span id="tareasUsuario"></span>
+                                        </small>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="mb-3">
@@ -220,6 +227,27 @@ window.mostrarModalReasignar = function(idlead) {
             destruirBuscador('#selectUsuarioReasignar');
         }
     });
+    
+    // Event listener para mostrar info del usuario seleccionado
+    setTimeout(() => {
+        const selectUsuario = document.getElementById('selectUsuarioReasignar');
+        if (selectUsuario) {
+            selectUsuario.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const infoDiv = document.getElementById('infoUsuarioSeleccionado');
+                
+                if (this.value) {
+                    document.getElementById('nombreUsuario').textContent = selectedOption.text.split(' - ')[0];
+                    document.getElementById('turnoUsuario').textContent = selectedOption.dataset.turno;
+                    document.getElementById('leadsUsuario').textContent = selectedOption.dataset.leads;
+                    document.getElementById('tareasUsuario').textContent = selectedOption.dataset.tareas;
+                    infoDiv.style.display = 'block';
+                } else {
+                    infoDiv.style.display = 'none';
+                }
+            });
+        }
+    }, 500);
 }
 
 /**
@@ -298,19 +326,26 @@ window.mostrarModalSolicitarApoyo = function(idlead) {
                                     <i class="mdi mdi-magnify"></i> Buscar usuario para solicitar apoyo:
                                 </label>
                                 <select name="usuario_apoyo" id="selectUsuarioApoyo" class="form-select" required>
-                                    <option value="">Buscar usuario...</option>
+                                    <option value="">Escribe para buscar usuario...</option>
                                     ${usuariosDisponibles.map(u => `
                                         <option value="${u.idusuario}"
                                                 data-turno="${u.turno}"
                                                 data-leads="${u.leads_activos}"
                                                 data-tareas="${u.tareas_pendientes}">
-                                            ${u.nombre}
+                                            ${u.nombre} - ${u.turno} | ${u.leads_activos} leads | ${u.tareas_pendientes} tareas
                                         </option>
                                     `).join('')}
                                 </select>
-                                <small class="form-text text-muted mt-1">
-                                    <i class="mdi mdi-information"></i> Escribe para buscar por nombre
-                                </small>
+                                <div id="infoUsuarioApoyo" class="mt-2" style="display:none;">
+                                    <div class="alert alert-info mb-0">
+                                        <strong><i class="mdi mdi-account"></i> <span id="nombreUsuarioApoyo"></span></strong><br>
+                                        <small>
+                                            <i class="mdi mdi-clock"></i> Turno: <span id="turnoUsuarioApoyo"></span> | 
+                                            <i class="mdi mdi-account-group"></i> Leads activos: <span id="leadsUsuarioApoyo"></span> | 
+                                            <i class="mdi mdi-checkbox-marked-circle"></i> Tareas pendientes: <span id="tareasUsuarioApoyo"></span>
+                                        </small>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="mb-3">
@@ -385,6 +420,27 @@ window.mostrarModalSolicitarApoyo = function(idlead) {
             destruirBuscador('#selectUsuarioApoyo');
         }
     });
+    
+    // Event listener para mostrar info del usuario seleccionado
+    setTimeout(() => {
+        const selectUsuario = document.getElementById('selectUsuarioApoyo');
+        if (selectUsuario) {
+            selectUsuario.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const infoDiv = document.getElementById('infoUsuarioApoyo');
+                
+                if (this.value) {
+                    document.getElementById('nombreUsuarioApoyo').textContent = selectedOption.text.split(' - ')[0];
+                    document.getElementById('turnoUsuarioApoyo').textContent = selectedOption.dataset.turno;
+                    document.getElementById('leadsUsuarioApoyo').textContent = selectedOption.dataset.leads;
+                    document.getElementById('tareasUsuarioApoyo').textContent = selectedOption.dataset.tareas;
+                    infoDiv.style.display = 'block';
+                } else {
+                    infoDiv.style.display = 'none';
+                }
+            });
+        }
+    }, 500);
 }
 
 /**
@@ -443,12 +499,34 @@ window.mostrarModalProgramarSeguimiento = function(idlead) {
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Fecha:</label>
-                                    <input type="date" name="fecha" class="form-control" required
+                                    <input type="date" name="fecha" id="fechaSeguimiento" class="form-control" required
                                         min="${new Date().toISOString().split('T')[0]}">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Hora:</label>
-                                    <input type="time" name="hora" class="form-control" required>
+                                    <div class="row">
+                                        <div class="col-5">
+                                            <select name="hora" id="horaSeguimiento" class="form-select" required>
+                                                <option value="">HH</option>
+                                                ${[8,9,10,11,12,1,2,3,4,5,6,7,8].map(h => `<option value="${h}">${h.toString().padStart(2,'0')}</option>`).join('')}
+                                            </select>
+                                        </div>
+                                        <div class="col-4">
+                                            <select name="minutos" id="minutosSeguimiento" class="form-select" required>
+                                                <option value="00">00</option>
+                                                <option value="15">15</option>
+                                                <option value="30">30</option>
+                                                <option value="45">45</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-3">
+                                            <select name="periodo" id="periodoSeguimiento" class="form-select" required>
+                                                <option value="AM">AM</option>
+                                                <option value="PM" selected>PM</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">Horario laboral: 8:00 AM - 8:00 PM</small>
                                 </div>
                             </div>
 
@@ -516,7 +594,43 @@ window.mostrarModalProgramarSeguimiento = function(idlead) {
  */
 window.ejecutarProgramarSeguimiento = async function() {
     const form = document.getElementById('formProgramarSeguimiento');
+    
+    // Obtener valores
+    const hora = parseInt(document.getElementById('horaSeguimiento').value);
+    const minutos = document.getElementById('minutosSeguimiento').value;
+    const periodo = document.getElementById('periodoSeguimiento').value;
+    
+    // Validar que se hayan seleccionado todos los campos
+    if (!hora || !minutos || !periodo) {
+        Swal.fire('Error', 'Por favor selecciona la hora completa (hora, minutos y AM/PM)', 'error');
+        return;
+    }
+    
+    // Convertir a formato 24 horas
+    let hora24 = hora;
+    if (periodo === 'PM' && hora !== 12) {
+        hora24 = hora + 12;
+    } else if (periodo === 'AM' && hora === 12) {
+        hora24 = 0;
+    }
+    
+    // Validar horario laboral (8 AM - 8 PM = 8:00 - 20:00)
+    if (hora24 < 8 || hora24 > 20 || (hora24 === 20 && minutos !== '00')) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Horario no laboral',
+            text: 'Por favor selecciona un horario entre 8:00 AM y 8:00 PM',
+            confirmButtonText: 'Entendido'
+        });
+        return;
+    }
+    
+    // Crear FormData con la hora en formato 24 horas
     const formData = new FormData(form);
+    const horaCompleta = `${hora24.toString().padStart(2, '0')}:${minutos}`;
+    formData.set('hora', horaCompleta);
+    formData.delete('minutos');
+    formData.delete('periodo');
 
     try {
         const response = await fetch(`${baseUrl}/lead-asignacion/programarSeguimiento`, {
@@ -533,8 +647,8 @@ window.ejecutarProgramarSeguimiento = async function() {
             Swal.fire({
                 icon: 'success',
                 title: 'Seguimiento programado',
-                text: 'Recibirás una notificación en la fecha indicada',
-                timer: 2000
+                text: `Programado para ${horaCompleta} (${hora}:${minutos} ${periodo})`,
+                timer: 2500
             });
             $('#modalProgramarSeguimiento').modal('hide');
         } else {

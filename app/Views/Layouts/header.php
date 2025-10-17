@@ -31,6 +31,9 @@
   
   <!-- Componente Select Buscador CSS -->
   <link rel="stylesheet" href="<?= base_url('css/components/select-buscador.css') ?>">
+  
+  <!-- Header Dropdowns CSS -->
+  <link rel="stylesheet" href="<?= base_url('css/header-dropdowns.css?v=' . time()) ?>">
 
   <!-- Layout CSS -->
   <link rel="stylesheet" href="<?= base_url('css/dashboard/dashboard.css') ?>">
@@ -88,28 +91,36 @@
               <span class="badge bg-danger position-absolute" id="notificaciones-badge" 
                     style="display: none; top: 5px; right: 5px; font-size: 10px; padding: 2px 5px;">0</span>
             </a>
-            <div class="dropdown-menu dropdown-menu-end p-0" style="width: 350px;">
+            <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg" style="width: 380px; border-radius: 0.5rem; border: none; margin-top: 0.5rem;">
               <!-- Header -->
-              <div class="dropdown-header d-flex justify-content-between align-items-center bg-light" style="padding: 10px 14px;">
-                <strong style="font-size: 14px;"><i class="ti-bell me-2"></i>Notificaciones</strong>
-                <button class="btn btn-sm btn-link text-primary p-0" id="btn-marcar-todas-leidas" 
-                        style="text-decoration: none; font-size: 11px;">
-                  Marcar como leídas
+              <div class="dropdown-header d-flex justify-content-between align-items-center" 
+                   style="padding: 16px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 0.5rem 0.5rem 0 0;">
+                <div class="d-flex align-items-center">
+                  <i class="ti-bell me-2 text-white" style="font-size: 18px;"></i>
+                  <strong class="text-white" style="font-size: 15px;">Notificaciones</strong>
+                </div>
+                <button class="btn btn-sm btn-link text-white p-0" id="btn-marcar-todas-leidas" 
+                        style="text-decoration: none; font-size: 11px; opacity: 0.9;">
+                  <i class="ti-check me-1"></i>Marcar leídas
                 </button>
               </div>
-              <div class="dropdown-divider m-0"></div>
               
               <!-- Lista de notificaciones (se llena con JavaScript) -->
-              <div id="notificaciones-lista" style="max-height: 300px; overflow-y: auto; min-height: 120px;">
-                <div class="text-center py-3 text-muted">
-                  <i class="ti-bell" style="font-size: 36px; opacity: 0.3;"></i>
-                  <p class="mb-0 mt-2" style="font-size: 13px;">Cargando notificaciones...</p>
+              <div id="notificaciones-lista" style="max-height: 320px; overflow-y: auto; min-height: 140px; background-color: #f8f9fa;">
+                <div class="text-center py-5 text-muted">
+                  <div class="mb-3">
+                    <i class="ti-bell" style="font-size: 48px; opacity: 0.2;"></i>
+                  </div>
+                  <p class="mb-1" style="font-size: 14px; font-weight: 500; color: #6c757d;">No tienes notificaciones</p>
+                  <p class="mb-0" style="font-size: 12px; color: #adb5bd;">Te avisaremos cuando haya algo nuevo</p>
                 </div>
               </div>
               
-              <div class="dropdown-divider m-0"></div>
-              <a href="<?= base_url('notificaciones') ?>" class="dropdown-item text-center text-primary py-2" style="font-size: 12px;">
-                <strong>Ver todas las notificaciones</strong>
+              <div style="border-top: 1px solid #e9ecef;"></div>
+              <a href="<?= base_url('notificaciones') ?>" 
+                 class="dropdown-item text-center py-3" 
+                 style="font-size: 13px; color: #667eea; font-weight: 600; background-color: white; border-radius: 0 0 0.5rem 0.5rem;">
+                <i class="ti-arrow-right me-1"></i>Ver todas las notificaciones
               </a>
             </div>
           </li>
@@ -123,20 +134,20 @@
               </div>
               <span class="d-none d-md-inline ms-2"><?= session()->get('nombre_completo') ?? session()->get('usuario') ?? 'Usuario' ?></span>
             </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="profileDropdown" style="margin-top: 0.5rem; min-width: 240px; border-radius: 0.5rem;">
               <li>
-                <div class="dropdown-header">
-                  <h6 class="mb-0"><?= session()->get('nombre_completo') ?? session()->get('usuario') ?? 'Usuario' ?></h6>
-                  <small class="text-muted"><?= session()->get('correo') ?? session()->get('email') ?? '' ?></small>
+                <div class="dropdown-header" style="padding: 12px 16px; background-color: #f8f9fa;">
+                  <h6 class="mb-1" style="font-size: 14px; font-weight: 600;"><?= session()->get('nombre_completo') ?? session()->get('usuario') ?? 'Usuario' ?></h6>
+                  <small class="text-muted" style="font-size: 12px;"><?= session()->get('correo') ?? session()->get('email') ?? '' ?></small>
                 </div>
               </li>
-              <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="<?= base_url('perfil') ?>"><i class="ti-user me-2"></i>Mi Perfil</a></li>
-              <li><a class="dropdown-item" href="<?= base_url('configuracion') ?>"><i class="ti-settings me-2"></i>Configuración</a></li>
-              <li><hr class="dropdown-divider"></li>
+              <li><hr class="dropdown-divider m-0"></li>
+              <li><a class="dropdown-item py-2" href="<?= base_url('perfil') ?>" style="font-size: 13px;"><i class="ti-user me-2"></i>Mi Perfil</a></li>
+              <li><a class="dropdown-item py-2" href="<?= base_url('configuracion') ?>" style="font-size: 13px;"><i class="ti-settings me-2"></i>Configuración</a></li>
+              <li><hr class="dropdown-divider m-0"></li>
               <li>
-                <a class="dropdown-item" href="#" onclick="event.preventDefault(); cerrarSesion();">
-                  <i class="ti-power-off text-danger me-2"></i>Cerrar sesión
+                <a class="dropdown-item py-2 text-danger" href="#" onclick="event.preventDefault(); cerrarSesion();" style="font-size: 13px;">
+                  <i class="ti-power-off me-2"></i>Cerrar sesión
                 </a>
               </li>
             </ul>

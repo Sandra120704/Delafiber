@@ -270,23 +270,35 @@ class Cotizaciones extends BaseController
      */
     public function cambiarEstado($id)
     {
-        $estado = $this->request->getPost('estado');
-        
-        if (!$this->cotizacionModel->cambiarEstado($id, $estado)) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Estado no válido o error al actualizar']);
-        }
+        try {
+            $estado = $this->request->getPost('estado');
+            
+            if (empty($estado)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Estado no proporcionado']);
+            }
+            
+            // Intentar cambiar el estado
+            if (!$this->cotizacionModel->cambiarEstado($id, $estado)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Estado no válido o error al actualizar']);
+            }
 
-        $cotizacion = $this->cotizacionModel->find($id);
-        if (!$cotizacion) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Cotización no encontrada']);
-        }
+            $cotizacion = $this->cotizacionModel->find($id);
+            if (!$cotizacion) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Cotización no encontrada']);
+            }
 
-        // Si la cotización fue aceptada, mover lead a etapa CIERRE
-        if ($estado === 'Aceptada') {
-            $this->leadModel->update($cotizacion['idlead'], ['idetapa' => 5]); // Etapa CIERRE
-        }
+            // Si la cotización fue aceptada, mover lead a etapa CIERRE
+            // Normalizar comparación (case-insensitive)
+            if (strtolower($estado) === 'aceptada') {
+                $this->leadModel->update($cotizacion['idlead'], ['idetapa' => 5]); // Etapa CIERRE
+            }
 
-        return $this->response->setJSON(['success' => true, 'message' => 'Estado actualizado']);
+            return $this->response->setJSON(['success' => true, 'message' => 'Estado actualizado correctamente']);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error al cambiar estado de cotización: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error al cambiar estado: ' . $e->getMessage()]);
+        }
     }
 
     /**

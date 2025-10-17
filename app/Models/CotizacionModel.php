@@ -280,18 +280,22 @@ class CotizacionModel extends Model
      */
     public function cambiarEstado($idcotizacion, $nuevoEstado)
     {
+        // Convertir a minúsculas para validación
+        $estadoNormalizado = strtolower($nuevoEstado);
         $estadosValidos = ['borrador', 'enviada', 'aceptada', 'rechazada'];
         
-        if (!in_array($nuevoEstado, $estadosValidos)) {
+        if (!in_array($estadoNormalizado, $estadosValidos)) {
             return false;
         }
         
-        $updateData = ['estado' => $nuevoEstado];
+        // Guardar con primera letra en mayúscula para consistencia en la BD
+        $estadoFormateado = ucfirst($estadoNormalizado);
+        $updateData = ['estado' => $estadoFormateado];
         
         // Registrar fecha según el estado
-        if ($nuevoEstado === 'enviada') {
+        if ($estadoNormalizado === 'enviada') {
             $updateData['fecha_envio'] = date('Y-m-d H:i:s');
-        } elseif (in_array($nuevoEstado, ['aceptada', 'rechazada'])) {
+        } elseif (in_array($estadoNormalizado, ['aceptada', 'rechazada'])) {
             $updateData['fecha_respuesta'] = date('Y-m-d H:i:s');
         }
 

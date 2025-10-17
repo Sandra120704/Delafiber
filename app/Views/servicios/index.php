@@ -67,7 +67,9 @@
                             </div>
                         <?php else: ?>
                             <?php foreach ($servicios as $servicio): 
-                                $activo = ($servicio['estado'] ?? 'Activo') === 'Activo';
+                                // Verificar si existe la columna estado, si no, asumir activo por defecto
+                                $estado = isset($servicio['estado']) ? strtolower($servicio['estado']) : 'activo';
+                                $activo = $estado === 'activo';
                             ?>
                                 <div class="col-lg-4 col-md-6 mb-4 servicio-card" 
                                      data-estado="<?= $activo ? 'activo' : 'inactivo' ?>"

@@ -211,6 +211,10 @@
                                             </select>
                                         </div>
                                     </div>
+                                    <div class="col-md-6">
+                                        <!-- Contenedor para campos dinámicos según origen -->
+                                        <div id="campos-dinamicos-origen"></div>
+                                    </div>
                                 </div>
 
                                 <div class="row">
@@ -243,6 +247,7 @@
                                 <!-- Campo oculto: asignación automática al usuario actual -->
                                 <input type="hidden" id="idusuario_asignado" name="idusuario_asignado" value="<?= session()->get('idusuario') ?>">
                                 <input type="hidden" id="idetapa" name="idetapa" value="1">
+                                <input type="hidden" id="idcampania" name="idcampania" value="">
 
                                 <div class="form-group">
                                     <label for="nota_inicial">Nota del Primer Contacto (opcional)</label>
@@ -277,6 +282,8 @@
 
 <script>
 const BASE_URL = '<?= base_url() ?>';
+// Campañas disponibles para campos dinámicos
+const campanias = <?= json_encode($campanias ?? []) ?>;
 </script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="<?= base_url('js/leads/wizard.js') ?>"></script>
