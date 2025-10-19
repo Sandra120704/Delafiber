@@ -35,7 +35,7 @@ async function cargarNotificacionesIniciales() {
             ultimaConsulta = new Date().toISOString();
         }
     } catch (error) {
-        console.error('Error al cargar notificaciones:', error);
+        // Error silencioso
     }
 }
 
@@ -70,7 +70,7 @@ function iniciarPolling() {
                 ultimaConsulta = data.timestamp;
             }
         } catch (error) {
-            console.error('Error en polling:', error);
+            // Error silencioso
         }
     }, 30000); // 30 segundos
 }
@@ -221,7 +221,7 @@ async function marcarComoLeida(id) {
         cargarNotificacionesIniciales();
 
     } catch (error) {
-        console.error('Error al marcar como leída:', error);
+        // Error silencioso
     }
 }
 
@@ -257,7 +257,7 @@ async function marcarTodasLeidas() {
         }
 
     } catch (error) {
-        console.error('Error:', error);
+        // Error silencioso
     }
 }
 
