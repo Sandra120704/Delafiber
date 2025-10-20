@@ -4,28 +4,72 @@ $(document).ready(function() {
     // NOTA: El handler de búsqueda por DNI está en index.php (vanilla JS)
     // para evitar duplicación de eventos
     
-    // Cambiar estado activo/inactivo
-    $('.estado-switch').change(function() {
+    // Cambiar estado (activo/inactivo/suspendido)
+    $(document).on('change', '.estado-select', function() {
         const usuarioId = $(this).data('id');
-        const activo = $(this).is(':checked');
-        $.post(`${base_url}/usuarios/cambiarEstado/${usuarioId}`, {
-            activo: activo ? 1 : 0
+        const nuevoEstado = $(this).val();
+        const selectElement = $(this);
+        const estadoAnterior = selectElement.data('estado-anterior') || 'activo';
+        
+        console.log('Cambiando estado del usuario:', usuarioId, 'a:', nuevoEstado);
+        
+        // Guardar el estado anterior
+        selectElement.data('estado-anterior', nuevoEstado);
+        
+        // Obtener el token CSRF
+        const csrfToken = $('meta[name="csrf-token"]').attr('content');
+        
+        console.log('Token CSRF:', csrfToken);
+        console.log('URL:', `${base_url}/usuarios/cambiarEstado/${usuarioId}`);
+        
+        $.ajax({
+            url: `${base_url}/usuarios/cambiarEstado/${usuarioId}`,
+            method: 'POST',
+            data: { 
+                estado: nuevoEstado,
+                csrf_test_name: csrfToken
+            },
+            dataType: 'json'
         })
         .done(function(response) {
+            console.log('Respuesta del servidor:', response);
+            
             if (response.success) {
-                const badge = $(this).closest('td').find('.badge');
-                badge.removeClass('bg-success bg-secondary')
-                     .addClass(activo ? 'bg-success' : 'bg-secondary')
-                     .text(activo ? 'Activo' : 'Inactivo');
-                
+                console.log('Estado actualizado exitosamente');
                 Swal.fire({
                     icon: 'success',
                     title: 'Estado actualizado',
+                    text: response.message,
                     timer: 1500,
                     showConfirmButton: false
+                }).then(() => {
+                    // Recargar la página para reflejar los cambios
+                    console.log('Recargando página...');
+                    location.reload();
+                });
+            } else {
+                console.error('Error al actualizar estado:', response.message);
+                // Revertir al estado anterior si falla
+                selectElement.val(estadoAnterior);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: response.message || 'No se pudo cambiar el estado'
                 });
             }
-        }.bind(this));
+        })
+        .fail(function(xhr, status, error) {
+            console.error('Error AJAX:', status, error);
+            console.error('Respuesta completa:', xhr.responseText);
+            
+            // Revertir al estado anterior si falla
+            selectElement.val(estadoAnterior);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error de conexión al cambiar el estado'
+            });
+        });
     });
 
     // Crear/Editar usuario
@@ -146,10 +190,31 @@ window.filtrarUsuarios = function(filtro) {
             // Mostrar todos
             break;
         case 'activos':
-            $('tbody tr[data-estado="inactivo"]').hide();
+            // Ocultar los que no son activos
+            $('tbody tr').each(function() {
+                const select = $(this).find('.estado-select');
+                if (select.val() !== 'activo') {
+                    $(this).hide();
+                }
+            });
             break;
         case 'inactivos':
-            $('tbody tr[data-estado="activo"]').hide();
+            // Ocultar los que no son inactivos
+            $('tbody tr').each(function() {
+                const select = $(this).find('.estado-select');
+                if (select.val() !== 'inactivo') {
+                    $(this).hide();
+                }
+            });
+            break;
+        case 'suspendidos':
+            // Ocultar los que no son suspendidos
+            $('tbody tr').each(function() {
+                const select = $(this).find('.estado-select');
+                if (select.val() !== 'suspendido') {
+                    $(this).hide();
+                }
+            });
             break;
         case 'vendedores':
             $('tbody tr:not([data-rol="vendedor"])').hide();

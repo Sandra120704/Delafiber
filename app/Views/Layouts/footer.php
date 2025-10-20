@@ -97,9 +97,6 @@
   
   <!-- Gestión de Dropdowns del Header -->
   <script src="<?= base_url('js/components/header-dropdowns.js?v=' . time()) ?>"></script>
-  
-  <!-- Debug Dropdowns (TEMPORAL - Remover después) -->
-  <script src="<?= base_url('js/components/debug-dropdowns.js?v=' . time()) ?>"></script>
 
   <!-- Scripts específicos de cada página -->
   <?= $this->renderSection('scripts') ?>

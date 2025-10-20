@@ -23,7 +23,6 @@ class UsuarioModel extends Model
                      u.nombre as nombre_completo,
                      u.email as correo, 
                      COALESCE(r.nombre, "Usuario") as rol')
-            ->where('u.estado', 'activo')
             ->groupStart()
                 ->where('u.email', $usuario)
                 ->orWhere('u.nombre', $usuario)
@@ -32,7 +31,7 @@ class UsuarioModel extends Model
         $user = $builder->get()->getRowArray();
         
         if (!$user) {
-            log_message('error', 'Usuario no encontrado o inactivo: ' . $usuario);
+            log_message('error', 'Usuario no encontrado: ' . $usuario);
             return false;
         }
         

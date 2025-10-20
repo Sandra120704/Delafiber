@@ -77,6 +77,21 @@ class Auth extends BaseController
         $user = $this->usuarioModel->validarCredenciales($usuario, $password);
         
         if ($user) {
+            // Verificar el estado del usuario
+            $estadoUsuario = $user['estado'] ?? 'activo';
+            
+            if ($estadoUsuario === 'inactivo') {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Tu cuenta está inactiva. Contacta al administrador.');
+            }
+            
+            if ($estadoUsuario === 'suspendido') {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Tu cuenta ha sido suspendida. Contacta al administrador.');
+            }
+            
             // Obtener información del rol
             $db = \Config\Database::connect();
             $rol = $db->table('roles')

@@ -23,7 +23,8 @@ class LeadModel extends Model
         'distrito_servicio',
         'coordenadas_servicio',
         'zona_servicio',
-        'tipo_solicitud'
+        'tipo_solicitud',
+        'plan_interes'
     ];
     protected $useTimestamps = true; 
     protected $createdField = 'created_at';

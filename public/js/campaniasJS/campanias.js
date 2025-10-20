@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof $ !== 'undefined' && $.fn.DataTable) {
         tabla = $('#tablaCampanias').DataTable({
             language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                url: base_url + '/js/datatables/es-ES.json'
             },
             order: [[4, 'desc']],
             pageLength: 25,

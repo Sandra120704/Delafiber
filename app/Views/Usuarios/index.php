@@ -32,24 +32,24 @@
         <div class="col-md-3">
             <div class="card bg-success text-white">
                 <div class="card-body text-center">
-                    <h4><?= count(array_filter($usuarios ?? [], fn($u) => ($u['estado'] ?? 'Activo') === 'Activo')) ?></h4>
-                    <small>Activos</small>
+                    <h4><?= count(array_filter($usuarios ?? [], fn($u) => ($u['estadoActivo'] ?? 'activo') === 'activo')) ?></h4>
+                    <small>✅ Activos</small>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-warning text-white">
+            <div class="card bg-secondary text-white">
                 <div class="card-body text-center">
-                    <h4><?= count(array_filter($usuarios ?? [], fn($u) => ($u['nombre_rol'] ?? '') === 'vendedor')) ?></h4>
-                    <small>Vendedores</small>
+                    <h4><?= count(array_filter($usuarios ?? [], fn($u) => ($u['estadoActivo'] ?? '') === 'inactivo')) ?></h4>
+                    <small>⭕ Inactivos</small>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-info text-white">
+            <div class="card bg-danger text-white">
                 <div class="card-body text-center">
-                    <h4><?= count(array_filter($usuarios ?? [], fn($u) => ($u['nombre_rol'] ?? '') === 'admin')) ?></h4>
-                    <small>Administradores</small>
+                    <h4><?= count(array_filter($usuarios ?? [], fn($u) => ($u['estadoActivo'] ?? '') === 'suspendido')) ?></h4>
+                    <small>🚫 Suspendidos</small>
                 </div>
             </div>
         </div>
@@ -62,8 +62,9 @@
                 <div class="col-md-8">
                     <div class="btn-group" role="group">
                         <button class="btn btn-outline-primary active" onclick="filtrarUsuarios('todos')">Todos</button>
-                        <button class="btn btn-outline-success" onclick="filtrarUsuarios('activos')">Activos</button>
-                        <button class="btn btn-outline-danger" onclick="filtrarUsuarios('inactivos')">Inactivos</button>
+                        <button class="btn btn-outline-success" onclick="filtrarUsuarios('activos')">✅ Activos</button>
+                        <button class="btn btn-outline-secondary" onclick="filtrarUsuarios('inactivos')">⭕ Inactivos</button>
+                        <button class="btn btn-outline-danger" onclick="filtrarUsuarios('suspendidos')">🚫 Suspendidos</button>
                         <button class="btn btn-outline-warning" onclick="filtrarUsuarios('vendedores')">Vendedores</button>
                         <button class="btn btn-outline-info" onclick="filtrarUsuarios('admins')">Admins</button>
                     </div>
@@ -140,16 +141,19 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input estado-switch" type="checkbox" 
-                                               <?= $activo ? 'checked' : '' ?> 
-                                               data-id="<?= $usuario['idusuario'] ?>">
-                                        <label class="form-check-label">
-                                            <span class="badge bg-<?= $activo ? 'success' : 'secondary' ?>">
-                                                <?= $activo ? 'Activo' : 'Inactivo' ?>
-                                            </span>
-                                        </label>
-                                    </div>
+                                    <select class="form-select form-select-sm estado-select" 
+                                            data-id="<?= $usuario['idusuario'] ?>"
+                                            style="width: auto;">
+                                        <option value="activo" <?= ($usuario['estadoActivo'] ?? 'activo') === 'activo' ? 'selected' : '' ?>>
+                                            ✅ Activo
+                                        </option>
+                                        <option value="inactivo" <?= ($usuario['estadoActivo'] ?? '') === 'inactivo' ? 'selected' : '' ?>>
+                                            ⭕ Inactivo
+                                        </option>
+                                        <option value="suspendido" <?= ($usuario['estadoActivo'] ?? '') === 'suspendido' ? 'selected' : '' ?>>
+                                            🚫 Suspendido
+                                        </option>
+                                    </select>
                                 </td>
                                 <td>
                                     <small class="text-muted">
@@ -260,6 +264,12 @@
                                 <div class="col-md-6">
                                     <label class="form-label">Correo Electrónico</label>
                                     <input type="email" class="form-control" id="correo" name="correo">
+                                    <small class="text-muted" id="correo-hint">
+                                        <i class="bx bx-info-circle"></i> Se usará para iniciar sesión
+                                    </small>
+                                    <div class="alert alert-warning mt-2 d-none" id="correo-warning">
+                                        <i class="bx bx-error"></i> <strong>Empleados internos</strong> deben usar email corporativo <strong>@delafiber.com</strong>
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Distrito</label>
@@ -445,6 +455,33 @@
                         btnBuscarDni.innerHTML = '<i class="bx bx-search"></i> Buscar';
                     });
             });
+        }
+        
+        // Validación de dominio corporativo en tiempo real
+        const rolSelect = document.getElementById('idrol');
+        const correoInput = document.getElementById('correo');
+        const correoWarning = document.getElementById('correo-warning');
+        
+        // Roles que requieren email corporativo (Admin, Supervisor, Vendedor)
+        const rolesInternos = <?= json_encode(array_column(array_filter($roles, fn($r) => in_array($r['nivel'], [1, 2, 3])), 'idrol')) ?>;
+        
+        function validarDominioCorporativo() {
+            const rolSeleccionado = parseInt(rolSelect.value);
+            const email = correoInput.value.toLowerCase();
+            
+            if (rolesInternos.includes(rolSeleccionado) && email && !email.endsWith('@delafiber.com')) {
+                correoWarning.classList.remove('d-none');
+                correoInput.classList.add('is-invalid');
+            } else {
+                correoWarning.classList.add('d-none');
+                correoInput.classList.remove('is-invalid');
+            }
+        }
+        
+        if (rolSelect && correoInput) {
+            rolSelect.addEventListener('change', validarDominioCorporativo);
+            correoInput.addEventListener('blur', validarDominioCorporativo);
+            correoInput.addEventListener('input', validarDominioCorporativo);
         }
     });
 </script>

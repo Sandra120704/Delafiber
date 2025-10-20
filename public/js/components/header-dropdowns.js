@@ -21,24 +21,42 @@ function inicializarDropdowns() {
     const toggles = document.querySelectorAll('[data-bs-toggle="dropdown"]');
     
     toggles.forEach(toggle => {
-        // Crear instancia de Bootstrap si no existe
-        if (!bootstrap.Dropdown.getInstance(toggle)) {
-            new bootstrap.Dropdown(toggle, {
-                autoClose: true
-            });
-        }
-        
-        // Cerrar otros dropdowns cuando se abre este
-        toggle.addEventListener('show.bs.dropdown', function(e) {
-            toggles.forEach(otherToggle => {
-                if (otherToggle !== this) {
-                    const instance = bootstrap.Dropdown.getInstance(otherToggle);
-                    if (instance) {
-                        instance.hide();
-                    }
+        try {
+            // Verificar si getInstance existe antes de usarlo
+            if (typeof bootstrap.Dropdown.getInstance === 'function') {
+                // Crear instancia de Bootstrap si no existe
+                if (!bootstrap.Dropdown.getInstance(toggle)) {
+                    new bootstrap.Dropdown(toggle, {
+                        autoClose: true
+                    });
                 }
+            } else {
+                // Fallback: crear instancia directamente
+                new bootstrap.Dropdown(toggle, {
+                    autoClose: true
+                });
+            }
+            
+            // Cerrar otros dropdowns cuando se abre este
+            toggle.addEventListener('show.bs.dropdown', function(e) {
+                toggles.forEach(otherToggle => {
+                    if (otherToggle !== this) {
+                        try {
+                            if (typeof bootstrap.Dropdown.getInstance === 'function') {
+                                const instance = bootstrap.Dropdown.getInstance(otherToggle);
+                                if (instance) {
+                                    instance.hide();
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('Error al cerrar dropdown:', err);
+                        }
+                    }
+                });
             });
-        });
+        } catch (error) {
+            console.error('Error al inicializar dropdown:', error);
+        }
     });
 }
 
@@ -144,9 +162,17 @@ function cerrarDropdownActual(menu) {
 function cerrarTodosLosDropdowns() {
     const toggles = document.querySelectorAll('[data-bs-toggle="dropdown"]');
     toggles.forEach(toggle => {
-        const instance = bootstrap?.Dropdown.getInstance(toggle);
-        if (instance) {
-            instance.hide();
+        try {
+            if (typeof bootstrap !== 'undefined' && 
+                bootstrap.Dropdown && 
+                typeof bootstrap.Dropdown.getInstance === 'function') {
+                const instance = bootstrap.Dropdown.getInstance(toggle);
+                if (instance) {
+                    instance.hide();
+                }
+            }
+        } catch (error) {
+            console.warn('Error al cerrar dropdown:', error);
         }
     });
 }

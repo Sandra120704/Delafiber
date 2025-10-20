@@ -60,6 +60,9 @@ class UsuarioController extends BaseController
 
     public function guardar()
     {
+        // Detectar si es una petición AJAX
+        $isAjax = $this->request->isAJAX();
+        
         // Validación de datos de persona
         $rules = [
             'dni' => 'required|exact_length[8]|numeric',
@@ -72,6 +75,13 @@ class UsuarioController extends BaseController
         ];
 
         if (!$this->validate($rules)) {
+            if ($isAjax) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error de validación',
+                    'errors' => $this->validator->getErrors()
+                ]);
+            }
             return redirect()->back()
                 ->withInput()
                 ->with('errors', $this->validator->getErrors());
@@ -81,20 +91,61 @@ class UsuarioController extends BaseController
         $db->transStart();
 
         try {
-            // 1. Buscar si la persona ya existe por DNI
+            // 1. Validar dominio corporativo para roles de los usuarios
+            $idrol = $this->request->getPost('idrol');
+            $correo = $this->request->getPost('correo');
+            
+            // Obtener información del rol
+            $rol = $this->rolesModel->find($idrol);
+            
+            // Roles internos (nivel 1=Admin, 2=Supervisor, 3=Vendedor) requieren email corporativo
+            if ($rol && in_array($rol['nivel'], [1, 2, 3]) && !empty($correo)) {
+                if (!str_ends_with(strtolower($correo), '@delafiber.com')) {
+                    if ($isAjax) {
+                        return $this->response->setJSON([
+                            'success' => false,
+                            'message' => 'Los empleados internos deben usar email corporativo @delafiber.com'
+                        ]);
+                    }
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Los empleados internos deben usar email corporativo @delafiber.com');
+                }
+            }
+            
+            // 2. Verificar si el email ya existe
+            $emailExistente = $this->usuarioModel->where('email', $correo)->first();
+            if ($emailExistente) {
+                if ($isAjax) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'El correo electrónico ya está registrado'
+                    ]);
+                }
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'El correo electrónico ya está registrado');
+            }
+
+            // 3. Crear o actualizar persona
             $personaExistente = $this->personaModel->where('dni', $this->request->getPost('dni'))->first();
             
             if ($personaExistente) {
-                // Verificar si ya tiene usuario
-                $usuarioExistente = $this->usuarioModel->where('idpersona', $personaExistente['idpersona'])->first();
-                if ($usuarioExistente) {
-                    return redirect()->back()
-                        ->withInput()
-                        ->with('error', 'Esta persona ya tiene un usuario registrado');
-                }
+                // Actualizar datos de la persona existente
+                $personaData = [
+                    'nombres' => $this->request->getPost('nombres'),
+                    'apellidos' => $this->request->getPost('apellidos'),
+                    'telefono' => $this->request->getPost('telefono'),
+                    'correo' => $this->request->getPost('correo'),
+                    'direccion' => $this->request->getPost('direccion'),
+                    'referencias' => $this->request->getPost('referencias'),
+                    'iddistrito' => $this->request->getPost('iddistrito') ?: null
+                ];
+                
+                $this->personaModel->update($personaExistente['idpersona'], $personaData);
                 $idpersona = $personaExistente['idpersona'];
             } else {
-                // 2. Crear nueva persona
+                // Crear nueva persona
                 $personaData = [
                     'dni' => $this->request->getPost('dni'),
                     'nombres' => $this->request->getPost('nombres'),
@@ -113,7 +164,7 @@ class UsuarioController extends BaseController
                 }
             }
 
-            // 3. Crear usuario (sin relación directa con personas)
+            // 4. Crear usuario (independiente de personas)
             $usuarioData = [
                 'nombre' => $this->request->getPost('nombres') . ' ' . $this->request->getPost('apellidos'),
                 'email' => $this->request->getPost('correo') ?: $this->request->getPost('usuario') . '@delafiber.com',
@@ -121,7 +172,7 @@ class UsuarioController extends BaseController
                 'idrol' => $this->request->getPost('idrol'),
                 'turno' => $this->request->getPost('turno') ?: 'completo',
                 'telefono' => $this->request->getPost('telefono'),
-                'estado' => 'Activo'
+                'estado' => 'activo'
             ];
 
             $idusuario = $this->usuarioModel->insert($usuarioData);
@@ -136,11 +187,28 @@ class UsuarioController extends BaseController
                 throw new \Exception('Error en la transacción');
             }
 
+            // Retornar respuesta según el tipo de petición
+            if ($isAjax) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Usuario creado correctamente',
+                    'usuario_id' => $idusuario
+                ]);
+            }
+
             return redirect()->to('usuarios')
                 ->with('success', 'Usuario creado correctamente');
 
         } catch (\Exception $e) {
             $db->transRollback();
+            
+            if ($isAjax) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al crear el usuario: ' . $e->getMessage()
+                ]);
+            }
+            
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Error al crear el usuario: ' . $e->getMessage());
@@ -166,15 +234,18 @@ class UsuarioController extends BaseController
             $persona = $this->personaModel->where('dni', $dni)->first();
             
             if ($persona) {
-                // Verificar si ya tiene usuario
-                $usuario = $this->usuarioModel->where('idpersona', $persona['idpersona'])->first();
+                // Verificar si el email de esta persona ya está registrado como usuario
+                $usuario = null;
+                if (!empty($persona['correo'])) {
+                    $usuario = $this->usuarioModel->where('email', $persona['correo'])->first();
+                }
                 
                 return $this->response->setJSON([
                     'success' => true,
                     'source' => 'local',
                     'persona' => $persona,
                     'tiene_usuario' => !empty($usuario),
-                    'message' => $usuario ? 'Esta persona ya tiene un usuario registrado' : 'Persona encontrada en la base de datos'
+                    'message' => $usuario ? 'Esta persona ya tiene un usuario registrado con este email' : 'Persona encontrada en la base de datos'
                 ]);
             }
 
@@ -361,14 +432,50 @@ class UsuarioController extends BaseController
 
     public function cambiarEstado($idusuario)
     {
-        $activo = $this->request->getVar('activo');
+        $nuevoEstado = $this->request->getVar('estado');
+        
+        // Validar que el estado sea válido
+        $estadosValidos = ['activo', 'inactivo', 'suspendido'];
+        if (!in_array($nuevoEstado, $estadosValidos)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Estado inválido. Debe ser: activo, inactivo o suspendido'
+            ]);
+        }
         
         try {
-            $this->usuarioModel->update($idusuario, ['activo' => $activo]);
+            $usuario = $this->usuarioModel->find($idusuario);
+            
+            if (!$usuario) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Usuario no encontrado'
+                ]);
+            }
+            
+            // Actualizar el estado
+            $actualizado = $this->usuarioModel->update($idusuario, ['estado' => $nuevoEstado]);
+            
+            if (!$actualizado) {
+                log_message('error', "No se pudo actualizar el estado del usuario {$idusuario} a {$nuevoEstado}");
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al actualizar el estado en la base de datos'
+                ]);
+            }
+            
+            log_message('info', "Estado del usuario {$idusuario} actualizado a: {$nuevoEstado}");
+            
+            $mensajes = [
+                'activo' => 'Usuario activado correctamente',
+                'inactivo' => 'Usuario desactivado correctamente',
+                'suspendido' => 'Usuario suspendido correctamente'
+            ];
             
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Estado actualizado correctamente'
+                'message' => $mensajes[$nuevoEstado],
+                'estado' => $nuevoEstado
             ]);
         } catch (\Exception $e) {
             return $this->response->setJSON([

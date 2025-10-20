@@ -113,6 +113,9 @@ class Leads extends BaseController
                     ->with('info', 'Esta persona ya es un lead existente');
             }
         }
+        
+        // Capturar ID de campaña si viene desde vista de campaña
+        $campaniaId = $this->request->getGet('campania');
 
         $data = [
             'title' => 'Nuevo Lead - Delafiber CRM',
@@ -123,7 +126,8 @@ class Leads extends BaseController
             'modalidades' => $modalidades, 
             'vendedores' => $vendedores,  // Lista de usuarios para asignar
             'user_name' => session()->get('user_name'),
-            'persona' => $personaData  // Datos de la persona para autocompletar
+            'persona' => $personaData,  // Datos de la persona para autocompletar
+            'campania_preseleccionada' => $campaniaId  // ID de campaña para pre-seleccionar
         ];
     
         return view('leads/create', $data);

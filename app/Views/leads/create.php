@@ -148,7 +148,7 @@
                                 </div>
 
                                 <div class="row">
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="tipo_solicitud">Tipo de Instalación</label>
                                             <select class="form-control" id="tipo_solicitud" name="tipo_solicitud">
@@ -160,7 +160,31 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="plan_interes">Plan de Interés 🌐</label>
+                                            <select class="form-control" id="plan_interes" name="plan_interes">
+                                                <option value="">Seleccione (opcional)</option>
+                                                <optgroup label="📶 Internet Hogar">
+                                                    <option value="Plan 50 Mbps">50 Mbps - S/ 50/mes</option>
+                                                    <option value="Plan 100 Mbps">100 Mbps - S/ 80/mes</option>
+                                                    <option value="Plan 200 Mbps">200 Mbps - S/ 120/mes</option>
+                                                    <option value="Plan 300 Mbps">300 Mbps - S/ 150/mes</option>
+                                                </optgroup>
+                                                <optgroup label="🏢 Internet Empresarial">
+                                                    <option value="Plan Empresarial 500 Mbps">500 Mbps - S/ 300/mes</option>
+                                                    <option value="Plan Empresarial 1 Gbps">1 Gbps - S/ 500/mes</option>
+                                                </optgroup>
+                                                <optgroup label="📺 Combos">
+                                                    <option value="Combo Internet + TV">Internet 100 Mbps + TV - S/ 120/mes</option>
+                                                    <option value="Combo Internet + Teléfono">Internet 100 Mbps + Teléfono - S/ 100/mes</option>
+                                                </optgroup>
+                                                <option value="Consulta personalizada">💬 Consulta personalizada</option>
+                                            </select>
+                                            <small class="text-muted">Datos de prueba - Actualizar con planes reales</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="iddistrito">Distrito</label>
                                             <select class="form-control" id="iddistrito" name="iddistrito">
@@ -180,16 +204,21 @@
                                 <!-- Contenedor para mensaje de cobertura de zonas -->
                                 <div id="alerta-cobertura-zona" style="display: none;"></div>
 
-                                <div class="form-group">
-                                    <label for="direccion">Dirección de Instalación</label>
-                                    <input type="text" class="form-control" id="direccion" name="direccion"
-                                           placeholder="Ej: Av. Principal 123, Chincha Alta (opcional)">
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="referencias">Referencias de Ubicación</label>
-                                    <textarea class="form-control" id="referencias" name="referencias" rows="2"
-                                              placeholder="Ej: Frente al parque, cerca del mercado"></textarea>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="direccion">Dirección de Instalación</label>
+                                            <input type="text" class="form-control" id="direccion" name="direccion"
+                                                   placeholder="Ej: Av. Principal 123, Chincha Alta">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="referencias">Referencias de Ubicación</label>
+                                            <input type="text" class="form-control" id="referencias" name="referencias"
+                                                   placeholder="Ej: Frente al parque, cerca del mercado">
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <hr>
@@ -247,7 +276,23 @@
                                 <!-- Campo oculto: asignación automática al usuario actual -->
                                 <input type="hidden" id="idusuario_asignado" name="idusuario_asignado" value="<?= session()->get('idusuario') ?>">
                                 <input type="hidden" id="idetapa" name="idetapa" value="1">
-                                <input type="hidden" id="idcampania" name="idcampania" value="">
+                                <input type="hidden" id="idcampania" name="idcampania" value="<?= $campania_preseleccionada ?? '' ?>">
+
+                                <?php if (!empty($campania_preseleccionada)): ?>
+                                    <?php 
+                                    // Buscar el nombre de la campaña
+                                    $nombreCampania = 'Campaña seleccionada';
+                                    foreach ($campanias as $camp) {
+                                        if ($camp['idcampania'] == $campania_preseleccionada) {
+                                            $nombreCampania = $camp['nombre'];
+                                            break;
+                                        }
+                                    }
+                                    ?>
+                                    <div class="alert alert-success">
+                                        <i class="icon-check"></i> <strong>Campaña:</strong> Este lead se vinculará automáticamente a la campaña <strong>"<?= esc($nombreCampania) ?>"</strong>
+                                    </div>
+                                <?php endif; ?>
 
                                 <div class="form-group">
                                     <label for="nota_inicial">Nota del Primer Contacto (opcional)</label>

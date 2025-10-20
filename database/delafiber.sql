@@ -317,6 +317,7 @@ CREATE TABLE `leads` (
   `coordenadas_servicio` VARCHAR(100) COMMENT 'Coordenadas de instalación (lat,lng)',
   `zona_servicio` INT UNSIGNED COMMENT 'Zona de campaña para este servicio',
   `tipo_solicitud` ENUM('casa', 'negocio', 'oficina', 'otro') DEFAULT 'casa' COMMENT 'Tipo de instalación',
+  `plan_interes` VARCHAR(100) COMMENT 'Plan o servicio de interés del cliente',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`idlead`),

@@ -146,6 +146,18 @@ $historial = $historial ?? [];
                                 <h6><?= esc(session()->get('user_name') ?? 'Sin asignar') ?></h6>
                             </div>
                             <div class="col-md-6 mb-3">
+                                <label class="text-muted">Plan de Interés 🌐</label>
+                                <h6>
+                                    <?php if (!empty($lead['plan_interes'])): ?>
+                                        <span class="badge badge-primary" style="font-size: 14px;">
+                                            <?= esc($lead['plan_interes']) ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-muted">No especificado</span>
+                                    <?php endif; ?>
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
                                 <label class="text-muted">Fecha de Registro</label>
                                 <h6><?= isset($lead['created_at']) ? date('d/m/Y H:i', strtotime($lead['created_at'])) : 'No disponible' ?></h6>
                             </div>
