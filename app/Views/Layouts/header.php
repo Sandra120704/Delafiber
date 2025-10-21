@@ -130,15 +130,15 @@
             <a class="nav-link d-flex align-items-center" href="#" id="profileDropdown" 
                data-bs-toggle="dropdown" aria-expanded="false">
               <div class="user-avatar d-flex align-items-center justify-content-center bg-primary text-white">
-                <?= strtoupper(substr(session()->get('nombre_completo') ?? session()->get('usuario') ?? 'U', 0, 1)) ?>
+                <?= strtoupper(substr(session()->get('nombre') ?? 'U', 0, 1)) ?>
               </div>
-              <span class="d-none d-md-inline ms-2"><?= session()->get('nombre_completo') ?? session()->get('usuario') ?? 'Usuario' ?></span>
+              <span class="d-none d-md-inline ms-2"><?= session()->get('nombre') ?? 'Usuario' ?></span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="profileDropdown" style="margin-top: 0.5rem; min-width: 240px; border-radius: 0.5rem;">
               <li>
                 <div class="dropdown-header" style="padding: 12px 16px; background-color: #f8f9fa;">
-                  <h6 class="mb-1" style="font-size: 14px; font-weight: 600;"><?= session()->get('nombre_completo') ?? session()->get('usuario') ?? 'Usuario' ?></h6>
-                  <small class="text-muted" style="font-size: 12px;"><?= session()->get('correo') ?? session()->get('email') ?? '' ?></small>
+                  <h6 class="mb-1" style="font-size: 14px; font-weight: 600;"><?= session()->get('nombre') ?? 'Usuario' ?></h6>
+                  <small class="text-muted" style="font-size: 12px;"><?= session()->get('email') ?? '' ?></small>
                 </div>
               </li>
               <li><hr class="dropdown-divider m-0"></li>

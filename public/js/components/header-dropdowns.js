@@ -44,7 +44,7 @@ function inicializarDropdowns() {
             toggle.addEventListener('shown.bs.dropdown', function() {
                 const menu = this.nextElementSibling;
                 if (menu && menu.classList.contains('dropdown-menu')) {
-                    console.log('🎯 Ajustando posición del dropdown...');
+                    console.log('Ajustando posición del dropdown...');
                     
                     // Obtener dimensiones
                     const toggleRect = this.getBoundingClientRect();

@@ -62,7 +62,7 @@
 /* Header del dropdown de notificaciones */
 #notificacionesDropdown + .dropdown-menu .dropdown-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 50px 70px;
+    padding: 18px 20px;
     border-radius: 12px 12px 0 0;
     position: sticky;
     top: 0;

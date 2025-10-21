@@ -12,11 +12,43 @@ class ServicioModel extends Model
         'velocidad',
         'categoria',
         'precio',
-        'estado'
+        'caracteristicas',
+        'estado',
+        'orden'
     ];
     protected $useTimestamps = true;
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
+    
+    // Validaciones
+    protected $validationRules = [
+        'nombre' => 'required|min_length[3]|max_length[100]',
+        'precio' => 'required|decimal|greater_than[0]',
+        'categoria' => 'required|in_list[hogar,empresarial,combo,adicional]',
+        'estado' => 'permit_empty|in_list[activo,inactivo]'
+    ];
+    
+    protected $validationMessages = [
+        'nombre' => [
+            'required' => 'El nombre del servicio es obligatorio',
+            'min_length' => 'El nombre debe tener al menos 3 caracteres',
+            'max_length' => 'El nombre no puede exceder 100 caracteres'
+        ],
+        'precio' => [
+            'required' => 'El precio es obligatorio',
+            'decimal' => 'El precio debe ser un número válido',
+            'greater_than' => 'El precio debe ser mayor a 0'
+        ],
+        'categoria' => [
+            'required' => 'La categoría es obligatoria',
+            'in_list' => 'Categoría inválida'
+        ]
+    ];
+    
+    // Callbacks para manejar JSON
+    protected $beforeInsert = ['encodeCaracteristicas'];
+    protected $beforeUpdate = ['encodeCaracteristicas'];
+    protected $afterFind = ['decodeCaracteristicas'];
 
     /**
      * Obtener servicios activos ordenados por precio
@@ -121,5 +153,102 @@ class ServicioModel extends Model
         $builder->limit($limit);
 
         return $builder->get()->getResultArray();
+    }
+    
+    /**
+     * Callback: Codificar características a JSON antes de insertar/actualizar
+     */
+    protected function encodeCaracteristicas(array $data)
+    {
+        if (isset($data['data']['caracteristicas']) && is_array($data['data']['caracteristicas'])) {
+            $data['data']['caracteristicas'] = json_encode($data['data']['caracteristicas'], JSON_UNESCAPED_UNICODE);
+        }
+        return $data;
+    }
+    
+    /**
+     * Callback: Decodificar características JSON después de consultar
+     */
+    protected function decodeCaracteristicas(array $data)
+    {
+        if (isset($data['data'])) {
+            // Resultado único
+            if (isset($data['data']['caracteristicas']) && is_string($data['data']['caracteristicas'])) {
+                $data['data']['caracteristicas'] = json_decode($data['data']['caracteristicas'], true);
+            }
+        } elseif (isset($data['data']) === false && is_array($data)) {
+            // Múltiples resultados
+            foreach ($data as &$row) {
+                if (isset($row['caracteristicas']) && is_string($row['caracteristicas'])) {
+                    $row['caracteristicas'] = json_decode($row['caracteristicas'], true);
+                }
+            }
+        }
+        return $data;
+    }
+    
+    /**
+     * Obtener servicios ordenados por campo 'orden'
+     */
+    public function getServiciosOrdenados($categoria = null)
+    {
+        $builder = $this->where('estado', 'activo');
+        
+        if ($categoria) {
+            $builder->where('categoria', $categoria);
+        }
+        
+        return $builder->orderBy('orden', 'ASC')
+                      ->orderBy('precio', 'ASC')
+                      ->findAll();
+    }
+    
+    /**
+     * Obtener servicios por categoría con estadísticas
+     */
+    public function getServiciosPorCategoria()
+    {
+        $db = \Config\Database::connect();
+        $builder = $db->table($this->table);
+        $builder->select('
+            categoria,
+            COUNT(*) as total_servicios,
+            AVG(precio) as precio_promedio,
+            MIN(precio) as precio_minimo,
+            MAX(precio) as precio_maximo
+        ');
+        $builder->where('estado', 'activo');
+        $builder->groupBy('categoria');
+        $builder->orderBy('categoria', 'ASC');
+        
+        return $builder->get()->getResultArray();
+    }
+    
+    /**
+     * Cambiar estado de un servicio (activar/desactivar)
+     */
+    public function toggleEstado($idservicio)
+    {
+        $servicio = $this->find($idservicio);
+        
+        if (!$servicio) {
+            return false;
+        }
+        
+        $nuevoEstado = ($servicio['estado'] === 'activo') ? 'inactivo' : 'activo';
+        
+        return $this->update($idservicio, ['estado' => $nuevoEstado]);
+    }
+    
+    /**
+     * Obtener total de ingresos potenciales (suma de precios de servicios activos)
+     */
+    public function getIngresosPotenciales()
+    {
+        return $this->selectSum('precio')
+                    ->where('estado', 'activo')
+                    ->get()
+                    ->getRow()
+                    ->precio ?? 0;
     }
 }

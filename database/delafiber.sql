@@ -113,17 +113,23 @@ CREATE TABLE `modalidades` (
   PRIMARY KEY (`idmodalidad`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabla: servicios
+-- Tabla: servicios (Mejorada - incluye planes de internet y servicios adicionales)
 CREATE TABLE `servicios` (
   `idservicio` INT UNSIGNED AUTO_INCREMENT,
-  `nombre` VARCHAR(100) NOT NULL,
-  `descripcion` TEXT,
-  `velocidad` VARCHAR(50) COMMENT 'Ej: 100 Mbps',
-  `precio` DECIMAL(10,2) NOT NULL,
-  `categoria` VARCHAR(50),
-  `estado` VARCHAR(20) DEFAULT 'activo',
+  `nombre` VARCHAR(100) NOT NULL COMMENT 'Nombre del servicio o plan',
+  `descripcion` TEXT COMMENT 'Descripción detallada',
+  `velocidad` VARCHAR(50) COMMENT 'Velocidad del servicio (ej: 100 Mbps)',
+  `precio` DECIMAL(10,2) NOT NULL COMMENT 'Precio mensual del servicio',
+  `categoria` ENUM('hogar', 'empresarial', 'combo', 'adicional') DEFAULT 'hogar' COMMENT 'Categoría del servicio',
+  `caracteristicas` JSON COMMENT 'Características adicionales en formato JSON',
+  `estado` ENUM('activo', 'inactivo') DEFAULT 'activo' COMMENT 'Estado del servicio',
+  `orden` SMALLINT UNSIGNED DEFAULT 0 COMMENT 'Orden de visualización en catálogo',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`idservicio`)
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`idservicio`),
+  KEY `idx_servicio_categoria` (`categoria`),
+  KEY `idx_servicio_estado` (`estado`),
+  KEY `idx_servicio_orden` (`orden`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabla: campanias
@@ -257,9 +263,10 @@ CREATE TABLE `personas` (
   `referencias` TEXT,
   `iddistrito` INT UNSIGNED,
   `coordenadas` VARCHAR(100) COMMENT 'lat,lng',
-  `id_zona` INT UNSIGNED,
+  `id_zona` INT UNSIGNED COMMENT 'Zona de campaña asignada',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL COMMENT 'Soft delete - Fecha de eliminación lógica',
   PRIMARY KEY (`idpersona`),
   KEY `idx_persona_distrito` (`iddistrito`),
   KEY `idx_persona_telefono` (`telefono`),
@@ -320,6 +327,7 @@ CREATE TABLE `leads` (
   `plan_interes` VARCHAR(100) COMMENT 'Plan o servicio de interés del cliente',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL COMMENT 'Soft delete - Fecha de eliminación lógica',
   PRIMARY KEY (`idlead`),
   KEY `idx_lead_persona` (`idpersona`),
   KEY `idx_lead_usuario` (`idusuario`),
@@ -580,6 +588,7 @@ CREATE TABLE `notificaciones` (
   KEY `idx_notificacion_usuario` (`idusuario`),
   KEY `idx_notificacion_leida` (`leida`),
   KEY `idx_notificacion_fecha` (`created_at`),
+  KEY `idx_notificacion_usuario_leida` (`idusuario`, `leida`, `created_at`),
   CONSTRAINT `fk_notificacion_usuario` 
     FOREIGN KEY (`idusuario`) 
     REFERENCES `usuarios` (`idusuario`) 
@@ -657,22 +666,10 @@ CREATE TABLE IF NOT EXISTS `comentarios_lead` (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `campos_dinamicos_origen` (
-  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `idlead` INT(11) UNSIGNED NOT NULL,
-  `campo` VARCHAR(100) NOT NULL COMMENT 'Nombre del campo dinámico (ej: referido_por, tipo_publicidad)',
-  `valor` TEXT NULL COMMENT 'Valor del campo dinámico',
-  `created_at` DATETIME NULL,
-  PRIMARY KEY (`id`),
-  INDEX `idx_idlead` (`idlead`),
-  INDEX `idx_campo` (`campo`),
-  INDEX `idx_idlead_campo` (`idlead`, `campo`),
-  CONSTRAINT `fk_campos_dinamicos_lead`
-    FOREIGN KEY (`idlead`)
-    REFERENCES `leads` (`idlead`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- =====================================================
+-- TABLA DUPLICADA ELIMINADA (campos_dinamicos_origen)
+-- Ya está definida en la línea 590
+-- =====================================================
 
 -- Vista: v_usuarios_permisos
 CREATE OR REPLACE VIEW `v_usuarios_permisos` AS

@@ -47,6 +47,11 @@ abstract class BaseController extends Controller
      * Data to pass to views
      */
     protected $data = [];
+    
+    /**
+     * Modelo de auditoría
+     */
+    protected $auditoriaModel;
 
     /**
      * @return void
@@ -59,6 +64,9 @@ abstract class BaseController extends Controller
         // Preload any models, libraries, etc, here.
 
         // E.g.: $this->session = service('session');
+        
+        // Inicializar modelo de auditoría
+        $this->auditoriaModel = new \App\Models\AuditoriaModel();
         
         // Cargar notificaciones para el header
         $this->cargarNotificaciones();
@@ -95,5 +103,83 @@ abstract class BaseController extends Controller
                 $this->data['notification_count'] = 0;
             }
         }
+    }
+    
+    /**
+     * Registrar auditoría de creación
+     * 
+     * @param string $tabla Nombre de la tabla
+     * @param int $registroId ID del registro creado
+     * @param array $datos Datos del registro
+     * @return bool
+     */
+    protected function auditarCreacion($tabla, $registroId, $datos)
+    {
+        $idusuario = session()->get('idusuario');
+        
+        if (!$idusuario) {
+            return false;
+        }
+        
+        return $this->auditoriaModel->registrarCreacion($idusuario, $tabla, $registroId, $datos);
+    }
+    
+    /**
+     * Registrar auditoría de actualización
+     * 
+     * @param string $tabla Nombre de la tabla
+     * @param int $registroId ID del registro actualizado
+     * @param array $datosAnteriores Datos antes del cambio
+     * @param array $datosNuevos Datos después del cambio
+     * @return bool
+     */
+    protected function auditarActualizacion($tabla, $registroId, $datosAnteriores, $datosNuevos)
+    {
+        $idusuario = session()->get('idusuario');
+        
+        if (!$idusuario) {
+            return false;
+        }
+        
+        return $this->auditoriaModel->registrarActualizacion($idusuario, $tabla, $registroId, $datosAnteriores, $datosNuevos);
+    }
+    
+    /**
+     * Registrar auditoría de eliminación
+     * 
+     * @param string $tabla Nombre de la tabla
+     * @param int $registroId ID del registro eliminado
+     * @param array $datos Datos del registro eliminado
+     * @return bool
+     */
+    protected function auditarEliminacion($tabla, $registroId, $datos)
+    {
+        $idusuario = session()->get('idusuario');
+        
+        if (!$idusuario) {
+            return false;
+        }
+        
+        return $this->auditoriaModel->registrarEliminacion($idusuario, $tabla, $registroId, $datos);
+    }
+    
+    /**
+     * Registrar auditoría personalizada
+     * 
+     * @param string $accion Descripción de la acción
+     * @param string|null $tabla Tabla afectada (opcional)
+     * @param int|null $registroId ID del registro (opcional)
+     * @param array|null $datos Datos adicionales (opcional)
+     * @return bool
+     */
+    protected function auditar($accion, $tabla = null, $registroId = null, $datos = null)
+    {
+        $idusuario = session()->get('idusuario');
+        
+        if (!$idusuario) {
+            return false;
+        }
+        
+        return $this->auditoriaModel->registrar($idusuario, $accion, $tabla, $registroId, null, $datos);
     }
 }

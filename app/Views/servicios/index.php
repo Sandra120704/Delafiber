@@ -113,12 +113,47 @@
                                                 <span class="fw-bold text-success">S/ <?= number_format($servicio['precio'], 2) ?></span>
                                             </div>
 
+                                            <!-- Velocidad -->
+                                            <?php if (!empty($servicio['velocidad'])): ?>
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <i class="ti-bolt text-warning me-2"></i>
+                                                    <span class="text-muted"><?= esc($servicio['velocidad']) ?></span>
+                                                </div>
+                                            <?php endif; ?>
+                                            
                                             <!-- Descripción -->
                                             <?php if (!empty($servicio['descripcion'])): ?>
                                                 <p class="text-muted small mb-3">
                                                     <?= esc(substr($servicio['descripcion'], 0, 100)) ?>
                                                     <?= strlen($servicio['descripcion']) > 100 ? '...' : '' ?>
                                                 </p>
+                                            <?php endif; ?>
+                                            
+                                            <!-- Características -->
+                                            <?php if (!empty($servicio['caracteristicas'])): ?>
+                                                <?php 
+                                                $caracteristicas = is_string($servicio['caracteristicas']) 
+                                                    ? json_decode($servicio['caracteristicas'], true) 
+                                                    : $servicio['caracteristicas'];
+                                                ?>
+                                                <?php if (!empty($caracteristicas['incluye'])): ?>
+                                                    <div class="mb-3">
+                                                        <small class="text-muted fw-bold d-block mb-1">Incluye:</small>
+                                                        <ul class="list-unstyled mb-0">
+                                                            <?php foreach (array_slice($caracteristicas['incluye'], 0, 3) as $item): ?>
+                                                                <li class="small">
+                                                                    <i class="ti-check text-success me-1"></i>
+                                                                    <?= esc($item) ?>
+                                                                </li>
+                                                            <?php endforeach; ?>
+                                                            <?php if (count($caracteristicas['incluye']) > 3): ?>
+                                                                <li class="small text-muted">
+                                                                    + <?= count($caracteristicas['incluye']) - 3 ?> más...
+                                                                </li>
+                                                            <?php endif; ?>
+                                                        </ul>
+                                                    </div>
+                                                <?php endif; ?>
                                             <?php endif; ?>
 
                                             <!-- Estadísticas -->
