@@ -109,20 +109,18 @@ window.mostrarModalReasignar = function(idlead) {
                             <input type="hidden" name="idlead" value="${idlead}">
                             
                             <div class="mb-3">
-                                <label class="form-label">
-                                    <i class="mdi mdi-magnify"></i> Buscar y asignar usuario:
-                                </label>
-                                <select name="nuevo_usuario" id="selectUsuarioReasignar" class="form-select" required>
-                                    <option value="">Escribe para buscar usuario...</option>
-                                    ${usuariosDisponibles.map(u => `
-                                        <option value="${u.idusuario}" 
-                                                data-turno="${u.turno}"
-                                                data-leads="${u.leads_activos}"
-                                                data-tareas="${u.tareas_pendientes}">
-                                            ${u.nombre} - ${u.turno} | ${u.leads_activos} leads | ${u.tareas_pendientes} tareas
-                                        </option>
-                                    `).join('')}
-                                </select>
+                                <label class="form-label">Buscar y asignar usuario:</label>
+                                <input type="text" 
+                                       id="inputBuscarUsuario" 
+                                       class="form-control" 
+                                       placeholder="Escribe para buscar por nombre, teléfono o DNI"
+                                       autocomplete="off">
+                                <input type="hidden" name="nuevo_usuario" id="hiddenUsuarioSeleccionado" required>
+                                
+                                <div id="resultadosBusqueda" class="list-group mt-2" style="max-height: 250px; overflow-y: auto; display: none;">
+                                    <!-- Resultados de búsqueda aparecerán aquí -->
+                                </div>
+                                
                                 <div id="infoUsuarioSeleccionado" class="mt-2" style="display:none;">
                                     <div class="alert alert-info mb-0">
                                         <strong><i class="mdi mdi-account"></i> <span id="nombreUsuario"></span></strong><br>
@@ -200,54 +198,110 @@ window.mostrarModalReasignar = function(idlead) {
         const $modal = $('#modalReasignar');
         $modal.modal('show');
         
-        // Esperar a que el modal esté completamente visible
-        $modal.on('shown.bs.modal', function() {
-            // Inicializar Select2 para búsqueda de usuarios
-            if (typeof inicializarBuscadorUsuarios === 'function') {
-                console.log('Inicializando buscador de usuarios en modal reasignar');
-                inicializarBuscadorUsuarios('#selectUsuarioReasignar', {
-                    placeholder: 'Escribe para buscar usuario...',
-                    dropdownParent: $modal,
-                    allowClear: true
+        // Configurar búsqueda de usuarios
+        const inputBuscar = document.getElementById('inputBuscarUsuario');
+        const resultadosDiv = document.getElementById('resultadosBusqueda');
+        const hiddenInput = document.getElementById('hiddenUsuarioSeleccionado');
+        
+        inputBuscar.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            
+            if (query.length === 0) {
+                resultadosDiv.style.display = 'none';
+                resultadosDiv.innerHTML = '';
+                return;
+            }
+            
+            // Filtrar usuarios
+            const usuariosFiltrados = usuariosDisponibles.filter(u => 
+                u.nombre.toLowerCase().includes(query) ||
+                u.turno.toLowerCase().includes(query)
+            );
+            
+            if (usuariosFiltrados.length === 0) {
+                resultadosDiv.innerHTML = '<div class="list-group-item text-muted">No se encontraron usuarios</div>';
+                resultadosDiv.style.display = 'block';
+                return;
+            }
+            
+            // Mostrar resultados
+            resultadosDiv.innerHTML = usuariosFiltrados.map(u => {
+                const colorTurno = u.turno.toLowerCase().includes('mañana') ? 'warning' : 
+                                   u.turno.toLowerCase().includes('tarde') ? 'info' : 'secondary';
+                return `
+                    <a href="#" class="list-group-item list-group-item-action usuario-item" 
+                       data-id="${u.idusuario}"
+                       data-nombre="${u.nombre}"
+                       data-turno="${u.turno}"
+                       data-leads="${u.leads_activos}"
+                       data-tareas="${u.tareas_pendientes}">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0 me-2">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                                     style="width: 32px; height: 32px; font-size: 14px; font-weight: bold;">
+                                    ${u.nombre.charAt(0).toUpperCase()}
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">${u.nombre}</div>
+                                <small class="text-muted">
+                                    <span class="badge bg-${colorTurno}">${u.turno}</span>
+                                    <span class="ms-2">📊 ${u.leads_activos} leads</span>
+                                    <span class="ms-2">✅ ${u.tareas_pendientes} tareas</span>
+                                </small>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+            
+            resultadosDiv.style.display = 'block';
+            
+            // Event listeners para seleccionar usuario
+            resultadosDiv.querySelectorAll('.usuario-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const id = this.dataset.id;
+                    const nombre = this.dataset.nombre;
+                    const turno = this.dataset.turno;
+                    const leads = this.dataset.leads;
+                    const tareas = this.dataset.tareas;
+                    
+                    // Actualizar input y hidden
+                    inputBuscar.value = nombre;
+                    hiddenInput.value = id;
+                    
+                    // Mostrar info del usuario
+                    document.getElementById('nombreUsuario').textContent = nombre;
+                    document.getElementById('turnoUsuario').textContent = turno;
+                    document.getElementById('leadsUsuario').textContent = leads;
+                    document.getElementById('tareasUsuario').textContent = tareas;
+                    document.getElementById('infoUsuarioSeleccionado').style.display = 'block';
+                    
+                    // Ocultar resultados
+                    resultadosDiv.style.display = 'none';
                 });
-            } else {
-                console.warn('Función inicializarBuscadorUsuarios no disponible');
+            });
+        });
+        
+        // Ocultar resultados al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!inputBuscar.contains(e.target) && !resultadosDiv.contains(e.target)) {
+                resultadosDiv.style.display = 'none';
             }
         });
     }, 100);
 
     // Toggle campos de tarea
-    document.getElementById('crearTarea').addEventListener('change', function() {
-        document.getElementById('camposTarea').style.display = this.checked ? 'block' : 'none';
-    });
-    
-    // Limpiar Select2 al cerrar modal
-    $('#modalReasignar').on('hidden.bs.modal', function() {
-        if (typeof destruirBuscador === 'function') {
-            destruirBuscador('#selectUsuarioReasignar');
-        }
-    });
-    
-    // Event listener para mostrar info del usuario seleccionado
     setTimeout(() => {
-        const selectUsuario = document.getElementById('selectUsuarioReasignar');
-        if (selectUsuario) {
-            selectUsuario.addEventListener('change', function() {
-                const selectedOption = this.options[this.selectedIndex];
-                const infoDiv = document.getElementById('infoUsuarioSeleccionado');
-                
-                if (this.value) {
-                    document.getElementById('nombreUsuario').textContent = selectedOption.text.split(' - ')[0];
-                    document.getElementById('turnoUsuario').textContent = selectedOption.dataset.turno;
-                    document.getElementById('leadsUsuario').textContent = selectedOption.dataset.leads;
-                    document.getElementById('tareasUsuario').textContent = selectedOption.dataset.tareas;
-                    infoDiv.style.display = 'block';
-                } else {
-                    infoDiv.style.display = 'none';
-                }
+        const crearTareaCheckbox = document.getElementById('crearTarea');
+        if (crearTareaCheckbox) {
+            crearTareaCheckbox.addEventListener('change', function() {
+                document.getElementById('camposTarea').style.display = this.checked ? 'block' : 'none';
             });
         }
-    }, 500);
+    }, 200);
 }
 
 /**
@@ -322,20 +376,18 @@ window.mostrarModalSolicitarApoyo = function(idlead) {
                             <input type="hidden" name="idlead" value="${idlead}">
                             
                             <div class="mb-3">
-                                <label class="form-label">
-                                    <i class="mdi mdi-magnify"></i> Buscar usuario para solicitar apoyo:
-                                </label>
-                                <select name="usuario_apoyo" id="selectUsuarioApoyo" class="form-select" required>
-                                    <option value="">Escribe para buscar usuario...</option>
-                                    ${usuariosDisponibles.map(u => `
-                                        <option value="${u.idusuario}"
-                                                data-turno="${u.turno}"
-                                                data-leads="${u.leads_activos}"
-                                                data-tareas="${u.tareas_pendientes}">
-                                            ${u.nombre} - ${u.turno} | ${u.leads_activos} leads | ${u.tareas_pendientes} tareas
-                                        </option>
-                                    `).join('')}
-                                </select>
+                                <label class="form-label">Buscar usuario para solicitar apoyo:</label>
+                                <input type="text" 
+                                       id="inputBuscarUsuarioApoyo" 
+                                       class="form-control" 
+                                       placeholder="Escribe para buscar usuario..."
+                                       autocomplete="off">
+                                <input type="hidden" name="usuario_apoyo" id="hiddenUsuarioApoyo" required>
+                                
+                                <div id="resultadosBusquedaApoyo" class="list-group mt-2" style="max-height: 250px; overflow-y: auto; display: none;">
+                                    <!-- Resultados de búsqueda aparecerán aquí -->
+                                </div>
+                                
                                 <div id="infoUsuarioApoyo" class="mt-2" style="display:none;">
                                     <div class="alert alert-info mb-0">
                                         <strong><i class="mdi mdi-account"></i> <span id="nombreUsuarioApoyo"></span></strong><br>
@@ -398,49 +450,100 @@ window.mostrarModalSolicitarApoyo = function(idlead) {
         const $modal = $('#modalSolicitarApoyo');
         $modal.modal('show');
         
-        // Esperar a que el modal esté completamente visible
-        $modal.on('shown.bs.modal', function() {
-            // Inicializar Select2 para búsqueda de usuarios
-            if (typeof inicializarBuscadorUsuarios === 'function') {
-                console.log('Inicializando buscador de usuarios en modal apoyo');
-                inicializarBuscadorUsuarios('#selectUsuarioApoyo', {
-                    placeholder: 'Escribe para buscar usuario...',
-                    dropdownParent: $modal,
-                    allowClear: true
+        // Configurar búsqueda de usuarios
+        const inputBuscar = document.getElementById('inputBuscarUsuarioApoyo');
+        const resultadosDiv = document.getElementById('resultadosBusquedaApoyo');
+        const hiddenInput = document.getElementById('hiddenUsuarioApoyo');
+        
+        inputBuscar.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            
+            if (query.length === 0) {
+                resultadosDiv.style.display = 'none';
+                resultadosDiv.innerHTML = '';
+                return;
+            }
+            
+            // Filtrar usuarios
+            const usuariosFiltrados = usuariosDisponibles.filter(u => 
+                u.nombre.toLowerCase().includes(query) ||
+                u.turno.toLowerCase().includes(query)
+            );
+            
+            if (usuariosFiltrados.length === 0) {
+                resultadosDiv.innerHTML = '<div class="list-group-item text-muted">No se encontraron usuarios</div>';
+                resultadosDiv.style.display = 'block';
+                return;
+            }
+            
+            // Mostrar resultados
+            resultadosDiv.innerHTML = usuariosFiltrados.map(u => {
+                const colorTurno = u.turno.toLowerCase().includes('mañana') ? 'warning' : 
+                                   u.turno.toLowerCase().includes('tarde') ? 'info' : 'secondary';
+                return `
+                    <a href="#" class="list-group-item list-group-item-action usuario-item-apoyo" 
+                       data-id="${u.idusuario}"
+                       data-nombre="${u.nombre}"
+                       data-turno="${u.turno}"
+                       data-leads="${u.leads_activos}"
+                       data-tareas="${u.tareas_pendientes}">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0 me-2">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                                     style="width: 32px; height: 32px; font-size: 14px; font-weight: bold;">
+                                    ${u.nombre.charAt(0).toUpperCase()}
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">${u.nombre}</div>
+                                <small class="text-muted">
+                                    <span class="badge bg-${colorTurno}">${u.turno}</span>
+                                    <span class="ms-2">📊 ${u.leads_activos} leads</span>
+                                    <span class="ms-2">✅ ${u.tareas_pendientes} tareas</span>
+                                </small>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+            
+            resultadosDiv.style.display = 'block';
+            
+            // Event listeners para seleccionar usuario
+            resultadosDiv.querySelectorAll('.usuario-item-apoyo').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const id = this.dataset.id;
+                    const nombre = this.dataset.nombre;
+                    const turno = this.dataset.turno;
+                    const leads = this.dataset.leads;
+                    const tareas = this.dataset.tareas;
+                    
+                    // Actualizar input y hidden
+                    inputBuscar.value = nombre;
+                    hiddenInput.value = id;
+                    
+                    // Mostrar info del usuario
+                    document.getElementById('nombreUsuarioApoyo').textContent = nombre;
+                    document.getElementById('turnoUsuarioApoyo').textContent = turno;
+                    document.getElementById('leadsUsuarioApoyo').textContent = leads;
+                    document.getElementById('tareasUsuarioApoyo').textContent = tareas;
+                    document.getElementById('infoUsuarioApoyo').style.display = 'block';
+                    
+                    // Ocultar resultados
+                    resultadosDiv.style.display = 'none';
                 });
-            } else {
-                console.warn('Función inicializarBuscadorUsuarios no disponible');
+            });
+        });
+        
+        // Ocultar resultados al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!inputBuscar.contains(e.target) && !resultadosDiv.contains(e.target)) {
+                resultadosDiv.style.display = 'none';
             }
         });
     }, 100);
-    
-    // Limpiar Select2 al cerrar modal
-    $('#modalSolicitarApoyo').on('hidden.bs.modal', function() {
-        if (typeof destruirBuscador === 'function') {
-            destruirBuscador('#selectUsuarioApoyo');
-        }
-    });
-    
-    // Event listener para mostrar info del usuario seleccionado
-    setTimeout(() => {
-        const selectUsuario = document.getElementById('selectUsuarioApoyo');
-        if (selectUsuario) {
-            selectUsuario.addEventListener('change', function() {
-                const selectedOption = this.options[this.selectedIndex];
-                const infoDiv = document.getElementById('infoUsuarioApoyo');
-                
-                if (this.value) {
-                    document.getElementById('nombreUsuarioApoyo').textContent = selectedOption.text.split(' - ')[0];
-                    document.getElementById('turnoUsuarioApoyo').textContent = selectedOption.dataset.turno;
-                    document.getElementById('leadsUsuarioApoyo').textContent = selectedOption.dataset.leads;
-                    document.getElementById('tareasUsuarioApoyo').textContent = selectedOption.dataset.tareas;
-                    infoDiv.style.display = 'block';
-                } else {
-                    infoDiv.style.display = 'none';
-                }
-            });
-        }
-    }, 500);
 }
 
 /**

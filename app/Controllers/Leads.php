@@ -14,6 +14,7 @@ use App\Models\EtapaModel;
 use App\Models\DistritoModel;
 use App\Models\CampoDinamicoOrigenModel;
 use App\Models\HistorialLeadModel;
+use App\Models\ComentarioLeadModel;
 use Config\LeadEstado;
 use Config\TipoSolicitud;
 
@@ -1555,6 +1556,103 @@ public function completarTarea()
                 'success' => false,
                 'message' => 'Error al buscar clientes'
             ]);
+        }
+    }
+
+    /**
+     * Obtener comentarios de un lead (AJAX)
+     */
+    public function getComentarios($idlead)
+    {
+        try {
+            $comentarioModel = new ComentarioLeadModel();
+            $comentarios = $comentarioModel->getComentariosByLead($idlead);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'comentarios' => $comentarios
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error al cargar comentarios: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al cargar comentarios: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Crear nuevo comentario (AJAX)
+     */
+    public function crearComentario()
+    {
+        try {
+            $idlead = $this->request->getPost('idlead');
+            $comentario = $this->request->getPost('comentario');
+            $tipo = $this->request->getPost('tipo') ?? 'nota_interna';
+            $idusuario = session()->get('idusuario');
+
+            if (empty($comentario)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'El comentario no puede estar vacío'
+                ]);
+            }
+
+            $comentarioModel = new ComentarioLeadModel();
+            $result = $comentarioModel->crearComentario($idlead, $idusuario, $comentario, $tipo);
+
+            if ($result) {
+                // Si es solicitud de apoyo, crear notificación para supervisores
+                if ($tipo === 'solicitud_apoyo') {
+                    $this->notificarSolicitudApoyo($idlead, $idusuario);
+                }
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Comentario agregado correctamente'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al guardar el comentario'
+                ]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Error al crear comentario: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al crear comentario: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Notificar a supervisores sobre solicitud de apoyo
+     */
+    private function notificarSolicitudApoyo($idlead, $idusuario)
+    {
+        try {
+            $notificacionModel = new \App\Models\NotificacionModel();
+            $usuarioModel = new \App\Models\UsuarioModel();
+            
+            // Obtener supervisores
+            $supervisores = $usuarioModel->where('idrol', 2)->findAll(); // 2 = Supervisor
+            
+            $lead = $this->leadModel->find($idlead);
+            $usuario = $usuarioModel->find($idusuario);
+            
+            foreach ($supervisores as $supervisor) {
+                $notificacionModel->crearNotificacion(
+                    $supervisor['idusuario'],
+                    'solicitud_apoyo',
+                    'Solicitud de Apoyo en Lead',
+                    $usuario['nombre'] . ' solicita apoyo en el lead: ' . $lead['nombres'],
+                    base_url('leads/view/' . $idlead)
+                );
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Error al notificar apoyo: ' . $e->getMessage());
         }
     }
 }

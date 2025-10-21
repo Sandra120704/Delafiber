@@ -252,6 +252,48 @@ $historial = $historial ?? [];
                     </div>
                 </div>
 
+                <!-- Comentarios Internos -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                        <h5 class="mb-0">💬 Comentarios Internos</h5>
+                        <span class="badge badge-secondary" id="contadorComentarios">0</span>
+                    </div>
+                    <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                        <!-- Lista de comentarios -->
+                        <div id="listaComentarios">
+                            <div class="text-center text-muted py-3">
+                                <i class="icon-speech" style="font-size: 2rem;"></i>
+                                <p>Cargando comentarios...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <!-- Formulario para nuevo comentario -->
+                        <form id="formComentario">
+                            <input type="hidden" name="idlead" value="<?= $lead['idlead'] ?>">
+                            <div class="form-group mb-2">
+                                <textarea class="form-control" name="comentario" id="nuevoComentario" rows="2" placeholder="Escribe un comentario..." required></textarea>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <input type="radio" class="btn-check" name="tipo" id="tipoNota" value="nota_interna" checked>
+                                    <label class="btn btn-outline-secondary" for="tipoNota">
+                                        <i class="icon-note"></i> Nota
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="tipo" id="tipoApoyo" value="solicitud_apoyo">
+                                    <label class="btn btn-outline-warning" for="tipoApoyo">
+                                        <i class="icon-bell"></i> Solicitar Apoyo
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="icon-paper-plane"></i> Enviar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
                 <!-- Historial de Cambios de Etapa -->
                 <div class="card">
                     <div class="card-header">
@@ -529,5 +571,6 @@ $historial = $historial ?? [];
 <!-- Scripts de Leads -->
 <script src="<?= base_url('js/leads/leads-view.js') ?>"></script>
 <script src="<?= base_url('js/leads/asignacion-leads.js') ?>"></script>
+<script src="<?= base_url('js/leads/comentarios-lead.js') ?>"></script>
 
 <?= $this->endSection() ?>

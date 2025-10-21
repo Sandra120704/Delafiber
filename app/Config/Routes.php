@@ -42,6 +42,9 @@ $routes->group('leads', ['filter' => 'auth'], function($routes) {
     $routes->get('verificar-cobertura', 'Leads::verificarCobertura');
     $routes->get('buscarClienteAjax', 'Leads::buscarClienteAjax'); // Búsqueda con Select2
     $routes->get('exportar', 'Leads::exportar');
+    // Comentarios
+    $routes->get('getComentarios/(:num)', 'Leads::getComentarios/$1');
+    $routes->post('crearComentario', 'Leads::crearComentario');
 });
 
 // === CAMPAÑAS ===

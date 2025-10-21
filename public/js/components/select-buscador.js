@@ -10,9 +10,10 @@
  */
 function inicializarBuscadorUsuarios(selector, options = {}) {
     const defaults = {
-        placeholder: 'Buscar usuario...',
+        placeholder: 'Escribe para buscar usuario...',
         allowClear: true,
         width: '100%',
+        dropdownAutoWidth: true,
         language: {
             noResults: function() {
                 return "No se encontraron usuarios";
@@ -26,10 +27,18 @@ function inicializarBuscadorUsuarios(selector, options = {}) {
         },
         minimumInputLength: 0,
         templateResult: formatearUsuario,
-        templateSelection: formatearSeleccionUsuario
+        templateSelection: formatearSeleccionUsuario,
+        // Configuración para que el campo de búsqueda esté DENTRO del dropdown
+        closeOnSelect: true,
+        selectOnClose: false
     };
 
     const config = { ...defaults, ...options };
+    
+    // Destruir instancia previa si existe
+    if ($(selector).data('select2')) {
+        $(selector).select2('destroy');
+    }
     
     $(selector).select2(config);
 }

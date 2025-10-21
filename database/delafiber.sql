@@ -666,6 +666,7 @@ CREATE TABLE IF NOT EXISTS `comentarios_lead` (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
 -- =====================================================
 -- TABLA DUPLICADA ELIMINADA (campos_dinamicos_origen)
 -- Ya está definida en la línea 590
