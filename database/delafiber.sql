@@ -1,4 +1,3 @@
-
 DROP DATABASE IF EXISTS `delafiber`;
 CREATE DATABASE `delafiber` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `delafiber`;
@@ -644,14 +643,15 @@ CREATE TABLE IF NOT EXISTS `tb_interacciones` (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabla: comentarios_lead
-CREATE TABLE IF NOT EXISTS `comentarios_lead` (
+-- Tabla: comentario_lead (comentarios de leads)
+CREATE TABLE IF NOT EXISTS `comentari_lead` (
   `idcomentario` INT UNSIGNED AUTO_INCREMENT,
   `idlead` INT UNSIGNED NOT NULL,
   `idusuario` INT UNSIGNED NOT NULL,
   `comentario` TEXT NOT NULL,
-  `tipo` VARCHAR(50) DEFAULT 'Nota' COMMENT 'Nota, Recordatorio, Alerta',
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `tipo` ENUM('nota_interna', 'solicitud_apoyo', 'respuesta') DEFAULT 'nota_interna' COMMENT 'Tipo de comentario',
+  `created_at` DATETIME NULL,
+  `updated_at` DATETIME NULL,
   PRIMARY KEY (`idcomentario`),
   KEY `idx_comentario_lead` (`idlead`),
   KEY `idx_comentario_usuario` (`idusuario`),
@@ -665,12 +665,6 @@ CREATE TABLE IF NOT EXISTS `comentarios_lead` (
     REFERENCES `usuarios` (`idusuario`) 
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
--- =====================================================
--- TABLA DUPLICADA ELIMINADA (campos_dinamicos_origen)
--- Ya está definida en la línea 590
--- =====================================================
 
 -- Vista: v_usuarios_permisos
 CREATE OR REPLACE VIEW `v_usuarios_permisos` AS
