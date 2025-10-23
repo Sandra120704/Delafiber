@@ -145,13 +145,13 @@
                                             data-id="<?= $usuario['idusuario'] ?>"
                                             style="width: auto;">
                                         <option value="activo" <?= ($usuario['estadoActivo'] ?? 'activo') === 'activo' ? 'selected' : '' ?>>
-                                            ✅ Activo
+                                             Activo
                                         </option>
                                         <option value="inactivo" <?= ($usuario['estadoActivo'] ?? '') === 'inactivo' ? 'selected' : '' ?>>
-                                            ⭕ Inactivo
+                                             Inactivo
                                         </option>
                                         <option value="suspendido" <?= ($usuario['estadoActivo'] ?? '') === 'suspendido' ? 'selected' : '' ?>>
-                                            🚫 Suspendido
+                                             Suspendido
                                         </option>
                                     </select>
                                 </td>

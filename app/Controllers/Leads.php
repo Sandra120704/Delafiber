@@ -251,13 +251,105 @@ class Leads extends BaseController
                 'Lead creado'
             );
             
+            // Procesar documentos adjuntos
+            $documentoModel = new \App\Models\DocumentoLeadModel();
+            $documentosSubidos = [];
+            
+            // DNI Frontal
+            $dniFrontal = $this->request->getFile('foto_dni_frontal');
+            if ($dniFrontal && $dniFrontal->isValid()) {
+                $resultado = $documentoModel->guardarDocumento(
+                    $dniFrontal,
+                    $leadId,
+                    $personaId,
+                    'dni_frontal',
+                    session()->get('idusuario'),
+                    'formulario_web'
+                );
+                if ($resultado['success']) {
+                    $documentosSubidos[] = 'DNI Frontal';
+                }
+            }
+            
+            // DNI Reverso
+            $dniReverso = $this->request->getFile('foto_dni_reverso');
+            if ($dniReverso && $dniReverso->isValid()) {
+                $resultado = $documentoModel->guardarDocumento(
+                    $dniReverso,
+                    $leadId,
+                    $personaId,
+                    'dni_reverso',
+                    session()->get('idusuario'),
+                    'formulario_web'
+                );
+                if ($resultado['success']) {
+                    $documentosSubidos[] = 'DNI Reverso';
+                }
+            }
+            
+            // Recibo de Luz/Agua
+            $recibo = $this->request->getFile('recibo_luz_agua');
+            $tipoRecibo = $this->request->getPost('tipo_recibo') ?: 'recibo_luz';
+            if ($recibo && $recibo->isValid()) {
+                $resultado = $documentoModel->guardarDocumento(
+                    $recibo,
+                    $leadId,
+                    $personaId,
+                    $tipoRecibo,
+                    session()->get('idusuario'),
+                    'formulario_web'
+                );
+                if ($resultado['success']) {
+                    $documentosSubidos[] = 'Recibo';
+                }
+            }
+            
+            // Foto Domicilio
+            $fotoDomicilio = $this->request->getFile('foto_domicilio');
+            if ($fotoDomicilio && $fotoDomicilio->isValid()) {
+                $resultado = $documentoModel->guardarDocumento(
+                    $fotoDomicilio,
+                    $leadId,
+                    $personaId,
+                    'foto_domicilio',
+                    session()->get('idusuario'),
+                    'formulario_web'
+                );
+                if ($resultado['success']) {
+                    $documentosSubidos[] = 'Foto Domicilio';
+                }
+            }
+            
+            // Guardar coordenadas y ubicación de WhatsApp si existen
+            $coordenadas = $this->request->getPost('coordenadas_servicio');
+            $ubicacionCompartida = $this->request->getPost('ubicacion_compartida');
+            
+            if ($coordenadas || $ubicacionCompartida) {
+                $updateData = [];
+                if ($coordenadas) {
+                    $updateData['coordenadas_servicio'] = $coordenadas;
+                    $updateData['coordenadas_whatsapp'] = $coordenadas;
+                }
+                if ($ubicacionCompartida) {
+                    $updateData['ubicacion_compartida'] = $ubicacionCompartida;
+                }
+                if (!empty($updateData)) {
+                    $this->leadModel->update($leadId, $updateData);
+                }
+            }
+            
             // Registrar en auditoría
             log_auditoria(
                 'Crear Lead',
                 'leads',
                 $leadId,
                 null,
-                ['lead_id' => $leadId, 'persona_id' => $personaId, 'nombre' => $nombreCompleto]
+                [
+                    'lead_id' => $leadId, 
+                    'persona_id' => $personaId, 
+                    'nombre' => $nombreCompleto,
+                    'documentos' => count($documentosSubidos) . ' documentos subidos'
+                ]
             );
             
             // Si se asignó a otro usuario, crear notificación
@@ -1653,6 +1745,308 @@ public function completarTarea()
             }
         } catch (\Exception $e) {
             log_message('error', 'Error al notificar apoyo: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Verificar si un cliente ya existe (para WhatsApp)
+     */
+    public function verificarClienteExistente()
+    {
+        $telefono = $this->request->getGet('telefono');
+        $dni = $this->request->getGet('dni');
+
+        if (empty($telefono) && empty($dni)) {
+            return $this->response->setJSON([
+                'existe' => false
+            ]);
+        }
+
+        try {
+            $db = \Config\Database::connect();
+            
+            // Buscar persona
+            $builder = $db->table('personas p');
+            $builder->select('p.*, l.idlead, l.estado as estado_lead, e.nombre as etapa_actual, c.idcliente');
+            $builder->join('leads l', 'l.idpersona = p.idpersona AND l.deleted_at IS NULL', 'left');
+            $builder->join('etapas e', 'e.idetapa = l.idetapa', 'left');
+            $builder->join('clientes c', 'c.idpersona = p.idpersona AND c.deleted_at IS NULL', 'left');
+            
+            if ($telefono) {
+                $builder->groupStart();
+                $builder->where('p.telefono', $telefono);
+                $builder->orWhere('p.whatsapp', $telefono);
+                $builder->groupEnd();
+            }
+            
+            if ($dni) {
+                if ($telefono) {
+                    $builder->orWhere('p.dni', $dni);
+                } else {
+                    $builder->where('p.dni', $dni);
+                }
+            }
+            
+            $builder->where('p.deleted_at IS NULL');
+            $builder->orderBy('p.created_at', 'DESC');
+            $builder->limit(1);
+            
+            $persona = $builder->get()->getRowArray();
+            
+            if ($persona) {
+                return $this->response->setJSON([
+                    'existe' => true,
+                    'cliente' => [
+                        'idpersona' => $persona['idpersona'],
+                        'nombres' => $persona['nombres'],
+                        'apellidos' => $persona['apellidos'],
+                        'dni' => $persona['dni'],
+                        'telefono' => $persona['telefono'],
+                        'whatsapp' => $persona['whatsapp'] ?? null,
+                        'correo' => $persona['correo']
+                    ],
+                    'es_lead' => !empty($persona['idlead']),
+                    'idlead' => $persona['idlead'] ?? null,
+                    'estado_lead' => $persona['estado_lead'] ?? null,
+                    'etapa_actual' => $persona['etapa_actual'] ?? null,
+                    'es_cliente' => !empty($persona['idcliente'])
+                ]);
+            }
+            
+            return $this->response->setJSON([
+                'existe' => false
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error al verificar cliente: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'existe' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Verificar cobertura por coordenadas GPS
+     */
+    public function verificarCoberturaCoordenadas()
+    {
+        $lat = $this->request->getGet('lat');
+        $lng = $this->request->getGet('lng');
+
+        if (empty($lat) || empty($lng)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'tiene_cobertura' => false,
+                'mensaje' => 'Coordenadas no proporcionadas'
+            ]);
+        }
+
+        try {
+            $db = \Config\Database::connect();
+            
+            // Buscar zonas activas que contengan el punto
+            $query = "
+                SELECT 
+                    z.id_zona,
+                    z.nombre_zona,
+                    z.descripcion,
+                    z.color,
+                    c.nombre as campania_nombre
+                FROM tb_zonas_campana z
+                INNER JOIN campanias c ON z.id_campana = c.idcampania
+                WHERE z.estado = 'activa'
+                AND ST_Contains(
+                    ST_GeomFromGeoJSON(z.poligono),
+                    ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')'))
+                )
+                LIMIT 1
+            ";
+            
+            $zona = $db->query($query, [$lng, $lat])->getRowArray();
+            
+            if ($zona) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'tiene_cobertura' => true,
+                    'zona' => $zona['nombre_zona'],
+                    'id_zona' => $zona['id_zona'],
+                    'campania' => $zona['campania_nombre'],
+                    'mensaje' => 'Esta ubicación tiene cobertura de servicio'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'tiene_cobertura' => false,
+                    'mensaje' => 'Esta ubicación no tiene cobertura actualmente. Puedes registrar el lead para futuras expansiones.'
+                ]);
+            }
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error al verificar cobertura por coordenadas: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'tiene_cobertura' => false,
+                'mensaje' => 'Error al verificar cobertura'
+            ]);
+        }
+    }
+
+    /**
+     * Subir documentos de un lead
+     */
+    public function subirDocumento($idlead)
+    {
+        requiere_permiso('leads.edit', 'No tienes permisos para subir documentos');
+
+        $documentoModel = new \App\Models\DocumentoLeadModel();
+        $lead = $this->leadModel->find($idlead);
+
+        if (!$lead) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Lead no encontrado'
+            ]);
+        }
+
+        $tipoDocumento = $this->request->getPost('tipo_documento');
+        $file = $this->request->getFile('archivo');
+
+        if (!$file || !$file->isValid()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No se recibió ningún archivo válido'
+            ]);
+        }
+
+        $resultado = $documentoModel->guardarDocumento(
+            $file,
+            $idlead,
+            $lead['idpersona'],
+            $tipoDocumento,
+            session()->get('idusuario'),
+            'formulario_web'
+        );
+
+        return $this->response->setJSON($resultado);
+    }
+
+    /**
+     * Convertir lead a cliente (integración con sistema de gestión)
+     */
+    public function convertirACliente($idlead)
+    {
+        requiere_permiso('leads.edit', 'No tienes permisos para convertir leads');
+
+        // Obtener lead completo
+        $lead = $this->leadModel->getLeadCompleto($idlead, session()->get('idusuario'));
+
+        if (!$lead) {
+            return redirect()->back()
+                ->with('error', 'Lead no encontrado o no tienes permisos para acceder')
+                ->with('swal_error', true);
+        }
+
+        // Si es GET, mostrar formulario de conversión
+        if ($this->request->getMethod() === 'get') {
+            // Obtener paquetes y sectores del sistema de gestión
+            $dbGestion = \Config\Database::connect('gestion');
+            
+            $paquetes = $dbGestion->table('tb_paquetes')
+                ->where('inactive_at', null)
+                ->orderBy('paquete', 'ASC')
+                ->get()
+                ->getResultArray();
+            
+            $sectores = $dbGestion->table('tb_sectores')
+                ->where('inactive_at', null)
+                ->orderBy('sector', 'ASC')
+                ->get()
+                ->getResultArray();
+
+            $data = [
+                'title' => 'Convertir Lead a Cliente',
+                'lead' => $lead,
+                'paquetes' => $paquetes,
+                'sectores' => $sectores
+            ];
+
+            return view('leads/convertir', $data);
+        }
+
+        // Si es POST, procesar conversión
+        $rules = [
+            'id_paquete' => 'required|integer',
+            'id_sector' => 'required|integer',
+            'fecha_inicio' => 'required|valid_date',
+            'nota_adicional' => 'permit_empty|string'
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $this->validator->getErrors())
+                ->with('swal_error', true);
+        }
+
+        // Obtener id_responsable del usuario actual
+        $dbGestion = \Config\Database::connect('gestion');
+        $responsable = $dbGestion->table('tb_responsables r')
+            ->join('tb_usuarios u', 'r.id_usuario = u.id_usuario')
+            ->join('tb_personas p', 'u.id_persona = p.id_persona')
+            ->where('p.nro_doc', session()->get('dni')) // Asumiendo que tienes el DNI en sesión
+            ->where('r.fecha_fin', null)
+            ->select('r.id_responsable')
+            ->get()
+            ->getRowArray();
+
+        if (!$responsable) {
+            return redirect()->back()
+                ->with('error', 'No se encontró tu usuario en el sistema de gestión')
+                ->with('swal_error', true);
+        }
+
+        try {
+            // Llamar al procedimiento almacenado
+            $db = \Config\Database::connect();
+            
+            $query = $db->query(
+                "CALL spu_lead_convertir_cliente(?, ?, ?, ?, ?, ?, @id_contrato, @mensaje)",
+                [
+                    $idlead,
+                    $this->request->getPost('id_paquete'),
+                    $this->request->getPost('id_sector'),
+                    $this->request->getPost('fecha_inicio'),
+                    $this->request->getPost('nota_adicional'),
+                    $responsable['id_responsable']
+                ]
+            );
+
+            // Obtener resultados
+            $result = $db->query("SELECT @id_contrato as id_contrato, @mensaje as mensaje")->getRow();
+
+            if ($result->id_contrato) {
+                // Registrar auditoría
+                registrar_auditoria(
+                    'leads',
+                    $idlead,
+                    'convertir',
+                    "Lead convertido a cliente. Contrato ID: {$result->id_contrato}"
+                );
+
+                return redirect()->to(base_url("leads/view/{$idlead}"))
+                    ->with('success', "Lead convertido exitosamente. Contrato #{$result->id_contrato} creado en el sistema de gestión.")
+                    ->with('swal_success', true)
+                    ->with('id_contrato', $result->id_contrato);
+            } else {
+                throw new \Exception($result->mensaje);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error al convertir lead: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Error al convertir lead: ' . $e->getMessage())
+                ->with('swal_error', true);
         }
     }
 }

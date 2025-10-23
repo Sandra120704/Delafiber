@@ -207,9 +207,10 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="direccion">Dirección de Instalación</label>
+                                            <label for="direccion">Dirección de Instalación *</label>
                                             <input type="text" class="form-control" id="direccion" name="direccion"
-                                                   placeholder="Ej: Av. Principal 123, Chincha Alta">
+                                                   placeholder="Ej: Av. Principal 123, Chincha Alta" required>
+                                            <small class="text-muted">Se verificará cobertura automáticamente</small>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -217,6 +218,100 @@
                                             <label for="referencias">Referencias de Ubicación</label>
                                             <input type="text" class="form-control" id="referencias" name="referencias"
                                                    placeholder="Ej: Frente al parque, cerca del mercado">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Ubicación GPS -->
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label>📍 Ubicación en Tiempo Real (Opcional)</label>
+                                            <div class="btn-group d-block mb-2" role="group">
+                                                <button type="button" class="btn btn-info btn-sm" id="btnObtenerUbicacion">
+                                                    <i class="icon-location-pin"></i> Obtener mi ubicación
+                                                </button>
+                                                <button type="button" class="btn btn-success btn-sm" id="btnPegarUbicacionWhatsapp">
+                                                    <i class="icon-social-whatsapp"></i> Pegar ubicación de WhatsApp
+                                                </button>
+                                            </div>
+                                            <input type="hidden" id="coordenadas_servicio" name="coordenadas_servicio">
+                                            <input type="hidden" id="ubicacion_compartida" name="ubicacion_compartida">
+                                            <div id="coordenadas-info" class="alert alert-info" style="display:none;">
+                                                <small id="coordenadas-texto"></small>
+                                            </div>
+                                            <div id="alerta-cobertura-ubicacion" style="display: none;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Documentos Requeridos -->
+                                <div class="card bg-light mb-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="icon-doc"></i> Documentos Requeridos (Opcional - puede subirse después)</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-warning">
+                                            <strong><i class="icon-info"></i> Importante:</strong> 
+                                            Para validar la dirección y verificar identidad, solicita al cliente:
+                                            <ul class="mb-0 mt-2">
+                                                <li>📄 Foto del DNI (frontal y reverso)</li>
+                                                <li>💡 Foto del recibo de luz o agua (para validar dirección)</li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="foto_dni_frontal">
+                                                        <i class="icon-camera"></i> DNI - Frontal
+                                                    </label>
+                                                    <input type="file" class="form-control-file" id="foto_dni_frontal" 
+                                                           name="foto_dni_frontal" accept="image/*,.pdf">
+                                                    <small class="text-muted">Formatos: JPG, PNG, PDF (máx. 5MB)</small>
+                                                    <div id="preview_dni_frontal" class="mt-2"></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="foto_dni_reverso">
+                                                        <i class="icon-camera"></i> DNI - Reverso
+                                                    </label>
+                                                    <input type="file" class="form-control-file" id="foto_dni_reverso" 
+                                                           name="foto_dni_reverso" accept="image/*,.pdf">
+                                                    <small class="text-muted">Formatos: JPG, PNG, PDF (máx. 3MB) - Se comprimirá automáticamente</small>
+                                                    <div id="preview_dni_reverso" class="mt-2"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="recibo_luz_agua">
+                                                        <i class="icon-camera"></i> Recibo de Luz o Agua
+                                                    </label>
+                                                    <select class="form-control form-control-sm mb-2" id="tipo_recibo" name="tipo_recibo">
+                                                        <option value="recibo_luz">Recibo de Luz</option>
+                                                        <option value="recibo_agua">Recibo de Agua</option>
+                                                    </select>
+                                                    <input type="file" class="form-control-file" id="recibo_luz_agua" 
+                                                           name="recibo_luz_agua" accept="image/*,.pdf">
+                                                    <small class="text-muted">Para validar la dirección de instalación</small>
+                                                    <div id="preview_recibo" class="mt-2"></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="foto_domicilio">
+                                                        <i class="icon-camera"></i> Foto del Domicilio (Opcional)
+                                                    </label>
+                                                    <input type="file" class="form-control-file" id="foto_domicilio" 
+                                                           name="foto_domicilio" accept="image/*">
+                                                    <small class="text-muted">Foto de la fachada o referencia visual</small>
+                                                    <div id="preview_domicilio" class="mt-2"></div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -335,5 +430,6 @@ const campanias = <?= json_encode($campanias ?? []) ?>;
 <script src="<?= base_url('js/leads/buscar-cliente.js') ?>"></script>
 <script src="<?= base_url('js/leads/create.js') ?>"></script>
 <script src="<?= base_url('js/leads/campos-dinamicos-origen.js') ?>"></script>
+<script src="<?= base_url('js/leads/documentos-geolocalizacion.js') ?>"></script>
 
 <?= $this->endSection() ?>

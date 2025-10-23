@@ -42,9 +42,11 @@ $historial = $historial ?? [];
                 <a href="<?= base_url('leads/edit/' . $lead['idlead']) ?>" class="btn btn-warning">
                     <i class="icon-pencil"></i> Editar
                 </a>
-                <button class="btn btn-success" data-toggle="modal" data-target="#modalConvertir">
+                <?php if ($lead['estado'] == 'activo'): ?>
+                <a href="<?= base_url('leads/convertirACliente/' . $lead['idlead']) ?>" class="btn btn-success">
                     <i class="icon-check"></i> Convertir a Cliente
-                </button>
+                </a>
+                <?php endif; ?>
                 <button class="btn btn-danger" data-toggle="modal" data-target="#modalDescartar">
                     <i class="icon-close"></i> Descartar
                 </button>

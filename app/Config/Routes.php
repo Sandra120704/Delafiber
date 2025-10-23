@@ -35,6 +35,8 @@ $routes->group('leads', ['filter' => 'auth'], function($routes) {
     $routes->get('pipeline', 'Leads::pipeline');
     $routes->post('moverEtapa', 'Leads::moverEtapa');
     $routes->post('convertir/(:num)', 'Leads::convertir/$1');
+    $routes->get('convertirACliente/(:num)', 'Leads::convertirACliente/$1');
+    $routes->post('convertirACliente/(:num)', 'Leads::convertirACliente/$1');
     $routes->post('descartar/(:num)', 'Leads::descartar/$1');
     $routes->post('agregarSeguimiento', 'Leads::agregarSeguimiento');
     $routes->post('crearTarea', 'Leads::crearTarea');
