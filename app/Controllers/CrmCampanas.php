@@ -16,6 +16,9 @@ class CrmCampanas extends BaseController
     protected $asignacionModel;
     protected $personaModel;
 
+    /**
+     * Constructor: inicializa los modelos necesarios.
+     */
     public function __construct()
     {
         $this->campaniaModel = new CampaniaModel();
@@ -24,9 +27,14 @@ class CrmCampanas extends BaseController
         $this->asignacionModel = new AsignacionZonaModel();
         $this->personaModel = new PersonaModel();
     }
+
     /**
-     * Vista principal de mapa de campañas (REEMPLAZA EL MAPA ANTIGUO)
+     * Muestra el mapa interactivo de campañas.
+     *
+     * @param int|null $idCampana ID de la campaña seleccionada (opcional)
+     * @return \CodeIgniter\HTTP\Response|string
      */
+
     public function mapaCampanas($idCampana = null)
     {
         // AuthFilter ya valida la autenticación
@@ -45,8 +53,12 @@ class CrmCampanas extends BaseController
     }
 
     /**
-     * Listar zonas de una campaña (redirige al mapa)
+     * Redirige al mapa de campañas según ID.
+     *
+     * @param int $idCampana
+     * @return \CodeIgniter\HTTP\RedirectResponse
      */
+
     public function zonasIndex($idCampana)
     {
         // Redirigir al mapa de campañas con la campaña seleccionada
@@ -54,8 +66,12 @@ class CrmCampanas extends BaseController
     }
 
     /**
-     * Ver detalle de una zona
+     * Muestra el detalle de una zona específica.
+     *
+     * @param int $idZona
+     * @return \CodeIgniter\HTTP\Response|string
      */
+
     public function zonaDetalle($idZona)
     {
         $zona = $this->zonaModel->getZonaDetalle($idZona);
@@ -76,8 +92,11 @@ class CrmCampanas extends BaseController
     }
 
     /**
-     * Guardar nueva zona (desde dibujo en mapa)
+     * Guarda una nueva zona dibujada en el mapa.
+     *
+     * @return \CodeIgniter\HTTP\Response JSON
      */
+
     public function guardarZona()
     {
         if (!$this->request->isAJAX()) {
@@ -119,9 +138,14 @@ class CrmCampanas extends BaseController
             'errors' => $this->zonaModel->errors()
         ]);
     }
+
     /**
-     * Actualizar zona existente
+     * Actualiza los datos de una zona existente.
+     *
+     * @param int $idZona
+     * @return \CodeIgniter\HTTP\Response JSON
      */
+
     public function actualizarZona($idZona)
     {
         if (!$this->request->isAJAX()) {
@@ -159,8 +183,12 @@ class CrmCampanas extends BaseController
     }
 
     /**
-     * Eliminar zona (soft delete)
+     * Elimina (soft delete) una zona.
+     *
+     * @param int $idZona
+     * @return \CodeIgniter\HTTP\RedirectResponse
      */
+
     public function eliminarZona($idZona)
     {
         $session = session();
@@ -174,8 +202,11 @@ class CrmCampanas extends BaseController
     }
 
     /**
-     * Asignar prospecto a zona automáticamente
+     * Asigna un prospecto a una zona de manera automática.
+     *
+     * @return \CodeIgniter\HTTP\Response JSON
      */
+
     public function asignarProspectoZona()
     {
         if (!$this->request->isAJAX()) {
@@ -200,8 +231,11 @@ class CrmCampanas extends BaseController
             'message' => 'Error al asignar prospecto'
         ]);
     }
+    
     /**
-     * Obtener prospectos sin zona asignada (COMPATIBLE CON MAPA ANTIGUO)
+     * Devuelve la lista de prospectos sin zona asignada.
+     *
+     * @return \CodeIgniter\HTTP\Response JSON
      */
     public function prospectosSinZona()
     {

@@ -10,6 +10,10 @@ use App\Models\DashboardModel;
 
 class Index extends BaseController
 {
+    //Documentaciones de los modelos
+    /**
+     * Inicialización de modelos
+     */
     protected $leadModel;
     protected $tareaModel;
     protected $seguimientoModel;
@@ -23,6 +27,11 @@ class Index extends BaseController
         $this->dashboardModel = new DashboardModel();
     }
 
+    /**
+     * Muestra el dashboard principal con resumen de datos
+     * @return string Vista del dashboard
+     * 
+     */
     public function index()
     {
         $idusuario = session()->get('idusuario');

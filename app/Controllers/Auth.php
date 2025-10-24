@@ -5,21 +5,46 @@ namespace App\Controllers;
 use App\Controllers\BaseController;
 use App\Models\UsuarioModel;
 
+/**
+ * Controlador Auth
+ *
+ * Gestiona el proceso de autenticación del sistema CRM Delafiber,
+ * incluyendo el inicio de sesión, cierre de sesión y validación de acceso.
+ *
+ * @package Delafiber\Controllers
+ * @author Sandra De la Cruz
+ * @version 1.0
+ * @since 2025-10-24
+ */
 class Auth extends BaseController
 {
+    /**
+     * Instancia del modelo de usuarios
+     *
+     * @var UsuarioModel
+     */
     protected $usuarioModel;
 
+    /**
+     * Constructor
+     *
+     * Inicializa el modelo de usuarios.
+     */
     public function __construct()
     {
         $this->usuarioModel = new UsuarioModel();
     }
 
     /**
-     * Página de login
+     * Página de inicio de sesión.
+     *
+     * Muestra el formulario de login si el usuario no está autenticado.
+     * Si ya tiene una sesión activa, lo redirige al dashboard.
+     *
+     * @return \CodeIgniter\HTTP\RedirectResponse|string Vista del login o redirección.
      */
     public function index()
     {
-        // Si ya está logueado, redirigir al dashboard
         if (session()->get('logged_in')) {
             return redirect()->to('/dashboard');
         }
@@ -32,7 +57,12 @@ class Auth extends BaseController
     }
 
     /**
-     * Procesar login
+     * Procesa el inicio de sesión.
+     *
+     * Valida las credenciales del usuario (nombre o correo electrónico)
+     * y crea la sesión correspondiente si son correctas.
+     *
+     * @return \CodeIgniter\HTTP\RedirectResponse|string
      */
     public function login()
     {
@@ -40,13 +70,13 @@ class Auth extends BaseController
             if (session()->get('logged_in')) {
                 return redirect()->to('/dashboard');
             }
-            $data = [
-                'title' => 'Iniciar Sesión - Delafiber CRM',
-            ];
-            // Verifica si la vista existe antes de mostrarla
+
+            $data = ['title' => 'Iniciar Sesión - Delafiber CRM'];
+
             if (!is_file(APPPATH . 'Views/auth/login.php')) {
                 return 'La vista auth/login.php no existe.';
             }
+
             return view('auth/login', $data);
         }
 
@@ -73,11 +103,9 @@ class Auth extends BaseController
         $usuario = $this->request->getPost('usuario');
         $password = $this->request->getPost('password');
 
-        // Validar credenciales (acepta email o nombre)
         $user = $this->usuarioModel->validarCredenciales($usuario, $password);
         
         if ($user) {
-            // Verificar el estado del usuario
             $estadoUsuario = $user['estado'] ?? 'activo';
             
             if ($estadoUsuario === 'inactivo') {
@@ -85,14 +113,13 @@ class Auth extends BaseController
                     ->withInput()
                     ->with('error', 'Tu cuenta está inactiva. Contacta al administrador.');
             }
-            
+
             if ($estadoUsuario === 'suspendido') {
                 return redirect()->back()
                     ->withInput()
                     ->with('error', 'Tu cuenta ha sido suspendida. Contacta al administrador.');
             }
             
-            // Obtener información del rol
             $db = \Config\Database::connect();
             $rol = $db->table('roles')
                 ->select('idrol, nombre, nivel, permisos')
@@ -100,13 +127,11 @@ class Auth extends BaseController
                 ->get()
                 ->getRowArray();
             
-            // Decodificar permisos JSON
             $permisos = [];
             if (!empty($rol['permisos'])) {
                 $permisos = json_decode($rol['permisos'], true) ?? [];
             }
             
-            // Crear sesión (variables estandarizadas)
             $sessionData = [
                 'idusuario' => $user['idusuario'],
                 'nombre' => $user['nombre_completo'],
@@ -121,23 +146,21 @@ class Auth extends BaseController
 
             session()->set($sessionData);
 
-            // Registrar último login
             $this->usuarioModel->actualizarUltimoLogin($user['idusuario']);
             session()->setFlashdata('success', 'Bienvenido, ' . $user['nombre_completo']);
 
-            // Redirigir al dashboard (página principal)
             return redirect()->to('/dashboard');
-
-        } else {
-            // Credenciales incorrectas
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Usuario o contraseña incorrectos');
         }
+
+        return redirect()->back()
+            ->withInput()
+            ->with('error', 'Usuario o contraseña incorrectos');
     }
 
     /**
-     * Cerrar sesión
+     * Cierra la sesión del usuario actual.
+     *
+     * @return \CodeIgniter\HTTP\RedirectResponse
      */
     public function logout()
     {
@@ -146,7 +169,9 @@ class Auth extends BaseController
     }
 
     /**
-     * Verificar si está autenticado (para AJAX)
+     * Verifica si el usuario está autenticado (para peticiones AJAX).
+     *
+     * @return \CodeIgniter\HTTP\Response
      */
     public function checkAuth()
     {
@@ -161,6 +186,13 @@ class Auth extends BaseController
         ]);
     }
 
+    /**
+     * Requiere autenticación para acceder a recursos protegidos.
+     *
+     * Si el usuario no está logueado, redirige o devuelve error JSON.
+     *
+     * @return bool|\CodeIgniter\HTTP\Response
+     */
     public function requireAuth()
     {
         if (!session()->get('logged_in')) {

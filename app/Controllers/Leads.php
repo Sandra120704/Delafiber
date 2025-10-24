@@ -1949,29 +1949,37 @@ public function completarTarea()
 
         // Si es GET, mostrar formulario de conversión
         if ($this->request->getMethod() === 'get') {
-            // Obtener paquetes y sectores del sistema de gestión
-            $dbGestion = \Config\Database::connect('gestion');
-            
-            $paquetes = $dbGestion->table('tb_paquetes')
-                ->where('inactive_at', null)
-                ->orderBy('paquete', 'ASC')
-                ->get()
-                ->getResultArray();
-            
-            $sectores = $dbGestion->table('tb_sectores')
-                ->where('inactive_at', null)
-                ->orderBy('sector', 'ASC')
-                ->get()
-                ->getResultArray();
+            try {
+                // Obtener paquetes y sectores del sistema de gestión
+                $dbGestion = \Config\Database::connect('gestion');
+                
+                $paquetes = $dbGestion->table('tb_paquetes')
+                    ->where('inactive_at', null)
+                    ->orderBy('paquete', 'ASC')
+                    ->get()
+                    ->getResultArray();
+                
+                $sectores = $dbGestion->table('tb_sectores')
+                    ->where('inactive_at', null)
+                    ->orderBy('sector', 'ASC')
+                    ->get()
+                    ->getResultArray();
 
-            $data = [
-                'title' => 'Convertir Lead a Cliente',
-                'lead' => $lead,
-                'paquetes' => $paquetes,
-                'sectores' => $sectores
-            ];
+                $data = [
+                    'title' => 'Convertir Lead a Cliente',
+                    'lead' => $lead,
+                    'paquetes' => $paquetes,
+                    'sectores' => $sectores
+                ];
 
-            return view('leads/convertir', $data);
+                return view('leads/convertir', $data);
+                
+            } catch (\Exception $e) {
+                log_message('error', 'Error al conectar con base de datos de gestión: ' . $e->getMessage());
+                return redirect()->back()
+                    ->with('error', 'Error al cargar datos del sistema de gestión. Verifica la configuración de la base de datos.')
+                    ->with('swal_error', true);
+            }
         }
 
         // Si es POST, procesar conversión

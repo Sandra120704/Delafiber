@@ -9,10 +9,24 @@ use App\Models\PersonaModel;
 
 class Cotizaciones extends BaseController
 {
+    /** @var CotizacionModel */
+
+    /** @var LeadModel */
+
+    /** @var ServicioModel */
+
+    /** @var PersonaModel */
+
     protected $cotizacionModel;
     protected $leadModel;
     protected $servicioModel;
     protected $personaModel;
+
+    /**
+     * Constructor.
+     *
+     * Inicializa los modelos requeridos para gestionar cotizaciones.
+     */
 
     public function __construct()
     {
@@ -23,8 +37,11 @@ class Cotizaciones extends BaseController
     }
 
     /**
-     * Mostrar lista de cotizaciones
+     * Muestra la lista de cotizaciones disponibles.
+     *
+     * @return \CodeIgniter\HTTP\Response|string
      */
+
     public function index()
     {
         $userId = session()->get('idusuario');
@@ -42,8 +59,11 @@ class Cotizaciones extends BaseController
     }
 
     /**
-     * Mostrar formulario para crear nueva cotización
+     * Muestra el formulario para crear una nueva cotización.
+     *
+     * @return \CodeIgniter\HTTP\Response|string
      */
+
     public function create()
     {
         $userId = session()->get('idusuario');
@@ -83,8 +103,14 @@ class Cotizaciones extends BaseController
     }
 
     /**
-     * Guardar nueva cotización
+     * Guarda una nueva cotización en la base de datos.
+     *
+     * Valida los datos, calcula los totales e inserta la información en las tablas
+     * correspondientes (`cotizaciones` y `cotizacion_detalle`).
+     *
+     * @return \CodeIgniter\HTTP\RedirectResponse
      */
+
     public function store()
     {
         $validation = \Config\Services::validation();
@@ -167,8 +193,12 @@ class Cotizaciones extends BaseController
     }
 
     /**
-     * Ver detalle de cotización
+     * Muestra el detalle de una cotización.
+     *
+     * @param int $id ID de la cotización
+     * @return \CodeIgniter\HTTP\Response|string
      */
+
     public function show($id)
     {
         $cotizacion = $this->cotizacionModel->getCotizacionCompleta($id);
@@ -186,8 +216,12 @@ class Cotizaciones extends BaseController
     }
 
     /**
-     * Editar cotización
+     * Muestra el formulario para editar una cotización existente.
+     *
+     * @param int $id ID de la cotización
+     * @return \CodeIgniter\HTTP\Response|string
      */
+
     public function edit($id)
     {
         $cotizacion = $this->cotizacionModel->find($id);
@@ -222,8 +256,12 @@ class Cotizaciones extends BaseController
     }
 
     /**
-     * Actualizar cotización
+     * Actualiza una cotización existente.
+     *
+     * @param int $id ID de la cotización
+     * @return \CodeIgniter\HTTP\RedirectResponse
      */
+
     public function update($id)
     {
         $validation = \Config\Services::validation();
@@ -266,8 +304,12 @@ class Cotizaciones extends BaseController
     }
 
     /**
-     * Cambiar estado de cotización
+     * Cambia el estado de una cotización (por ejemplo: "Borrador", "Aceptada", "Rechazada").
+     *
+     * @param int $id ID de la cotización
+     * @return \CodeIgniter\HTTP\Response JSON con el resultado
      */
+
     public function cambiarEstado($id)
     {
         try {
@@ -302,8 +344,12 @@ class Cotizaciones extends BaseController
     }
 
     /**
-     * Generar PDF de cotización
+     * Genera el PDF de una cotización.
+     *
+     * @param int $id ID de la cotización
+     * @return \CodeIgniter\HTTP\Response|string
      */
+
     public function generarPDF($id)
     {
         $cotizacion = $this->cotizacionModel->getCotizacionCompleta($id);
@@ -321,8 +367,12 @@ class Cotizaciones extends BaseController
     }
 
     /**
-     * Obtener cotizaciones por lead (AJAX)
+     * Obtiene cotizaciones asociadas a un lead.
+     *
+     * @param int $idlead ID del lead
+     * @return \CodeIgniter\HTTP\Response JSON con cotizaciones
      */
+
     public function porLead($idlead)
     {
         $cotizaciones = $this->cotizacionModel->getCotizacionesPorLead($idlead);
@@ -330,8 +380,11 @@ class Cotizaciones extends BaseController
     }
 
     /**
-     * Buscar leads para Select2 (AJAX)
+     * Busca leads para autocompletar (Select2).
+     *
+     * @return \CodeIgniter\HTTP\Response JSON con resultados de búsqueda
      */
+    
     public function buscarLeads()
     {
         // Log para depuración

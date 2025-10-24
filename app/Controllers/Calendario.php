@@ -12,9 +12,26 @@ use App\Models\TareaModel;
  */
 class Calendario extends BaseController
 {
+    /**
+     * @var EventoCalendarioModel $eventoModel Modelo para manejar eventos del calendario.
+     */
+
     protected $eventoModel;
+
+    /**
+     * @var LeadModel $leadModel Modelo para manejar leads.
+     */
     protected $leadModel;
+
+    /**
+     * @var TareaModel $tareaModel Modelo para manejar tareas.
+     */
     protected $tareaModel;
+
+    /**
+     * Constructor de la clase Calendario.
+     * Inicializa los modelos requeridos y el helper de auditoría.
+     */
     
     public function __construct()
     {
@@ -25,8 +42,11 @@ class Calendario extends BaseController
     }
     
     /**
-     * Vista principal del calendario
+     * Muestra la vista principal del calendario.
+     *
+     * @return \CodeIgniter\View\View Vista del calendario.
      */
+    
     public function index()
     {
         $data = [
@@ -38,8 +58,11 @@ class Calendario extends BaseController
     }
     
     /**
-     * Obtener eventos para el calendario (API JSON)
+     * Obtiene los eventos del usuario autenticado para mostrar en el calendario (formato JSON).
+     *
+     * @return \CodeIgniter\HTTP\Response JSON con los eventos formateados.
      */
+
     public function getEventos()
     {
         $idusuario = session()->get('idusuario');
@@ -73,8 +96,11 @@ class Calendario extends BaseController
     }
     
     /**
-     * Crear nuevo evento
+     * Crea un nuevo evento en el calendario.
+     *
+     * @return \CodeIgniter\HTTP\Response JSON indicando éxito o error.
      */
+
     public function store()
     {
         $rules = [
@@ -128,8 +154,12 @@ class Calendario extends BaseController
     }
     
     /**
-     * Actualizar evento
+     * Actualiza los datos de un evento existente.
+     *
+     * @param int $idevento ID del evento a actualizar.
+     * @return \CodeIgniter\HTTP\Response JSON con el resultado de la actualización.
      */
+
     public function update($idevento)
     {
         $evento = $this->eventoModel->find($idevento);
@@ -173,10 +203,14 @@ class Calendario extends BaseController
             ]);
         }
     }
-    
+
     /**
-     * Completar evento
+     * Marca un evento como completado.
+     *
+     * @param int $idevento ID del evento.
+     * @return \CodeIgniter\HTTP\Response JSON con el resultado.
      */
+
     public function completar($idevento)
     {
         $evento = $this->eventoModel->find($idevento);
@@ -204,8 +238,12 @@ class Calendario extends BaseController
     }
     
     /**
-     * Cancelar evento
+     * Cancela un evento.
+     *
+     * @param int $idevento ID del evento.
+     * @return \CodeIgniter\HTTP\Response JSON con el resultado.
      */
+
     public function cancelar($idevento)
     {
         $evento = $this->eventoModel->find($idevento);
@@ -233,8 +271,12 @@ class Calendario extends BaseController
     }
     
     /**
-     * Eliminar evento
+     * Elimina un evento.
+     *
+     * @param int $idevento ID del evento.
+     * @return \CodeIgniter\HTTP\Response JSON con el resultado.
      */
+
     public function delete($idevento)
     {
         $evento = $this->eventoModel->find($idevento);
@@ -270,8 +312,11 @@ class Calendario extends BaseController
     }
     
     /**
-     * Obtener eventos de hoy
+     * Obtiene los eventos del día actual del usuario.
+     *
+     * @return \CodeIgniter\HTTP\Response JSON con los eventos de hoy.
      */
+
     public function eventosHoy()
     {
         $idusuario = session()->get('idusuario');
@@ -284,8 +329,11 @@ class Calendario extends BaseController
     }
     
     /**
-     * Obtener próximos eventos
+     * Obtiene los próximos eventos según el número de días configurado.
+     *
+     * @return \CodeIgniter\HTTP\Response JSON con los próximos eventos.
      */
+
     public function proximosEventos()
     {
         $idusuario = session()->get('idusuario');
@@ -299,8 +347,12 @@ class Calendario extends BaseController
     }
     
     /**
-     * Crear evento desde tarea
+     * Crea un evento automáticamente a partir de una tarea.
+     *
+     * @param int $idtarea ID de la tarea asociada.
+     * @return \CodeIgniter\HTTP\Response JSON con el resultado.
      */
+
     public function crearDesdeTarea($idtarea)
     {
         $idusuario = session()->get('idusuario');

@@ -3,6 +3,10 @@ namespace App\Controllers;
 
 class Configuracion extends BaseController
 {
+    /**
+     * Muestra la página de configuración del usuario.
+     * @return \CodeIgniter\HTTP\RedirectResponse|string Vista de configuración.
+     */
     public function index()
     {
         $data = [
@@ -16,6 +20,13 @@ class Configuracion extends BaseController
 
         return view('configuracion/index', $data);
     }
+
+    /**
+     * Guarda la configuración del usuario.
+     * Actualmente almacena las preferencias en la sesion. 
+     * en futuras versiones puede conectarse con un modelo de base de datos.
+     * @return \CodeIgniter\HTTP\RedirectResponse Redirección tras guardar.
+     */
 
     public function guardar()
     {
@@ -33,6 +44,14 @@ class Configuracion extends BaseController
         return redirect()->to('configuracion')
             ->with('success', 'Configuración guardada correctamente');
     }
+
+    /**
+     * Obtiene las preferencias de configuración del usuario.
+     * Este metodo devuelve las preferencias almacenadas en la sesión.
+     * Ideal para integraciones AJAX.
+     * 
+     * @return \CodeIgniter\HTTP\Response JSON con las preferencias.
+     */
 
     public function obtenerPreferencias()
     {

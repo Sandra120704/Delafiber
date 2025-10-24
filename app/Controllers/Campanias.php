@@ -7,8 +7,17 @@ use App\Models\LeadModel;
 
 class Campanias extends BaseController
 {
+    
+    /**
+     * @var CampaniaModel Instancia del modelo de campañas.
+     */
+
     protected $campaniaModel;
     protected $leadModel;
+
+    /**
+     * Constructor: inicializa modelos utilizados.
+     */
 
     public function __construct()
     {
@@ -17,8 +26,11 @@ class Campanias extends BaseController
     }
 
     /**
-     * Mostrar lista de campañas
+     * Muestra la lista de campañas disponibles.
+     *
+     * @return string Vista con todas las campañas y conteo de leads.
      */
+
     public function index()
     {
         // Actualizar estados automáticamente según fechas
@@ -41,7 +53,9 @@ class Campanias extends BaseController
     }
 
     /**
-     * Formulario de crear campaña
+     * Muestra el formulario de creación de una nueva campaña.
+     *
+     * @return string Vista con formulario de creación.
      */
     public function create()
     {
@@ -53,8 +67,11 @@ class Campanias extends BaseController
     }
 
     /**
-     * Guardar nueva campaña
+     * Guarda una nueva campaña en la base de datos.
+     *
+     * @return \CodeIgniter\HTTP\RedirectResponse Redirección con mensaje de éxito o error.
      */
+
     public function store()
     {
         // Validación
@@ -94,8 +111,12 @@ class Campanias extends BaseController
     }
 
     /**
-     * Formulario de editar campaña
+     * Muestra el formulario para editar una campaña existente.
+     *
+     * @param int $id ID de la campaña.
+     * @return string|\CodeIgniter\HTTP\RedirectResponse
      */
+
     public function edit($id)
     {
         $campania = $this->campaniaModel->find($id);
@@ -114,8 +135,12 @@ class Campanias extends BaseController
     }
 
     /**
-     * Actualizar campaña existente
+     * Actualiza los datos de una campaña existente.
+     *
+     * @param int $id ID de la campaña.
+     * @return \CodeIgniter\HTTP\RedirectResponse
      */
+
     public function update($id)
     {
         // Verificar que existe
@@ -162,8 +187,12 @@ class Campanias extends BaseController
     }
 
     /**
-     * Eliminar campaña
+     * Elimina una campaña si no tiene leads asociados.
+     *
+     * @param int $id ID de la campaña.
+     * @return \CodeIgniter\HTTP\RedirectResponse
      */
+
     public function delete($id)
     {
         // Verificar que existe
@@ -194,8 +223,12 @@ class Campanias extends BaseController
     }
 
     /**
-     * Ver detalle de campaña con estadísticas
+     * Muestra el detalle de una campaña con estadísticas y leads recientes.
+     *
+     * @param int $id ID de la campaña.
+     * @return string|\CodeIgniter\HTTP\RedirectResponse
      */
+
     public function view($id)
     {
         // Actualizar estados automáticamente según fechas
@@ -278,7 +311,13 @@ class Campanias extends BaseController
         return view('campanias/view', $data);
     }
 
- 
+     /**
+     * Cambia el estado activo/inactivo de una campaña.
+     *
+     * @param int $id ID de la campaña.
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
+
     public function toggleEstado($id)
     {
         $campania = $this->campaniaModel->find($id);
@@ -311,8 +350,12 @@ class Campanias extends BaseController
     }
 
     /**
-     * Nueva vista personalizada de campaña
+     * Muestra una vista personalizada con detalle completo de la campaña.
+     *
+     * @param int $id ID de la campaña.
+     * @return string|\CodeIgniter\HTTP\RedirectResponse
      */
+
     public function show($id)
     {
         $campania = $this->campaniaModel->find($id);

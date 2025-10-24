@@ -126,3 +126,10 @@ _modules/*
 /phpunit*.xml
 
 README1.md
+
+#-------------------------
+# phpDocumentor
+#-------------------------
+phpDocumentor.phar
+docs/
+.phpdoc/
